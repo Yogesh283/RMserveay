@@ -1,0 +1,394 @@
+{
+    "common": {
+        "language": "语言",
+        "loading": "加载中…",
+        "menu": "菜单",
+        "openMenu": "打开菜单",
+        "closeMenu": "关闭菜单"
+    },
+    "home": {
+        "logIn": "登录",
+        "signIn": "登录",
+        "loginAsNormal": "普通用户登录",
+        "loginAsPublisher": "发布者登录",
+        "accountType": "账户类型",
+        "normalUser": "普通用户",
+        "normalUserTitle": "参与调研、赚取奖励 — 以会员身份加入",
+        "publisher": "发布者",
+        "publisherTitle": "创建调研、预算与您的发布者工作台",
+        "accountHint": "在上方按账户类型登录，或在下方选择注册。",
+        "eyebrow": "为跨境团队而打造",
+        "heroLine1": "将受众洞察转化为",
+        "heroGradient": "全球增长",
+        "heroSub": "RM Survey 将受访者、研究者与结算汇聚在同一安全平台 — 从首题到仪表盘，在您运营的每个市场保持清晰。",
+        "localesLine": "使用上方语言菜单 — 本页支持多种语言。",
+        "getStarted": "免费开始",
+        "openApp": "打开应用",
+        "teamEarn": "团队与收益",
+        "trustedBy": "全球产品与研究团队信赖之选",
+        "whatWeDo": "我们最擅长的",
+        "whatWeDoSub": "四大支柱 — 从伦敦到拉各斯统一的产品语言，无论投放还是答题。",
+        "learnMore": "了解更多 →",
+        "statsTitle": "与您同行的数据",
+        "statsSub": "实时完成率、可导出摘要，以及跨时区分布式团队仍清晰易读的界面。",
+        "statsBullets": [
+            "在同一工作台发起多语言研究",
+            "跨区域比较细分群体且不丢失细节",
+            "在激励透明的前提下扩展流量"
+        ],
+        "whyJoin": "团队为何加入",
+        "visualEyebrow": "实时 · 同步",
+        "visualTitle": "活动健康度",
+        "visualBar": "72% 完成率 · 滚动 24 小时窗口",
+        "statNumber": "1.25万+",
+        "statLabel": "全球贡献者",
+        "voicesTitle": "来自各地的声音",
+        "voicesSub": "不同地区的受访者与运营者 — 同一产品体验。",
+        "logoAlt": "RM Survey",
+        "services": [
+            {
+                "title": "研究与发现",
+                "text": "严谨的调研设计、稳定的执行与可跨市场复用的报告。"
+            },
+            {
+                "title": "方法与咨询",
+                "text": "问卷设计、抽样指导，以及面向全球利益相关方的叙事级输出。"
+            },
+            {
+                "title": "上市洞察",
+                "text": "细分层面的清晰度，使上市与推广反映受众真实偏好。"
+            },
+            {
+                "title": "项目交付",
+                "text": "端到端执行：时间表、责任归属与领导团队可复用的演示材料。"
+            }
+        ],
+        "testimonials": [
+            {
+                "quote": "流程清晰、结算可预期。我会在会议间隙参与 — 在亚太或出行途中都一样好用。",
+                "name": "Yuki T.",
+                "place": "日本东京"
+            },
+            {
+                "quote": "我们在一个工作空间运行多语言追踪。伦敦与圣保罗看到的是同一套数据。",
+                "name": "Marco V.",
+                "place": "意大利米兰"
+            },
+            {
+                "quote": "快速的现场更新与精致的受访者体验。更像全球化金融科技应用，而非传统样本库。",
+                "name": "James O.",
+                "place": "加拿大多伦多"
+            }
+        ]
+    },
+    "layout": {
+        "nav": {
+            "home": "首页",
+            "about": "关于",
+            "whyJoin": "为何加入",
+            "eBulletin": "电子简报",
+            "faqs": "常见问题",
+            "contact": "联系",
+            "rmSurvey": "RM Survey",
+            "dashboard": "控制台",
+            "publisher": "发布者",
+            "incomePanel": "收益面板"
+        },
+        "explore": "探索",
+        "account": "账户",
+        "login": "登录",
+        "register": "注册",
+        "logout": "退出",
+        "footerTagline": "用调研与洞察拓展线上影响力，全站体验一致流畅。",
+        "quickLinks": "快速链接",
+        "newsletter": "订阅通讯",
+        "newsletterHint": "{{name}} 的更新与简报。",
+        "subscribe": "订阅",
+        "emailPlaceholder": "邮箱",
+        "copyright": "© {{year}} {{name}}。保留所有权利。",
+        "termsFooter": "条款",
+        "privacy": "隐私",
+        "rmSurveyApp": "RM Survey 应用",
+        "publisherDashboard": "发布者控制台",
+        "memberIncomePanel": "会员收益面板"
+    },
+    "member": {
+        "loading": "加载中…",
+        "roleLabel": "会员",
+        "brandSubtitle": "统一面板",
+        "website": "官网",
+        "sectionMain": "主要",
+        "sectionPanels": "面板与资料",
+        "sectionProgramme": "计划",
+        "openSurveyApp": "打开调研应用",
+        "logout": "退出",
+        "profile": "资料",
+        "terms": "条款",
+        "more": "更多",
+        "moreNavAria": "更多导航",
+        "fullIncomeProgramme": "完整收益计划",
+        "nav": {
+            "dashboard": "控制台",
+            "team": "团队",
+            "surveys": "调研",
+            "wallet": "钱包",
+            "activePanels": "活跃面板",
+            "subPanels": "子面板",
+            "superSub": "超级子级",
+            "profile": "资料",
+            "incomeOverview": "收益概览",
+            "transactions": "交易",
+            "directIncome": "直推收益",
+            "panelMatching": "面板配对",
+            "subPanelMatching": "子面板配对",
+            "superSubPanel": "超级子面板",
+            "levelIncome": "层级收益",
+            "terms": "条款"
+        },
+        "dashboard": {
+            "loadFailed": "加载失败",
+            "loadingFigures": "正在加载最新数据…",
+            "welcomeBack": "欢迎回来",
+            "memberFallback": "会员",
+            "userId": "用户 ID",
+            "profile": "资料",
+            "walletBalance": "钱包余额",
+            "mainWalletTitle": "主钱包（您的）",
+            "mainWalletHint": "所有计划收入（调研、配对、层级、直推）均入账主钱包；充值也在此。链上提现只从主钱包扣除——若资金在 P2P，请先用 主↔P2P 转回主钱包。",
+            "p2pWalletTitle": "P2P 钱包",
+            "mainLabel": "主钱包",
+            "p2pLabel": "P2P",
+            "deposit": "充值",
+            "withdrawal": "提现",
+            "earningsSummary": "收益摘要",
+            "allTransactions": "全部交易",
+            "earnTotal": "计划合计（账本）",
+            "earningsLedgerDisclaimer": "账本合计是按时间累加的入账记录（当直推/层级/配对为 $0 时，总额主要来自下方「调研奖励」）。上方主钱包是当前可花的 USDT（已扣除手续费、面板、划转与提现）。",
+            "earnDirect": "直推收益",
+            "earnDirectHint": "打开页面",
+            "earnLevel": "层级收益",
+            "earnLevelHint": "打开页面",
+            "earnMatching": "配对收益",
+            "earnMatchingHint": "面板与子级",
+            "surveyCredits": "调研奖励",
+            "payouts": "{{count}} 笔发放",
+            "availableSurveys": "可用调研",
+            "surveysDoneTap": "已完成 {{done}} · 点击打开",
+            "tapToOpen": "点击打开",
+            "incomeProgramme": "收益计划",
+            "recentActivity": "近期动态",
+            "latestMovements": "最新变动",
+            "viewAll": "查看全部",
+            "tx": {
+                "deposit_credit": "充值",
+                "p2p_transfer_in": "P2P 入账",
+                "p2p_transfer_out": "P2P 转出",
+                "withdrawal": "提现",
+                "survey_credit": "调研入账",
+                "main_to_p2p": "主钱包 → P2P",
+                "p2p_to_main": "P2P → 主钱包",
+                "plan_purchase": "购买计划"
+            }
+        },
+        "ui": {
+            "hide": "Hide",
+            "show": "Show",
+            "active": "Active",
+            "inactive": "Inactive",
+            "sub": "Sub",
+            "super": "Super",
+            "left": "Left",
+            "right": "Right",
+            "empty": "Empty",
+            "learnMore": "Learn more",
+            "openArrow": "Open →",
+            "mainP2p": "Main ↔ P2P",
+            "copy": "Copy",
+            "copied": "Copied",
+            "share": "Share",
+            "details": "Details",
+            "dash": "—",
+            "yes": "Y",
+            "noneYet": "None yet.",
+            "allActive": "All active",
+            "typesOfIncome": "Types of income",
+            "activeParen": "(active)",
+            "failedToLoad": "Failed to load",
+            "previous": "Previous",
+            "next": "Next",
+            "pageOf": "Page {{current}} of {{last}}"
+        },
+        "programme": {
+            "eyebrow": "RM Survey",
+            "title": "Income programme",
+            "subtitle": "All core income streams and wallet tools. Rules and caps apply per page.",
+            "statusTitle": "Programme status",
+            "statusBody": "All six core income streams are active. Deposit, withdrawal, and terms stay linked for compliance.",
+            "streams": {
+                "direct": "Direct income",
+                "panelMatch": "Panel matching income",
+                "subPanelMatch": "Sub-panel matching income",
+                "superSubPanelMatch": "Super sub-panel matching income",
+                "level": "Level income"
+            },
+            "cards": {
+                "activePanels": {
+                    "title": "Active panel income",
+                    "desc": "$1 activation and $10 minimum panel — unlock active panelist survey income."
+                },
+                "subPanels": {
+                    "title": "Sub panel income",
+                    "desc": "$10 per panel, up to 9 slots — income scales $1–$9 per survey on the sub tier."
+                },
+                "superSubPanels": {
+                    "title": "Super sub panel income",
+                    "desc": "$100 per panel, up to 9 slots — survey tier $100–$900 plus matching programme."
+                },
+                "team": {
+                    "title": "Team overview",
+                    "desc": "Direct list, left/right legs, matching totals, level snapshot & binary tree."
+                },
+                "transactions": {
+                    "title": "Transactions",
+                    "desc": "Full ledger of credits and debits."
+                },
+                "directIncome": {
+                    "title": "Direct income",
+                    "desc": "10% flat commission on direct referrals (eligible when active panelist)."
+                },
+                "panelMatching": {
+                    "title": "Panel matching income",
+                    "desc": "1:1 left/right matching on $10 panels — 10% bonus, max 20 pairs per day."
+                },
+                "subPanelMatching": {
+                    "title": "Sub-panel matching income",
+                    "desc": "Tabular matching on sub panels — up to $256 daily cap."
+                },
+                "superSubPanelMatching": {
+                    "title": "Super sub-panel matching income",
+                    "desc": "$100 panel tier — same structure, higher rewards ($2,560 daily cap)."
+                },
+                "levelIncome": {
+                    "title": "Level income",
+                    "desc": "10 levels × 1% each from team survey earnings."
+                },
+                "wallet": {
+                    "title": "Wallet",
+                    "desc": "USDT (BEP-20), deposit, withdraw, Main ↔ P2P."
+                },
+                "terms": {
+                    "title": "Terms & conditions",
+                    "desc": "Caps, cycles, minimums, and withdrawal rules."
+                }
+            }
+        },
+        "walletHub": {
+            "eyebrow": "RM Survey",
+            "title": "Wallet",
+            "mainWalletEyebrow": "Your main wallet",
+            "withdraw": "Withdraw",
+            "deposit": "Deposit",
+            "p2pNote": "Internal P2P (after transfer from main only)",
+            "quickLinks": "Quick links",
+            "p2pSendQr": "P2P send & QR",
+            "recentTitle": "Transaction history",
+            "colType": "Type",
+            "colAmount": "Amount",
+            "colWhen": "When",
+            "noTransactions": "No transactions yet."
+        },
+        "transactionsPage": {
+            "eyebrow": "RM Survey",
+            "title": "Transaction history",
+            "subtitle": "Every credit and debit on your main wallet ledger.",
+            "colDate": "Date",
+            "colTxId": "TX ID",
+            "colType": "Type",
+            "colDetail": "What happened",
+            "colAmount": "Amount",
+            "colBalanceAfter": "Balance after",
+            "noTransactions": "No transactions yet.",
+            "types": {
+                "all": "All types",
+                "deposit_credit": "Deposit",
+                "withdrawal": "Withdrawal",
+                "survey_credit": "Survey credit",
+                "direct_commission": "Direct income",
+                "survey_level_income": "Level income",
+                "panel_matching": "Panel matching",
+                "sub_panel_matching": "Sub-panel matching",
+                "super_sub_panel_matching": "Super matching",
+                "p2p_transfer_in": "P2P in",
+                "p2p_transfer_out": "P2P out",
+                "plan_purchase": "Plan purchase",
+                "main_to_p2p": "Main → P2P",
+                "p2p_to_main": "P2P → Main"
+            },
+            "p2pOutDetail": "P2P sent to {{name}} · User ID {{uid}} · #{{id}}",
+            "p2pInDetail": "P2P received from {{name}} · User ID {{uid}} · #{{id}}"
+        },
+        "team": {
+            "loadFailed": "Failed to load team",
+            "loadTreeFailed": "Failed to load tree",
+            "binaryTree": "Binary tree",
+            "binaryTreeTitle": "Binary tree",
+            "sameLegStatsHint": "Same leg stats as Total team below.",
+            "matchCaption": "Match · sub · super (per leg)",
+            "reloadIfStatsMissing": "Reload page if stats missing.",
+            "placementTree": "Placement tree",
+            "legendRingActive": "Ring = active",
+            "myTeam": "My Team",
+            "ariaTotalTeam": "Total team breakdown",
+            "captionActive": "Regs, active panelists, panel carry — per leg.",
+            "captionSub": "Sub slots, today’s match, panel carry — per leg.",
+            "captionSuper": "Super slots, today’s super match, carry — per leg.",
+            "directReferrals": "Direct referrals",
+            "bySponsorHint": "By sponsor (not binary).",
+            "thName": "Name",
+            "thCode": "Code",
+            "thActShort": "Act.",
+            "levelIncome": "Level income",
+            "todayLabel": "Today:",
+            "payoutOk": "Payout OK",
+            "needActivePanel": "Need active panel",
+            "thLv": "Lv",
+            "thToday": "Today",
+            "thTeam": "Team",
+            "thAct": "Act.",
+            "thSub": "Sub",
+            "thSuper": "Super",
+            "matchingIncome": "Matching income",
+            "ariaMatching": "Matching income type",
+            "subMatching": "Sub matching",
+            "superMatching": "Super matching",
+            "dataNotLoaded": "Data not loaded.",
+            "statActiveNetwork": "Active in network",
+            "statActiveNetworkHint": "Activation + min panel",
+            "statYourSubPanels": "Your sub panels",
+            "statSuperSubPanels": "Super sub panels",
+            "referralLinks": "Referral links",
+            "referralCodeHint": "Code {{code}} — Copy or Share copies URL.",
+            "leftLink": "Left link",
+            "rightLink": "Right link",
+            "referralUnavailable": "Referral code unavailable.",
+            "shareInviteTitle": "Join RM Survey — {{leg}}",
+            "legsTableLeftTitle": "Under your left child, all depths",
+            "legsTableRightTitle": "Under your right child, all depths",
+            "leftLeg": "Left leg",
+            "rightLeg": "Right leg",
+            "rowRegistrations": "Registrations",
+            "rowActivePanelists": "Active panelists",
+            "rowPanelCarry": "Panel matching carry (L / R)",
+            "rowTeamSubPanels": "Team sub panels",
+            "rowMatchingSubToday": "Matching sub panels (today)",
+            "rowCarryPanelLR": "Carry forward · panel (L / R)",
+            "rowTeamSuperSub": "Team super sub panels",
+            "rowMatchingSuperToday": "Matching super sub panels (today)",
+            "rowCarrySuperLR": "Carry forward · super (L / R)",
+            "rowMatchingPanels": "Matching panels",
+            "rowSubMatchingPanels": "Sub matching panels",
+            "rowSuperMatchingPanels": "Super matching panels",
+            "nodeSubSuper": "Sub {{sub}} · Super {{super}}"
+        }
+    }
+}

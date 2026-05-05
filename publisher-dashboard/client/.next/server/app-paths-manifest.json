@@ -1,0 +1,16 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/login/page": "app/login/page.js",
+  "/p/[id]/page": "app/p/[id]/page.js",
+  "/register/page": "app/register/page.js",
+  "/page": "app/page.js",
+  "/(main)/earnings/page": "app/(main)/earnings/page.js",
+  "/(main)/surveys/[id]/edit/page": "app/(main)/surveys/[id]/edit/page.js",
+  "/(main)/analytics/page": "app/(main)/analytics/page.js",
+  "/(main)/dashboard/page": "app/(main)/dashboard/page.js",
+  "/(main)/notifications/page": "app/(main)/notifications/page.js",
+  "/(main)/surveys/new/page": "app/(main)/surveys/new/page.js",
+  "/(main)/settings/page": "app/(main)/settings/page.js",
+  "/(main)/surveys/page": "app/(main)/surveys/page.js",
+  "/(main)/audience/page": "app/(main)/audience/page.js"
+}

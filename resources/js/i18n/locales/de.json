@@ -1,0 +1,394 @@
+{
+    "common": {
+        "language": "Sprache",
+        "loading": "Wird geladen…",
+        "menu": "Menü",
+        "openMenu": "Menü öffnen",
+        "closeMenu": "Menü schließen"
+    },
+    "home": {
+        "logIn": "Anmelden",
+        "signIn": "Anmelden",
+        "loginAsNormal": "Normaler Nutzer — Anmeldung",
+        "loginAsPublisher": "Publisher — Anmeldung",
+        "accountType": "Kontotyp",
+        "normalUser": "Normaler Nutzer",
+        "normalUserTitle": "Umfragen ausfüllen, Prämien verdienen — als Mitglied beitreten",
+        "publisher": "Publisher",
+        "publisherTitle": "Umfragen, Budgets und Ihren Publisher-Arbeitsbereich erstellen",
+        "accountHint": "Melden Sie sich oben nach Kontotyp an oder wählen Sie unten die Registrierung.",
+        "eyebrow": "Für grenzüberschreitende Teams gebaut",
+        "heroLine1": "Verwandeln Sie Zielgruppen-Insights in",
+        "heroGradient": "globales Wachstum",
+        "heroSub": "RM Survey bringt Teilnehmer, Forscher und Auszahlungen auf einer sicheren Oberfläche zusammen — von der ersten Frage bis zum Dashboard, klar in jedem Markt.",
+        "localesLine": "Nutzen Sie das Sprachmenü oben — diese Seite gibt es in mehreren Sprachen.",
+        "getStarted": "Kostenlos starten",
+        "openApp": "App öffnen",
+        "teamEarn": "Team & Verdienst",
+        "trustedBy": "Produkt- und Forschungsteams weltweit vertrauen uns",
+        "whatWeDo": "Worin wir am besten sind",
+        "whatWeDoSub": "Vier Säulen — eine Produktsprache von London bis Lagos, egal ob Sie fielden oder antworten.",
+        "learnMore": "Mehr erfahren →",
+        "statsTitle": "Zahlen, die mitgehen",
+        "statsSub": "Live-Abschluss, exportfertige Zusammenfassungen und eine UI, die für verteilte Teams in allen Zeitzonen lesbar bleibt.",
+        "statsBullets": [
+            "Mehrsprachige Studien aus einem Workspace starten",
+            "Segmente über Regionen vergleichen, ohne Nuancen zu verlieren",
+            "Traffic skalieren und Anreize transparent halten"
+        ],
+        "whyJoin": "Warum Teams mitmachen",
+        "visualEyebrow": "Live · synchron",
+        "visualTitle": "Kampagnen-Gesundheit",
+        "visualBar": "72 % Abschluss · rollierendes 24h-Fenster",
+        "statNumber": "12,5k+",
+        "statLabel": "Mitwirkende weltweit",
+        "voicesTitle": "Stimmen von überall",
+        "voicesSub": "Panelisten und Betreiber in verschiedenen Regionen — dieselbe Oberfläche.",
+        "logoAlt": "RM Survey",
+        "services": [
+            {
+                "title": "Forschung & Discovery",
+                "text": "Methodisches Umfragedesign, konsistentes Fielding und Reporting, das über Märkte hinweg funktioniert."
+            },
+            {
+                "title": "Methodik & Beratung",
+                "text": "Fragebogendesign, Stichprobenführung und erzählfertige Outputs für globale Stakeholder."
+            },
+            {
+                "title": "Go-to-Market-Insight",
+                "text": "Klarheit auf Segmentebene, damit Launches und Kampagnen zeigen, was Zielgruppen wirklich schätzen."
+            },
+            {
+                "title": "Programm-Lieferung",
+                "text": "End-to-End-Umsetzung mit Zeitplänen, Ownership und Decks, die Ihre Führung wiederverwenden kann."
+            }
+        ],
+        "testimonials": [
+            {
+                "quote": "Klare Abläufe und planbare Auszahlungen. Ich mache Studien zwischen Meetings — gleich in APAC oder unterwegs.",
+                "name": "Yuki T.",
+                "place": "Tokio, Japan"
+            },
+            {
+                "quote": "Wir fahren mehrsprachige Tracker in einem Workspace. London und São Paulo sehen dieselben Zahlen.",
+                "name": "Marco V.",
+                "place": "Mailand, Italien"
+            },
+            {
+                "quote": "Schnelle Feldupdates und ein poliertes Respondent-Erlebnis. Eher globale Fintech-App als Legacy-Panel.",
+                "name": "James O.",
+                "place": "Toronto, Kanada"
+            }
+        ]
+    },
+    "layout": {
+        "nav": {
+            "home": "Start",
+            "about": "Über uns",
+            "whyJoin": "Warum mitmachen",
+            "eBulletin": "E-Bulletin",
+            "faqs": "FAQ",
+            "contact": "Kontakt",
+            "rmSurvey": "RM Survey",
+            "dashboard": "Dashboard",
+            "publisher": "Publisher",
+            "incomePanel": "Einkommenspanel"
+        },
+        "explore": "Entdecken",
+        "account": "Konto",
+        "login": "Anmelden",
+        "register": "Registrieren",
+        "logout": "Abmelden",
+        "footerTagline": "Wachsen Sie mit Umfragen und Insights — ein konsistentes Erlebnis auf jeder Seite.",
+        "quickLinks": "Schnelllinks",
+        "newsletter": "Newsletter",
+        "newsletterHint": "Updates und Bulletins von {{name}}.",
+        "subscribe": "Abonnieren",
+        "emailPlaceholder": "E-Mail",
+        "copyright": "© {{year}} {{name}}. Alle Rechte vorbehalten.",
+        "termsFooter": "AGB",
+        "privacy": "Datenschutz",
+        "rmSurveyApp": "RM Survey App",
+        "publisherDashboard": "Publisher-Dashboard",
+        "memberIncomePanel": "Mitglied-Einkommenspanel"
+    },
+    "member": {
+        "loading": "Wird geladen…",
+        "roleLabel": "Mitglied",
+        "brandSubtitle": "Einheitliches Panel",
+        "website": "Website",
+        "sectionMain": "Haupt",
+        "sectionPanels": "Panels & Profil",
+        "sectionProgramme": "Programm",
+        "openSurveyApp": "Umfrage-App öffnen",
+        "logout": "Abmelden",
+        "profile": "Profil",
+        "terms": "Bedingungen",
+        "more": "Mehr",
+        "moreNavAria": "Weitere Navigation",
+        "fullIncomeProgramme": "Vollständiges Einkommensprogramm",
+        "nav": {
+            "dashboard": "Dashboard",
+            "team": "Team",
+            "surveys": "Umfragen",
+            "wallet": "Wallet",
+            "activePanels": "Aktive Panels",
+            "subPanels": "Sub-Panels",
+            "superSub": "Super-Sub",
+            "profile": "Profil",
+            "incomeOverview": "Einkommensübersicht",
+            "transactions": "Transaktionen",
+            "directIncome": "Direkteinkommen",
+            "panelMatching": "Panel-Matching",
+            "subPanelMatching": "Sub-Panel-Matching",
+            "superSubPanel": "Super-Sub-Panel",
+            "levelIncome": "Level-Einkommen",
+            "terms": "Bedingungen"
+        },
+        "dashboard": {
+            "loadFailed": "Laden fehlgeschlagen",
+            "loadingFigures": "Daten werden geladen…",
+            "welcomeBack": "Willkommen zurück",
+            "memberFallback": "Mitglied",
+            "userId": "Benutzer-ID",
+            "profile": "Profil",
+            "walletBalance": "Wallet-Guthaben",
+            "mainWalletTitle": "Ihr Haupt-Wallet",
+            "mainWalletHint": "Alle Programmeinnahmen (Umfragen, Matching, Level, Direkt) werden hier gutgeschrieben. Einzahlungen ebenfalls. On-Chain-Abbuchungen nur vom Hauptwallet — bei Guthaben in P2P zuerst Haupt ↔ P2P nutzen.",
+            "p2pWalletTitle": "P2P-Wallet",
+            "mainLabel": "Haupt",
+            "p2pLabel": "P2P",
+            "deposit": "Einzahlung",
+            "withdrawal": "Auszahlung",
+            "earningsSummary": "Einkommensübersicht",
+            "allTransactions": "Alle Transaktionen",
+            "earnTotal": "Programm gesamt (Ledger)",
+            "earningsLedgerDisclaimer": "Ledger-Summen addieren über die Zeit gebuchte Gutschriften (wenn Direkt/Level/Matching $0 sind, stammt die Summe meist aus Umfrage-Gutschriften — siehe unten). Oben zeigt das Hauptwallet das jetzt verfügbare USDT nach Gebühren, Panels, Umbuchungen und Auszahlungen.",
+            "earnDirect": "Direkteinkommen",
+            "earnDirectHint": "Seite öffnen",
+            "earnLevel": "Level-Einkommen",
+            "earnLevelHint": "Seite öffnen",
+            "earnMatching": "Matching-Einkommen",
+            "earnMatchingHint": "Panel & Sub",
+            "surveyCredits": "Umfrage-Guthaben",
+            "payouts": "{{count}} Auszahlungen",
+            "availableSurveys": "Verfügbare Umfragen",
+            "surveysDoneTap": "{{done}} erledigt · tippen zum Öffnen",
+            "tapToOpen": "Tippen zum Öffnen",
+            "incomeProgramme": "Einkommensprogramm",
+            "recentActivity": "Letzte Aktivität",
+            "latestMovements": "Neueste Bewegungen",
+            "viewAll": "Alle anzeigen",
+            "tx": {
+                "deposit_credit": "Einzahlung",
+                "p2p_transfer_in": "P2P Eingang",
+                "p2p_transfer_out": "P2P Ausgang",
+                "withdrawal": "Auszahlung",
+                "survey_credit": "Umfrage-Gutschrift",
+                "main_to_p2p": "Haupt → P2P",
+                "p2p_to_main": "P2P → Haupt",
+                "plan_purchase": "Plan-Kauf"
+            }
+        },
+        "ui": {
+            "hide": "Hide",
+            "show": "Show",
+            "active": "Active",
+            "inactive": "Inactive",
+            "sub": "Sub",
+            "super": "Super",
+            "left": "Left",
+            "right": "Right",
+            "empty": "Empty",
+            "learnMore": "Learn more",
+            "openArrow": "Open →",
+            "mainP2p": "Main ↔ P2P",
+            "copy": "Copy",
+            "copied": "Copied",
+            "share": "Share",
+            "details": "Details",
+            "dash": "—",
+            "yes": "Y",
+            "noneYet": "None yet.",
+            "allActive": "All active",
+            "typesOfIncome": "Types of income",
+            "activeParen": "(active)",
+            "failedToLoad": "Failed to load",
+            "previous": "Previous",
+            "next": "Next",
+            "pageOf": "Page {{current}} of {{last}}"
+        },
+        "programme": {
+            "eyebrow": "RM Survey",
+            "title": "Income programme",
+            "subtitle": "All core income streams and wallet tools. Rules and caps apply per page.",
+            "statusTitle": "Programme status",
+            "statusBody": "All six core income streams are active. Deposit, withdrawal, and terms stay linked for compliance.",
+            "streams": {
+                "direct": "Direct income",
+                "panelMatch": "Panel matching income",
+                "subPanelMatch": "Sub-panel matching income",
+                "superSubPanelMatch": "Super sub-panel matching income",
+                "level": "Level income"
+            },
+            "cards": {
+                "activePanels": {
+                    "title": "Active panel income",
+                    "desc": "$1 activation and $10 minimum panel — unlock active panelist survey income."
+                },
+                "subPanels": {
+                    "title": "Sub panel income",
+                    "desc": "$10 per panel, up to 9 slots — income scales $1–$9 per survey on the sub tier."
+                },
+                "superSubPanels": {
+                    "title": "Super sub panel income",
+                    "desc": "$100 per panel, up to 9 slots — survey tier $100–$900 plus matching programme."
+                },
+                "team": {
+                    "title": "Team overview",
+                    "desc": "Direct list, left/right legs, matching totals, level snapshot & binary tree."
+                },
+                "transactions": {
+                    "title": "Transactions",
+                    "desc": "Full ledger of credits and debits."
+                },
+                "directIncome": {
+                    "title": "Direct income",
+                    "desc": "10% flat commission on direct referrals (eligible when active panelist)."
+                },
+                "panelMatching": {
+                    "title": "Panel matching income",
+                    "desc": "1:1 left/right matching on $10 panels — 10% bonus, max 20 pairs per day."
+                },
+                "subPanelMatching": {
+                    "title": "Sub-panel matching income",
+                    "desc": "Tabular matching on sub panels — up to $256 daily cap."
+                },
+                "superSubPanelMatching": {
+                    "title": "Super sub-panel matching income",
+                    "desc": "$100 panel tier — same structure, higher rewards ($2,560 daily cap)."
+                },
+                "levelIncome": {
+                    "title": "Level income",
+                    "desc": "10 levels × 1% each from team survey earnings."
+                },
+                "wallet": {
+                    "title": "Wallet",
+                    "desc": "USDT (BEP-20), deposit, withdraw, Main ↔ P2P."
+                },
+                "terms": {
+                    "title": "Terms & conditions",
+                    "desc": "Caps, cycles, minimums, and withdrawal rules."
+                }
+            }
+        },
+        "walletHub": {
+            "eyebrow": "RM Survey",
+            "title": "Wallet",
+            "mainWalletEyebrow": "Your main wallet",
+            "withdraw": "Withdraw",
+            "deposit": "Deposit",
+            "p2pNote": "Internal P2P (after transfer from main only)",
+            "quickLinks": "Quick links",
+            "p2pSendQr": "P2P send & QR",
+            "recentTitle": "Transaction history",
+            "colType": "Type",
+            "colAmount": "Amount",
+            "colWhen": "When",
+            "noTransactions": "No transactions yet."
+        },
+        "transactionsPage": {
+            "eyebrow": "RM Survey",
+            "title": "Transaction history",
+            "subtitle": "Every credit and debit on your main wallet ledger.",
+            "colDate": "Date",
+            "colTxId": "TX ID",
+            "colType": "Type",
+            "colDetail": "What happened",
+            "colAmount": "Amount",
+            "colBalanceAfter": "Balance after",
+            "noTransactions": "No transactions yet.",
+            "types": {
+                "all": "All types",
+                "deposit_credit": "Deposit",
+                "withdrawal": "Withdrawal",
+                "survey_credit": "Survey credit",
+                "direct_commission": "Direct income",
+                "survey_level_income": "Level income",
+                "panel_matching": "Panel matching",
+                "sub_panel_matching": "Sub-panel matching",
+                "super_sub_panel_matching": "Super matching",
+                "p2p_transfer_in": "P2P in",
+                "p2p_transfer_out": "P2P out",
+                "plan_purchase": "Plan purchase",
+                "main_to_p2p": "Main → P2P",
+                "p2p_to_main": "P2P → Main"
+            },
+            "p2pOutDetail": "P2P sent to {{name}} · User ID {{uid}} · #{{id}}",
+            "p2pInDetail": "P2P received from {{name}} · User ID {{uid}} · #{{id}}"
+        },
+        "team": {
+            "loadFailed": "Failed to load team",
+            "loadTreeFailed": "Failed to load tree",
+            "binaryTree": "Binary tree",
+            "binaryTreeTitle": "Binary tree",
+            "sameLegStatsHint": "Same leg stats as Total team below.",
+            "matchCaption": "Match · sub · super (per leg)",
+            "reloadIfStatsMissing": "Reload page if stats missing.",
+            "placementTree": "Placement tree",
+            "legendRingActive": "Ring = active",
+            "myTeam": "My Team",
+            "ariaTotalTeam": "Total team breakdown",
+            "captionActive": "Regs, active panelists, panel carry — per leg.",
+            "captionSub": "Sub slots, today’s match, panel carry — per leg.",
+            "captionSuper": "Super slots, today’s super match, carry — per leg.",
+            "directReferrals": "Direct referrals",
+            "bySponsorHint": "By sponsor (not binary).",
+            "thName": "Name",
+            "thCode": "Code",
+            "thActShort": "Act.",
+            "levelIncome": "Level income",
+            "todayLabel": "Today:",
+            "payoutOk": "Payout OK",
+            "needActivePanel": "Need active panel",
+            "thLv": "Lv",
+            "thToday": "Today",
+            "thTeam": "Team",
+            "thAct": "Act.",
+            "thSub": "Sub",
+            "thSuper": "Super",
+            "matchingIncome": "Matching income",
+            "ariaMatching": "Matching income type",
+            "subMatching": "Sub matching",
+            "superMatching": "Super matching",
+            "dataNotLoaded": "Data not loaded.",
+            "statActiveNetwork": "Active in network",
+            "statActiveNetworkHint": "Activation + min panel",
+            "statYourSubPanels": "Your sub panels",
+            "statSuperSubPanels": "Super sub panels",
+            "referralLinks": "Referral links",
+            "referralCodeHint": "Code {{code}} — Copy or Share copies URL.",
+            "leftLink": "Left link",
+            "rightLink": "Right link",
+            "referralUnavailable": "Referral code unavailable.",
+            "shareInviteTitle": "Join RM Survey — {{leg}}",
+            "legsTableLeftTitle": "Under your left child, all depths",
+            "legsTableRightTitle": "Under your right child, all depths",
+            "leftLeg": "Left leg",
+            "rightLeg": "Right leg",
+            "rowRegistrations": "Registrations",
+            "rowActivePanelists": "Active panelists",
+            "rowPanelCarry": "Panel matching carry (L / R)",
+            "rowTeamSubPanels": "Team sub panels",
+            "rowMatchingSubToday": "Matching sub panels (today)",
+            "rowCarryPanelLR": "Carry forward · panel (L / R)",
+            "rowTeamSuperSub": "Team super sub panels",
+            "rowMatchingSuperToday": "Matching super sub panels (today)",
+            "rowCarrySuperLR": "Carry forward · super (L / R)",
+            "rowMatchingPanels": "Matching panels",
+            "rowSubMatchingPanels": "Sub matching panels",
+            "rowSuperMatchingPanels": "Super matching panels",
+            "nodeSubSuper": "Sub {{sub}} · Super {{super}}"
+        }
+    }
+}

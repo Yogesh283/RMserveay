@@ -1,0 +1,6 @@
+.env
+node_modules/
+vendor/
+public/build/
+*.zip
+publisher-dashboard/client/node_modules/

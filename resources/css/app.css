@@ -1,0 +1,147 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    /* Inter + Noto Sans: broad Latin/Cyrillic coverage; system/CJK fallbacks for global UI */
+    --font-sans: 'Inter', 'Noto Sans', 'Poppins', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --color-brand-purple: #7c3aed;
+    --color-brand-purple-deep: #4c1d95;
+    /* Marketing / PageShell: align accents & muted copy (avoid ad-hoc purple/fuchsia drift) */
+    --color-rs-page-eyebrow: #93c5fd;
+    --color-rs-page-muted: #94a3b8;
+    --color-rs-page-body: #cbd5e1;
+}
+
+/**
+ * Global readability: slightly larger rem baseline + default white copy on dark UI.
+ * Tailwind text-slate-* / text-zinc-* utilities used for “muted” body copy map to white below.
+ */
+/**
+ * Viewport + horizontal lock: no sideways scroll; stable mobile height (dynamic viewport).
+ * Safe-area padding is applied per-component (nav bars, sheets).
+ */
+html {
+    font-size: 106.25%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background-color: #1a0a2e;
+    color: #ffffff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+#app {
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+.text-slate-100,
+.text-slate-200,
+.text-slate-300,
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-zinc-200,
+.text-zinc-300,
+.text-zinc-400,
+.text-zinc-500,
+.text-zinc-600 {
+    color: #ffffff !important;
+}
+
+.sm\:text-slate-400 {
+    color: #ffffff !important;
+}
+
+.placeholder\:text-slate-500::placeholder,
+.placeholder\:text-slate-600::placeholder,
+.placeholder\:text-zinc-400::placeholder,
+.placeholder\:text-zinc-500::placeholder,
+.placeholder\:text-zinc-600::placeholder {
+    color: rgb(255 255 255 / 0.58) !important;
+}
+
+/**
+ * react-phone-number-input: native country <select> inherits body’s light text colour,
+ * but the OS dropdown is usually white — options become invisible (white on white).
+ * Force a light colour scheme + explicit option colours where browsers allow it.
+ */
+.PhoneInputCountrySelect {
+    color-scheme: light;
+}
+
+.PhoneInputCountrySelect option,
+.PhoneInputCountrySelect optgroup {
+    color: #0f172a;
+    background-color: #ffffff;
+}
+
+.PhoneInputCountrySelect option:checked,
+.PhoneInputCountrySelect option:hover {
+    color: #0f172a;
+    background-color: #e2e8f0;
+}
+
+/* Home: premium entrance + ambient motion (respects reduced motion) */
+@keyframes home-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes home-aurora {
+    0%,
+    100% {
+        opacity: 0.45;
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        opacity: 0.75;
+        transform: translate(2%, -1%) scale(1.03);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .home-animate-in {
+        animation: home-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .home-animate-delay-1 {
+        animation-delay: 0.08s;
+    }
+    .home-animate-delay-2 {
+        animation-delay: 0.16s;
+    }
+    .home-animate-delay-3 {
+        animation-delay: 0.24s;
+    }
+    .home-animate-delay-4 {
+        animation-delay: 0.32s;
+    }
+    .home-aurora {
+        animation: home-aurora 14s ease-in-out infinite;
+    }
+    .home-aurora-delay {
+        animation-delay: -6s;
+    }
+}
