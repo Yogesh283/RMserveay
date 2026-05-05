@@ -2,6 +2,34 @@
 
 use Laravel\Sanctum\Sanctum;
 
+/*
+| Stateful domains must match the browser Host (with optional port).
+| Default included a bug: `%s%s` glued `::1` and APP_URL host → `::1example.com`,
+| so production was often missing the real domain unless SANCTUM_STATEFUL_DOMAINS was set.
+*/
+$defaultLocal = 'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1';
+
+$fromEnv = env('SANCTUM_STATEFUL_DOMAINS');
+if (is_string($fromEnv) && trim($fromEnv) !== '') {
+    $mergedStateful = $fromEnv;
+} else {
+    $parts = [$defaultLocal];
+    $appHostPort = Sanctum::currentApplicationUrlWithPort();
+    if ($appHostPort !== '') {
+        $parts[] = $appHostPort;
+    }
+    $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+    if (is_string($host) && $host !== '' && ! filter_var($host, FILTER_VALIDATE_IP) && str_contains($host, '.')) {
+        $parts[] = str_starts_with($host, 'www.') ? substr($host, 4) : 'www.'.$host;
+    }
+    $mergedStateful = implode(',', array_filter($parts));
+}
+
+$sanctumStateful = array_values(array_unique(array_filter(array_map(
+    static fn ($d) => trim((string) $d),
+    explode(',', $mergedStateful)
+))));
+
 return [
 
     /*
@@ -15,12 +43,7 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
-    ))),
+    'stateful' => $sanctumStateful,
 
     /*
     |--------------------------------------------------------------------------
