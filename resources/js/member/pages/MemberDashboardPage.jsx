@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { prepareSanctum } from '../../lib/auth';
 import { formatTransactionDetailRow } from '../lib/formatTransactionDetail';
 import { RmsButtonLink, RmsCard } from '../components/rms';
-import AppLogo from '../../components/AppLogo';
-import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
 
 export default function MemberDashboardPage() {
     const { t, i18n } = useTranslation();
@@ -114,34 +112,6 @@ export default function MemberDashboardPage() {
     return (
         <div className="relative space-y-4 pb-24">
             <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                <div className="mb-4 flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                        <button
-                            type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] text-white"
-                            aria-label="Menu"
-                        >
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
-                        <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
-                            <p className="truncate text-[10px] text-slate-400">Your Income, Our System</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
-                            <HomeLanguageSwitcher variant="compact" density="tight" />
-                        </div>
-                        <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-                            {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
-                            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0B1120] bg-emerald-400" />
-                        </span>
-                    </div>
-                </div>
-
                 <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0d1428] to-[#1b130a] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
                     <div className="pointer-events-none absolute -right-7 -top-8 h-28 w-28 rounded-full bg-[#7C3AED]/25 blur-2xl" />
                     <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />

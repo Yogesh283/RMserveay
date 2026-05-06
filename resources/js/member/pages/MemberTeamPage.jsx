@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
-import AppLogo from '../../components/AppLogo';
-import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
 
@@ -471,19 +469,6 @@ export default function MemberTeamPage() {
     return (
         <div className="relative space-y-4 pb-24">
             <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
-                        <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
-                        <HomeLanguageSwitcher variant="compact" density="tight" />
-                    </div>
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-                        U
-                    </span>
-                </div>
-
                 <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0c1529] to-[#111827] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
                     <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#7C3AED]/25 blur-2xl" />
                     <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />

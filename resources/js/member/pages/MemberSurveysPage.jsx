@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
-import AppLogo from '../../components/AppLogo';
-import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
 import { RmsCard } from '../components/rms';
 
 function fmtUsd(n) {
@@ -245,19 +243,6 @@ export default function MemberSurveysPage() {
     return (
         <div className="relative min-h-[40vh] space-y-4 pb-24">
             <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
-                        <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
-                        <HomeLanguageSwitcher variant="compact" density="tight" />
-                    </div>
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-                        U
-                    </span>
-                </div>
-
                 <div className="flex gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/30 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                     type="button"
