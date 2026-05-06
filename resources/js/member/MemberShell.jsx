@@ -582,9 +582,9 @@ export default function MemberShell() {
                             <p className="text-[16px] font-bold tracking-tight text-white">More Options</p>
                             <p className="mt-1 text-[11px] text-[#94A3B8]">Manage your account & earnings</p>
                         </div>
-                        <ul className="grid grid-cols-2 gap-2 px-3 pb-4">
-                            {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }) => (
-                                <li key={to}>
+                        <ul className="grid grid-cols-2 gap-2.5 px-3 pb-4">
+                            {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }, idx) => (
+                                <li key={to} className={idx === primaryNavMoreItemsMobile.length - 1 && primaryNavMoreItemsMobile.length % 2 === 1 ? 'col-span-2' : ''}>
                                     <NavLink
                                         to={to}
                                         onClick={() => setMoreSheetOpen(false)}
@@ -596,19 +596,20 @@ export default function MemberShell() {
                                             };
                                             return (
                                             [
-                                                'group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-300',
-                                                `bg-gradient-to-br ${meta.glow}`,
+                                                'group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-300 backdrop-blur-xl',
+                                                'bg-[linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]',
                                                 isActive
-                                                    ? `border-white/20 text-white ring-1 ${meta.ring} shadow-[0_10px_28px_rgba(0,0,0,0.45)]`
+                                                    ? `border-white/20 text-white ring-1 ${meta.ring} shadow-[0_12px_30px_rgba(0,0,0,0.48)]`
                                                     : 'border-white/10 text-[#CBD5E1] hover:border-white/20 hover:text-white hover:shadow-[0_10px_26px_rgba(0,0,0,0.35)]',
                                             ].join(' ')
                                             );
                                         }}
                                     >
                                         {({ isActive }) => {
-                                            const meta = moreMenuMetaByRoute[to] ?? { subtitle: 'Open section' };
+                                            const meta = moreMenuMetaByRoute[to] ?? { subtitle: 'Open section', glow: 'from-[#7C3AED]/20 to-[#3B82F6]/10' };
                                             return (
                                             <>
+                                                <div className={`pointer-events-none absolute -left-8 top-1/2 h-20 w-20 -translate-y-1/2 rounded-full bg-gradient-to-r ${meta.glow} opacity-45 blur-2xl`} />
                                                 <div className="flex items-start gap-2.5">
                                                     <span
                                                         className={[
