@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
-import { RmsCard, RmsSearchInput } from '../components/rms';
+import AppLogo from '../../components/AppLogo';
+import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
+import { RmsCard } from '../components/rms';
 
 function fmtUsd(n) {
     const x = Number.parseFloat(String(n));
@@ -27,6 +29,7 @@ const TIER_ORDER = ['free', 'panel', 'sub_panel', 'super_panel'];
 const TIER_SECTIONS = {
     free: {
         title: 'Free Survey',
+        subtitle: 'Start instantly and earn from beginner surveys.',
         titleClass: 'text-white',
         cardBorder:
             'border-emerald-500/30 bg-gradient-to-br from-emerald-950/35 via-[#0f172a] to-[#111827] ring-1 ring-emerald-500/20 shadow-[0_0_36px_rgba(16,185,129,0.08)]',
@@ -41,6 +44,7 @@ const TIER_SECTIONS = {
     },
     panel: {
         title: 'Panel Survey',
+        subtitle: 'Team-oriented surveys with higher payouts.',
         titleClass:
             'bg-gradient-to-r from-sky-200 via-cyan-200 to-sky-300 bg-clip-text text-transparent drop-shadow-[0_0_18px_rgba(34,211,238,0.25)]',
         cardBorder:
@@ -56,6 +60,7 @@ const TIER_SECTIONS = {
     },
     sub_panel: {
         title: 'Sub panel Survey',
+        subtitle: 'Advanced survey tracks for active members.',
         titleClass:
             'bg-gradient-to-r from-violet-200 via-fuchsia-200 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_0_18px_rgba(192,132,252,0.25)]',
         cardBorder:
@@ -71,6 +76,7 @@ const TIER_SECTIONS = {
     },
     super_panel: {
         title: 'Super panel Survey',
+        subtitle: 'Premium-level surveys with elite rewards.',
         titleClass:
             'bg-gradient-to-r from-amber-200 via-orange-200 to-amber-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.3)]',
         cardBorder:
@@ -181,7 +187,7 @@ function AvailableSurveyRow({ s, tier }) {
 }
 
 const tierToggleBtn =
-    'rounded-md border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] active:scale-[0.98]';
+    'rounded-xl border border-[#8B5CF6]/40 bg-gradient-to-r from-[#7C3AED]/35 to-[#2563EB]/20 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_0_18px_rgba(124,58,237,0.25)] transition hover:brightness-110 active:scale-[0.98]';
 
 function emptyTierOpenState() {
     return { free: false, panel: false, sub_panel: false, super_panel: false };
@@ -237,14 +243,28 @@ export default function MemberSurveysPage() {
     const anyAvailable = filteredAvailable.length > 0;
 
     return (
-        <div className="relative min-h-[40vh] space-y-3 pb-2">
-            <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#111827]/80 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="relative min-h-[40vh] space-y-4 pb-24">
+            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
+                        <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
+                        <HomeLanguageSwitcher variant="compact" density="tight" />
+                    </div>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
+                        U
+                    </span>
+                </div>
+
+                <div className="flex gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/30 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                     type="button"
                     onClick={() => setSection('available')}
-                    className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-semibold transition active:scale-[0.98] ${
+                    className={`shrink-0 flex-1 rounded-full px-4 py-2 text-[12px] font-semibold transition active:scale-[0.98] ${
                         section === 'available'
-                            ? 'bg-gradient-to-r from-[#6C4CF1]/55 to-[#8E6BFF]/40 text-white ring-1 ring-[#8E6BFF]/35'
+                            ? 'bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-[0_10px_26px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45'
                             : 'text-[#A0AEC0] hover:text-white'
                     }`}
                 >
@@ -253,25 +273,74 @@ export default function MemberSurveysPage() {
                 <button
                     type="button"
                     onClick={() => setSection('completed')}
-                    className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-semibold transition active:scale-[0.98] ${
+                    className={`shrink-0 flex-1 rounded-full px-4 py-2 text-[12px] font-semibold transition active:scale-[0.98] ${
                         section === 'completed'
-                            ? 'bg-gradient-to-r from-[#6C4CF1]/55 to-[#8E6BFF]/40 text-white ring-1 ring-[#8E6BFF]/35'
+                            ? 'bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-[0_10px_26px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45'
                             : 'text-[#A0AEC0] hover:text-white'
                     }`}
                 >
                     Completed
                 </button>
+                </div>
+
+                <div className="relative mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-[#11182c] to-[#0a1020] p-4">
+                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                    <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
+                    <div className="relative flex items-center gap-3">
+                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8B5CF6]/45 bg-[#7C3AED]/20 text-[#DDD6FE] shadow-[0_0_18px_rgba(124,58,237,0.35)]">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5h10M9 9h10M9 13h10M5 5h.01M5 9h.01M5 13h.01M4 19h16" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-white">Smart Survey Discovery</p>
+                            <p className="text-[11px] text-slate-300">Futuristic matching for high-value survey tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                    <div className="flex min-h-[46px] flex-1 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3">
+                        <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.1-4.4a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="Search surveys..."
+                            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        className="inline-flex min-h-[46px] items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200"
+                    >
+                        <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5h18M6 12h12M10 19h4" />
+                        </svg>
+                        Filter
+                    </button>
+                </div>
             </div>
 
-            <RmsSearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
 
             {err ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{err}</p> : null}
 
             {loading ? <p className="text-xs text-[#A0AEC0]">Loading…</p> : null}
 
             {!loading && section === 'available' && !anyAvailable ? (
-                <RmsCard variant="elevated" className="!p-4 text-center text-xs text-[#A0AEC0]">
-                    No surveys right now — check back later or finish programme setup.
+                <RmsCard variant="elevated" className="!rounded-[22px] !border-[#8B5CF6]/35 !bg-[#11152a]/90 !p-4 text-left text-xs text-[#A0AEC0]">
+                    <div className="flex items-start gap-3">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#8B5CF6]/45 bg-[#7C3AED]/20 text-[#DDD6FE]">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4m0 4h.01M5.6 19h12.8A1.6 1.6 0 0020 17.4V6.6A1.6 1.6 0 0018.4 5H5.6A1.6 1.6 0 004 6.6v10.8A1.6 1.6 0 005.6 19z" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-white">No surveys right now</p>
+                            <p className="mt-0.5 text-xs text-slate-300">Check back later or finish programme setup.</p>
+                        </div>
+                    </div>
                 </RmsCard>
             ) : null}
 
@@ -288,13 +357,19 @@ export default function MemberSurveysPage() {
                       const expanded = openAvailableTiers[tier];
                       return (
                           <RmsCard key={tier} variant="elevated" className={`!p-3 sm:!p-4 ${meta.cardBorder}`}>
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <div className="min-w-0 flex-1">
-                                      <h2 className={`text-base font-bold leading-tight ${meta.titleClass}`}>{meta.title}</h2>
+                              <div className="flex items-center justify-between gap-3">
+                                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                      <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.iconBg} ring-1`}>
+                                          <SurveyIcon strokeClass={meta.iconStroke} />
+                                      </span>
+                                      <div className="min-w-0">
+                                          <h2 className={`text-base font-bold leading-tight ${meta.titleClass}`}>{meta.title.toUpperCase()}</h2>
+                                          <p className="line-clamp-1 text-[11px] text-slate-300">{meta.subtitle}</p>
+                                      </div>
                                   </div>
-                                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.chip}`}>
-                                          {list.length}
+                                  <div className="flex shrink-0 items-center gap-2">
+                                      <span className={`rounded-xl border px-2 py-1 text-[10px] font-semibold ${meta.chip}`}>
+                                          {list.length} Available
                                       </span>
                                       <button
                                           type="button"
@@ -309,7 +384,7 @@ export default function MemberSurveysPage() {
                                           id={`tier-available-toggle-${tier}`}
                                           className={tierToggleBtn}
                                       >
-                                          {expanded ? 'Hide' : 'Show'}
+                                          {expanded ? 'Hide' : 'Show →'}
                                       </button>
                                   </div>
                               </div>
@@ -331,7 +406,7 @@ export default function MemberSurveysPage() {
                 : null}
 
             {!loading && section === 'completed' && filteredCompleted.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg border border-[#6b5c45]/90 bg-[#252019] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <div className="overflow-x-auto rounded-[22px] border border-white/10 bg-[#101525]/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <table className="w-full min-w-[520px] border-collapse text-xs text-white">
                             <thead>
                                 <tr className="border-b border-[#f5f0e633] bg-[#3d3428]">
@@ -389,6 +464,42 @@ export default function MemberSurveysPage() {
                         </table>
                 </div>
             ) : null}
+
+            <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0f162a]/95 !p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#8B5CF6]/45 bg-[#7C3AED]/20 text-[#DDD6FE]">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.077 3.323a1 1 0 00.95.69h3.495c.969 0 1.371 1.24.588 1.81l-2.828 2.055a1 1 0 00-.364 1.118l1.078 3.323c.3.921-.755 1.688-1.54 1.118l-2.829-2.055a1 1 0 00-1.175 0l-2.828 2.055c-.785.57-1.84-.197-1.54-1.118l1.078-3.323a1 1 0 00-.364-1.118L2.98 8.75c-.783-.57-.38-1.81.588-1.81h3.495a1 1 0 00.95-.69l1.077-3.323z" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-white">Complete more surveys</p>
+                            <p className="mt-1 text-xs text-slate-300">More surveys, more rewards!</p>
+                        </div>
+                    </div>
+                    <button type="button" className="rounded-xl border border-[#8B5CF6]/45 px-3 py-1.5 text-[11px] font-semibold text-[#C4B5FD]">
+                        How it works?
+                    </button>
+                </div>
+            </RmsCard>
+
+            <div className="fixed bottom-2 left-1/2 z-20 w-[min(460px,calc(100vw-20px))] -translate-x-1/2 rounded-[24px] border border-white/10 bg-[#0a1020]/95 p-2 shadow-[0_20px_44px_rgba(0,0,0,0.5)] backdrop-blur-xl md:hidden">
+                <div className="grid grid-cols-5 gap-1 text-[10px]">
+                    {['Dashboard', 'Team', 'Surveys', 'Wallet', 'More'].map((item) => (
+                        <span
+                            key={item}
+                            className={`flex min-h-[44px] items-center justify-center rounded-xl font-semibold ${
+                                item === 'Surveys'
+                                    ? 'bg-gradient-to-r from-[#7C3AED]/45 to-[#2563EB]/30 text-white ring-1 ring-[#A78BFA]/45 shadow-[0_8px_20px_rgba(124,58,237,0.35)]'
+                                    : 'text-slate-300'
+                            }`}
+                        >
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }

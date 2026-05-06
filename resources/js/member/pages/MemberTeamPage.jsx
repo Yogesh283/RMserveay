@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
+import AppLogo from '../../components/AppLogo';
+import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
 
@@ -464,20 +466,47 @@ export default function MemberTeamPage() {
     }, [data?.legs, totalTeamTab, t, i18n.resolvedLanguage]);
 
     const tabBtn =
-        'rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition sm:px-3 sm:text-sm';
+        'rounded-2xl border px-3 py-2 text-[12px] font-semibold transition sm:px-3 sm:text-sm';
 
     return (
-        <div className="relative space-y-3 pb-2">
+        <div className="relative space-y-4 pb-24">
+            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
+                        <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
+                        <HomeLanguageSwitcher variant="compact" density="tight" />
+                    </div>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
+                        U
+                    </span>
+                </div>
+
+                <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0c1529] to-[#111827] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
+                    <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                    <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
+                    <div className="relative flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={() => loadTree()}
+                            className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45"
+                        >
+                            {t('member.team.binaryTree')}
+                        </button>
+                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8B5CF6]/50 bg-[#7C3AED]/20 text-[#DDD6FE]">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 8l8-4 8 4-8 4-8-4zm0 8l8-4 8 4-8 4-8-4zm8-4v8" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             {err ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{err}</p> : null}
 
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <button
-                    type="button"
-                    onClick={() => loadTree()}
-                    className="rounded-xl bg-gradient-to-r from-[#6C4CF1] to-[#8E6BFF] px-3 py-2 text-sm font-semibold text-white shadow-md ring-1 ring-white/15 transition hover:brightness-110 active:scale-[0.98]"
-                >
-                    {t('member.team.binaryTree')}
-                </button>
                 {showTree && tree ? (
                     <button
                         type="button"
@@ -522,8 +551,16 @@ export default function MemberTeamPage() {
 
             {data ? (
                 <>
-                    <RmsCard variant="elevated" className="!p-3 sm:!p-4">
-                        <h2 className="text-lg font-bold text-white">{t('member.team.myTeam')}</h2>
+                    <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0e1529]/95 !p-4 sm:!p-4">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <h2 className="text-lg font-bold text-white">{t('member.team.myTeam')}</h2>
+                            <button className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-slate-200">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                                </svg>
+                                Info
+                            </button>
+                        </div>
                         <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Total team breakdown">
                             <button
                                 type="button"
@@ -534,7 +571,7 @@ export default function MemberTeamPage() {
                                 className={[
                                     tabBtn,
                                     totalTeamTab === 'active'
-                                        ? 'border-emerald-400/55 bg-emerald-500/20 text-emerald-50 ring-1 ring-emerald-400/35 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
+                                        ? 'border-[#8B5CF6]/60 bg-gradient-to-r from-[#7C3AED]/35 to-[#2563EB]/25 text-white ring-1 ring-[#A78BFA]/45 shadow-[0_0_20px_rgba(124,58,237,0.22)]'
                                         : 'border-emerald-500/15 bg-emerald-950/15 text-emerald-200/70 hover:border-emerald-500/35 hover:text-emerald-100',
                                 ].join(' ')}
                             >
@@ -550,7 +587,7 @@ export default function MemberTeamPage() {
                                     tabBtn,
                                     totalTeamTab === 'sub'
                                         ? 'border-sky-400/55 bg-sky-500/22 text-sky-50 ring-1 ring-sky-400/40 shadow-[0_0_20px_rgba(14,165,233,0.14)]'
-                                        : 'border-sky-500/15 bg-sky-950/20 text-sky-200/75 hover:border-sky-500/35 hover:text-sky-100',
+                                        : 'border-sky-500/20 bg-[#0f2037]/70 text-sky-200/80 hover:border-sky-500/35 hover:text-sky-100',
                                 ].join(' ')}
                             >
                                 Sub Panel
@@ -565,7 +602,7 @@ export default function MemberTeamPage() {
                                     tabBtn,
                                     totalTeamTab === 'super'
                                         ? 'border-amber-400/55 bg-amber-500/20 text-amber-50 ring-1 ring-amber-400/35 shadow-[0_0_20px_rgba(245,158,11,0.12)]'
-                                        : 'border-amber-500/15 bg-amber-950/20 text-amber-200/75 hover:border-amber-500/35 hover:text-amber-100',
+                                        : 'border-amber-500/20 bg-[#2a1a0e]/70 text-amber-200/80 hover:border-amber-500/35 hover:text-amber-100',
                                 ].join(' ')}
                             >
                                 Super Panel
@@ -576,9 +613,19 @@ export default function MemberTeamPage() {
                         </div>
                     </RmsCard>
 
-                    <RmsCard variant="neon" className="!p-3 sm:!p-4">
+                    <RmsCard variant="neon" className="!rounded-[24px] !border-[#8B5CF6]/30 !bg-[#0f162b]/95 !p-4 sm:!p-4">
                         <div className="flex flex-wrap items-start justify-between gap-2 sm:items-center">
-                            <h2 className="text-lg font-bold text-white">{t('member.team.directReferrals')}</h2>
+                            <div className="flex items-center gap-2.5">
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#8B5CF6]/40 bg-[#7C3AED]/20 text-[#DDD6FE]">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5V9H2v11h5m10 0v-5a3 3 0 00-6 0v5m6 0H7" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">{t('member.team.directReferrals')}</h2>
+                                    <p className="text-[11px] text-slate-300">Total direct members</p>
+                                </div>
+                            </div>
                             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                 <p className="text-sm text-[#A0AEC0]">
                                     <span className="text-lg font-bold tabular-nums text-white">{data.direct.count}</span>
@@ -625,9 +672,19 @@ export default function MemberTeamPage() {
                         ) : null}
                     </RmsCard>
 
-                    <RmsCard variant="neon" className="!p-3 sm:!p-4">
+                    <RmsCard variant="neon" className="!rounded-[24px] !border-emerald-400/25 !bg-[#0f1a22]/95 !p-4 sm:!p-4">
                         <div className="flex flex-wrap items-start justify-between gap-2 sm:items-center">
-                            <h2 className="text-lg font-bold text-white">{t('member.team.levelIncome')}</h2>
+                            <div className="flex items-center gap-2.5">
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 text-emerald-200">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 17l6-6 4 4 8-8M3 21h18" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">{t('member.team.levelIncome')}</h2>
+                                    <p className="text-[11px] text-emerald-200/80">View your level wise earnings</p>
+                                </div>
+                            </div>
                             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                 <button
                                     type="button"
@@ -689,8 +746,8 @@ export default function MemberTeamPage() {
                         ) : null}
                     </RmsCard>
 
-                    <RmsCard variant="neon" className="!p-3 sm:!p-4">
-                        <h2 className="text-lg font-bold text-white">{t('member.team.matchingIncome')}</h2>
+                    <RmsCard variant="neon" className="!rounded-[24px] !border-[#8B5CF6]/30 !bg-[#0f162b]/95 !p-4 sm:!p-4">
+                        <h2 className="text-lg font-bold text-white">Hedling Machin Tebal Income</h2>
                         <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label={t('member.team.ariaMatching')}>
                             <button
                                 type="button"
@@ -806,6 +863,23 @@ export default function MemberTeamPage() {
                     </RmsCard>
                 </>
             ) : null}
+
+            <div className="fixed bottom-2 left-1/2 z-20 w-[min(460px,calc(100vw-20px))] -translate-x-1/2 rounded-[24px] border border-white/10 bg-[#0a1020]/95 p-2 shadow-[0_20px_44px_rgba(0,0,0,0.5)] backdrop-blur-xl md:hidden">
+                <div className="grid grid-cols-5 gap-1 text-[10px]">
+                    {['Dashboard', 'Team', 'Surveys', 'Wallet', 'More'].map((item) => (
+                        <span
+                            key={item}
+                            className={`flex min-h-[44px] items-center justify-center rounded-xl font-semibold ${
+                                item === 'Team'
+                                    ? 'bg-gradient-to-r from-[#7C3AED]/45 to-[#2563EB]/30 text-white ring-1 ring-[#A78BFA]/45 shadow-[0_8px_20px_rgba(124,58,237,0.35)]'
+                                    : 'text-slate-300'
+                            }`}
+                        >
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }

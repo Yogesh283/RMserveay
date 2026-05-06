@@ -73,7 +73,7 @@ const serviceIconList = [IconResearch, IconConsult, IconChart, IconProject];
 export default function HomePage() {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
-    const mobileBanners = ['/images/banner1.jpeg', '/images/banner2.jpeg', '/images/banner3.jpeg'];
+    const mobileBanners = ['/images/Start%20Earn.png', '/images/Start%20Panel.png', '/images/Start%20Pub.png', '/images/Panel.png'];
     const [mobileSlide, setMobileSlide] = useState(0);
 
     /** Normal member signup — preserves invite `ref` / `side` from the URL. */

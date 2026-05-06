@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { prepareSanctum } from '../../lib/auth';
 import { formatTransactionDetailRow } from '../lib/formatTransactionDetail';
 import { RmsButtonLink, RmsCard } from '../components/rms';
+import AppLogo from '../../components/AppLogo';
+import HomeLanguageSwitcher from '../../components/HomeLanguageSwitcher';
 
 export default function MemberDashboardPage() {
     const { t, i18n } = useTranslation();
@@ -110,7 +112,65 @@ export default function MemberDashboardPage() {
     }, [q?.completed_surveys_count, t, i18n.resolvedLanguage]);
 
     return (
-        <div className="relative space-y-6">
+        <div className="relative space-y-4 pb-24">
+            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
+                <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] text-white"
+                            aria-label="Menu"
+                        >
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <AppLogo alt="" className="h-10 w-10 shrink-0 rounded-xl" />
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold tracking-[0.14em] text-white">RM SURVEY</p>
+                            <p className="truncate text-[10px] text-slate-400">Your Income, Our System</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
+                            <HomeLanguageSwitcher variant="compact" density="tight" />
+                        </div>
+                        <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#8B5CF6]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/25 text-xs font-semibold text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]">
+                            {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0B1120] bg-emerald-400" />
+                        </span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0d1428] to-[#1b130a] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
+                    <div className="pointer-events-none absolute -right-7 -top-8 h-28 w-28 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                    <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
+                    <div className="relative flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#8B5CF6]/50 bg-[#7C3AED]/25 text-white shadow-[0_0_18px_rgba(124,58,237,0.3)]">
+                                {(user?.name || 'Y').charAt(0).toUpperCase()}
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-xs text-slate-300">{t('member.dashboard.welcomeBack')}</p>
+                                <p className="truncate text-base font-semibold text-white">{user?.name || 'yogesh'}</p>
+                                <p className="truncate text-[11px] text-slate-400">ID: {user?.login_uid || '—'}</p>
+                            </div>
+                        </div>
+                        <div className="max-w-[48%]">
+                            <p className="text-xs font-semibold text-white">Complete your ID Activation</p>
+                            <p className="mt-1 text-[10px] leading-snug text-slate-300">Unlock full rewards, referrals and matching income flow.</p>
+                            <Link
+                                to="/member/active-panels"
+                                className="mt-2 inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#F59E0B] px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(124,58,237,0.34)]"
+                            >
+                                ID Activation
+                                <span aria-hidden>→</span>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {err ? (
                 <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{err}</p>
             ) : null}
@@ -119,40 +179,19 @@ export default function MemberDashboardPage() {
                 <p className="rounded-xl border border-white/10 bg-[#111827]/80 px-4 py-3 text-sm text-[#A0AEC0]">{t('member.dashboard.loadingFigures')}</p>
             ) : null}
 
-            {user ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
-                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C4CF1]/50 to-[#8E6BFF]/30 ring-2 ring-white/10 shadow-[0_8px_32px_rgba(108,76,241,0.35)] sm:h-14 sm:w-14">
-                            <span className="text-base font-bold text-white sm:text-lg">{(user.name || user.email || '?').charAt(0).toUpperCase()}</span>
-                            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0B0F1A] bg-emerald-500 sm:h-3 sm:w-3" />
-                        </div>
-                        <div className="min-w-0 flex-1 pt-0.5 sm:pt-0">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">{t('member.dashboard.welcomeBack')}</p>
-                            <p className="truncate text-base font-semibold text-white sm:text-lg">{user.name || t('member.dashboard.memberFallback')}</p>
-                            <p className="truncate text-xs text-[#A0AEC0]">{user.email}</p>
-                            {user.login_uid ? (
-                                <p className="mt-0.5 truncate font-mono text-[11px] text-[#C4B5FD]">
-                                    {t('member.dashboard.userId')}: <span className="font-semibold text-white">{user.login_uid}</span>
-                                </p>
-                            ) : null}
-                        </div>
-                    </div>
-                    <Link
-                        to="/member/profile"
-                        className="inline-flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-semibold text-white transition hover:border-[#8E6BFF]/40 active:scale-[0.98] sm:min-h-0 sm:w-auto sm:self-center"
-                    >
-                        {t('member.dashboard.profile')}
-                    </Link>
-                </div>
-            ) : null}
-
-            <RmsCard variant="elevated" className="!p-0" padding={false}>
+            <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0e1529]/95 !p-0" padding={false}>
                 <div className="space-y-4 p-4 sm:p-5">
                     <div className="min-w-0 space-y-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">
-                            {t('member.dashboard.mainWalletTitle')}
-                        </p>
-                        <p className="text-3xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] sm:leading-none">
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">Total Balance</p>
+                            <button type="button" className="rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-slate-300">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p className="text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] sm:leading-none">
                             {mainWalletUsd != null && mainWalletUsd !== '' ? fmtUsd(mainWalletUsd) : '—'}
                         </p>
                         <RmsCard variant="inset" className="!p-0" padding={false}>
@@ -192,23 +231,66 @@ export default function MemberDashboardPage() {
                             </RmsButtonLink>
                         </div>
                     </div>
-                    <div className="border-t border-white/[0.08] pt-4">
-                        <RmsButtonLink
-                            to="/member/active-panels"
-                            variant="gold"
-                            size="sm"
-                            className="w-full !justify-center rounded-xl font-bold tracking-wide !from-[#7c3aed] !via-[#0B9CF5] !to-amber-600 !text-white"
-                        >
-                            {t('member.dashboard.idActive')}
-                        </RmsButtonLink>
-                        <p className="mt-2 text-center text-[11px] leading-snug text-[#718096]">{t('member.dashboard.idActiveHint')}</p>
+                </div>
+            </RmsCard>
+
+            <div>
+                <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#A0AEC0]">Quick Actions</p>
+                <div className="grid grid-cols-4 gap-2">
+                    {[
+                        { label: 'ID Activation', to: '/member/active-panels', color: 'from-[#7C3AED]/35 to-[#2563EB]/20' },
+                        { label: 'Deposit', to: '/member/wallet/deposit', color: 'from-[#7C3AED]/35 to-[#8B5CF6]/20' },
+                        { label: 'Withdraw', to: '/member/wallet/withdraw', color: 'from-[#2563EB]/35 to-[#06B6D4]/20' },
+                        { label: 'Support', to: '/member/support-tickets', color: 'from-[#F59E0B]/30 to-[#7C3AED]/20' },
+                    ].map((qa) => (
+                        <Link key={qa.label} to={qa.to} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${qa.color} p-2.5 text-center shadow-[0_8px_20px_rgba(0,0,0,0.3)]`}>
+                            <span className="mx-auto mb-1.5 inline-flex h-7 w-7 items-center justify-center rounded-xl border border-white/20 bg-white/[0.08] text-white">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </span>
+                            <p className="text-[10px] font-semibold text-white">{qa.label}</p>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0f162b]/95 !p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white">Earnings Overview</p>
+                        <p className="text-[11px] text-slate-400">This Month</p>
                     </div>
+                    <button className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-200">This Month</button>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-[#8B5CF6]/30 bg-[#11182b]/90 p-3">
+                        <div className="relative h-20 overflow-hidden rounded-xl border border-[#8B5CF6]/20 bg-black/25">
+                            <div className="absolute inset-x-2 bottom-2 h-8 rounded-full border border-[#8B5CF6]/30 bg-gradient-to-r from-transparent via-[#8B5CF6]/35 to-transparent blur-[1px]" />
+                            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+                                <path d="M2 32 C20 30, 30 14, 46 18 C60 22, 72 8, 98 10" stroke="#A78BFA" strokeWidth="2.2" fill="none" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="rounded-2xl border border-cyan-400/25 bg-[#11182b]/90 p-3">
+                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-cyan-400/25 border-t-[#06B6D4] border-r-[#F59E0B] text-center">
+                            <div>
+                                <p className="text-[10px] text-slate-400">Total</p>
+                                <p className="text-xs font-bold text-white">{fmtUsd(e?.total_from_programme ?? 0)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-slate-300">
+                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#8B5CF6]" />Direct</span>
+                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#06B6D4]" />Matching</span>
+                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#F59E0B]" />Other</span>
                 </div>
             </RmsCard>
 
             <div>
                 <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">{t('member.dashboard.earningsSummary')}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">Stats Summary</p>
                     <Link to="/member/transactions" className="text-xs font-semibold text-[#8E6BFF] hover:underline">
                         {t('member.dashboard.allTransactions')}
                     </Link>
@@ -287,6 +369,23 @@ export default function MemberDashboardPage() {
                     </ul>
                 </RmsCard>
             ) : null}
+
+            <div className="fixed bottom-2 left-1/2 z-20 w-[min(460px,calc(100vw-20px))] -translate-x-1/2 rounded-[24px] border border-white/10 bg-[#0a1020]/95 p-2 shadow-[0_20px_44px_rgba(0,0,0,0.5)] backdrop-blur-xl md:hidden">
+                <div className="grid grid-cols-5 gap-1 text-[10px]">
+                    {['Dashboard', 'Team', 'Surveys', 'Wallet', 'More'].map((item) => (
+                        <span
+                            key={item}
+                            className={`flex min-h-[44px] items-center justify-center rounded-xl font-semibold ${
+                                item === 'Dashboard'
+                                    ? 'bg-gradient-to-r from-[#7C3AED]/45 to-[#2563EB]/30 text-white ring-1 ring-[#A78BFA]/45 shadow-[0_8px_20px_rgba(124,58,237,0.35)]'
+                                    : 'text-slate-300'
+                            }`}
+                        >
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
