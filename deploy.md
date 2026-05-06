@@ -155,20 +155,41 @@ php artisan storage:link
 
 ## 5) Permissions (important)
 
-Environment ke hisaab se owner group set karein.
+PHP-FPM jo user se chalta hai (often `www-data`, kabhi hosting user `rmsurveyai`), **usi user ko `storage/` + `bootstrap/cache` par write chahiye**.  
+Galat ownership se ye errors aate hain:
 
-Typical examples:
+- `file_put_contents(... storage/framework/sessions ...): Permission denied`
+- Blade / Livewire par `tempnam(): file created in the system's temporary directory` → HTTP 500
+
+Pehle FPM user confirm karo (example):
 
 ```bash
-sudo chown -R www-data:www-data "SERVER_DIR"
-sudo chmod -R 775 "SERVER_DIR/storage" "SERVER_DIR/bootstrap/cache"
+grep -E '^user\s*=' /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head
 ```
 
-If aapke server user `rmsurveyai` hai and Nginx/PHP runs under same user:
+Fir owner set karo (example: Ubuntu / `www-data`):
 
 ```bash
-sudo chown -R "SERVER_USER":"SERVER_USER" "SERVER_DIR"
-sudo chmod -R 775 "SERVER_DIR/storage" "SERVER_DIR/bootstrap/cache"
+sudo chown -R www-data:www-data "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
+sudo chmod -R ug+rwX "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
+```
+
+Agar aap codebase ko `rmsurveyai` user se own karna chahte ho lekin PHP-FPM `www-data` hai, tab **same group + setgid directory** sensible hota hai (example):
+
+```bash
+sudo chown -R rmsurveyai:www-data "/home/rmsurveyai/htdocs/rmsurveyai.com"
+sudo chmod -R ug+rwX "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
+sudo find "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache" -type d -exec chmod g+s {} \;
+sudo usermod -aG www-data rmsurveyai   # sirf zarurat ho to
+```
+
+> Root se `composer` / `php artisan` chalane par newly created files `root:root` ho sakti hain — isliye deploy ke baad `chown` dubara zaroor check karo.
+
+Typical shortcut (sirf tab jab FPM user = `rmsurveyai`):
+
+```bash
+sudo chown -R rmsurveyai:rmsurveyai "/home/rmsurveyai/htdocs/rmsurveyai.com"
+sudo chmod -R 775 "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
 ```
 
 ---
@@ -201,3 +222,18 @@ git checkout <commit_hash>
    - session cookie `SESSION_DOMAIN` / `SESSION_SECURE_COOKIE` mismatch
 2. Frontend changes show nahi ho rahe ho to server pe `npm run build` confirm karein (Vite `public/build/manifest.json` generate hota hai).
 
+3. `tempnam()` / Blade compile error aaye to `storage/framework/views` writable hai ya nahi verify karo, aur codebase me `bootstrap/runtime.php` project ke `storage/tmp` ko `TMPDIR` set karta hai — deploy/pull ke baad permissions phir match karo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+///git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only origin main && composer install --no-interaction --prefer-dist --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan storage:link
