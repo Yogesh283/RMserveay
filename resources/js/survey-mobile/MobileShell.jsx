@@ -8,10 +8,10 @@ const ACTIVE_STROKE = '#8E6BFF';
 const INACTIVE = 'rgba(160,174,192,0.65)';
 
 const tabs = [
-    { to: '/survey/dashboard', label: 'Home', icon: IconHome },
+    { to: '/survey/dashboard', label: 'Dashboard', icon: IconHome },
+    { to: '/survey/team', label: 'Team', icon: IconTeam },
     { to: '/survey/surveys', label: 'Surveys', icon: IconSurvey },
     { to: '/survey/wallet', label: 'Wallet', icon: IconWallet },
-    { to: '/survey/team', label: 'Team', icon: IconTeam },
     { to: '/survey/more', label: 'More', icon: IconMore },
 ];
 
@@ -91,15 +91,24 @@ export default function MobileShell() {
                                 [
                                     'flex flex-1 flex-col items-center gap-1 rounded-[18px] px-1.5 py-2 text-[10px] font-semibold transition-all duration-200',
                                     isActive
-                                        ? 'bg-gradient-to-t from-[rgba(108,76,241,0.28)] to-transparent text-white shadow-[0_0_28px_rgba(108,76,241,0.25)] ring-1 ring-[rgba(142,107,255,0.45)]'
+                                        ? 'text-white'
                                         : 'text-[#A0AEC0] hover:text-white',
                                 ].join(' ')
                             }
                         >
                             {({ isActive }) => (
                                 <>
-                                    <span className={isActive ? 'drop-shadow-[0_0_12px_rgba(142,107,255,0.55)]' : ''}>
-                                        <Icon active={isActive} />
+                                    <span
+                                        className={[
+                                            'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
+                                            isActive
+                                                ? 'bg-[linear-gradient(160deg,rgba(124,58,237,0.46),rgba(59,130,246,0.2))] shadow-[0_0_24px_rgba(124,58,237,0.5)] ring-1 ring-[rgba(167,139,250,0.58)]'
+                                                : 'bg-transparent',
+                                        ].join(' ')}
+                                    >
+                                        <span className={isActive ? 'drop-shadow-[0_0_12px_rgba(142,107,255,0.65)]' : ''}>
+                                            <Icon active={isActive} />
+                                        </span>
                                     </span>
                                     <span>{label}</span>
                                 </>
