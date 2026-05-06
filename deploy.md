@@ -224,16 +224,13 @@ git checkout <commit_hash>
 
 3. `tempnam()` / Blade compile error aaye to `storage/framework/views` writable hai ya nahi verify karo, aur codebase me `bootstrap/runtime.php` project ke `storage/tmp` ko `TMPDIR` set karta hai — deploy/pull ke baad permissions phir match karo.
 
+4. **Register chal raha hai lekin login fail** — do alag flows hain:
+   - **Register**: OTP `register_nonce` + email OTP se verify hota hai (ya `OTP_BYPASS=true` pe OTP skip).
+   - **Login (production)**: `OTP_BYPASS=false` ho to **pehle “Send OTP”** dabana zaroori hai; **registration wala OTP login pe kaam nahi karega**. Naya 6-digit code email se aayega.
+   - Agar OTP bhejne / verify par problem ho to live `.env` me **`CACHE_STORE=array` mat rakho** (OTP cache request ke beech survive nahi karta). `database` / `file` / `redis` use karo.
+   - `GET /api/user` **401** guest ke liye normal hai; login ke baad bhi 401 aaye to `APP_URL`, `SESSION_DOMAIN`, `SESSION_SECURE_COOKIE`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS` check karo aur `php artisan optimize:clear && php artisan config:cache` chalao.
 
 
 
 
 
-
-
-
-
-
-
-
-///git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only origin main && composer install --no-interaction --prefer-dist --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan storage:link

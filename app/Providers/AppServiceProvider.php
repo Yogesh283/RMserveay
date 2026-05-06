@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\NowPayments\NowPaymentsClient;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,8 +29,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (str_starts_with((string) config('app.url'), 'https://')) {
+        $appUrl = (string) config('app.url');
+
+        if (str_starts_with($appUrl, 'https://')) {
             URL::forceScheme('https');
+            // Unset SESSION_SECURE_COOKIE in .env often becomes null → cookies may not be marked Secure.
+            if (config('session.secure') === null) {
+                Config::set('session.secure', true);
+            }
+        }
+
+        $domain = config('session.domain');
+        if ($domain === '' || $domain === 'null') {
+            Config::set('session.domain', null);
         }
     }
 }
