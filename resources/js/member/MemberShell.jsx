@@ -40,6 +40,18 @@ const primaryNavMoreMobileExtraConfig = [
     { to: '/member/super-sub-panel-matching', labelKey: 'member.nav.superSubPanel', icon: IconStack },
 ];
 
+const moreMenuMetaByRoute = {
+    '/member/transactions': { subtitle: 'Wallet and earning history', glow: 'from-[#7C3AED]/24 to-[#3B82F6]/10', ring: 'ring-[#8B5CF6]/40' },
+    '/member/support-tickets': { subtitle: 'Help and issue tracking', glow: 'from-[#3B82F6]/24 to-[#06B6D4]/10', ring: 'ring-[#38BDF8]/40' },
+    '/member/active-panels': { subtitle: 'Activation progress panel', glow: 'from-[#06B6D4]/24 to-[#0EA5E9]/10', ring: 'ring-cyan-400/40' },
+    '/member/sub-panels': { subtitle: 'Sub panel management', glow: 'from-[#7C3AED]/24 to-[#A855F7]/10', ring: 'ring-fuchsia-400/35' },
+    '/member/super-sub-panels': { subtitle: 'Super hierarchy overview', glow: 'from-[#F59E0B]/24 to-[#FB923C]/10', ring: 'ring-amber-400/40' },
+    '/member/profile': { subtitle: 'Profile and account details', glow: 'from-[#EC4899]/20 to-[#A855F7]/10', ring: 'ring-pink-400/35' },
+    '/member/panel-matching': { subtitle: 'Panel matching insights', glow: 'from-emerald-500/20 to-[#06B6D4]/10', ring: 'ring-emerald-400/35' },
+    '/member/sub-panel-matching': { subtitle: 'Sub matching network', glow: 'from-cyan-500/22 to-[#3B82F6]/10', ring: 'ring-cyan-400/35' },
+    '/member/super-sub-panel-matching': { subtitle: 'Super matching analytics', glow: 'from-[#F59E0B]/24 to-[#FB7185]/10', ring: 'ring-orange-400/35' },
+};
+
 const MORE_PATH_PREFIXES = [
     '/member/transactions',
     '/member/support-tickets',
@@ -560,43 +572,87 @@ export default function MemberShell() {
                         onClick={() => setMoreSheetOpen(false)}
                         aria-label={t('common.closeMenu')}
                     />
-                    <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border border-white/10 bg-[#111827] shadow-2xl">
-                        <div className="flex justify-center pt-3 pb-2">
-                            <span className="h-1 w-10 rounded-full bg-white/20" />
+                    <div className="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-[28px] border border-white/[0.12] bg-gradient-to-b from-[#050816]/98 via-[#0A1020]/98 to-[#0B1120]/98 shadow-[0_-24px_56px_rgba(0,0,0,0.6)]">
+                        <div className="flex justify-center pt-3 pb-3">
+                            <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#7C3AED]/80 to-[#3B82F6]/70 shadow-[0_0_16px_rgba(124,58,237,0.55)]" />
                         </div>
-                        <p className="px-4 pb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">{t('member.more')}</p>
-                        <ul className="space-y-0.5 px-2 pb-4">
+                        <div className="relative overflow-hidden px-4 pb-3 pt-1 text-center">
+                            <div className="pointer-events-none absolute left-6 top-2 h-2 w-2 rounded-full bg-[#8B5CF6]/70 blur-[1px]" />
+                            <div className="pointer-events-none absolute right-8 top-6 h-1.5 w-1.5 rounded-full bg-cyan-300/70 blur-[1px]" />
+                            <p className="text-[16px] font-bold tracking-tight text-white">More Options</p>
+                            <p className="mt-1 text-[11px] text-[#94A3B8]">Manage your account & earnings</p>
+                        </div>
+                        <ul className="grid grid-cols-2 gap-2 px-3 pb-4">
                             {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }) => (
                                 <li key={to}>
                                     <NavLink
                                         to={to}
                                         onClick={() => setMoreSheetOpen(false)}
-                                        className={({ isActive }) =>
+                                        className={({ isActive }) => {
+                                            const meta = moreMenuMetaByRoute[to] ?? {
+                                                subtitle: 'Open section',
+                                                glow: 'from-[#7C3AED]/20 to-[#3B82F6]/10',
+                                                ring: 'ring-[#8B5CF6]/35',
+                                            };
+                                            return (
                                             [
-                                                'flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-semibold transition',
-                                                isActive ? 'bg-white/[0.12] text-white' : 'text-[#A0AEC0] hover:bg-white/[0.06] hover:text-white',
+                                                'group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-300',
+                                                `bg-gradient-to-br ${meta.glow}`,
+                                                isActive
+                                                    ? `border-white/20 text-white ring-1 ${meta.ring} shadow-[0_10px_28px_rgba(0,0,0,0.45)]`
+                                                    : 'border-white/10 text-[#CBD5E1] hover:border-white/20 hover:text-white hover:shadow-[0_10px_26px_rgba(0,0,0,0.35)]',
                                             ].join(' ')
-                                        }
+                                            );
+                                        }}
                                     >
-                                        {({ isActive }) => (
+                                        {({ isActive }) => {
+                                            const meta = moreMenuMetaByRoute[to] ?? { subtitle: 'Open section' };
+                                            return (
                                             <>
-                                                <Icon active={isActive} />
-                                                {label}
+                                                <div className="flex items-start gap-2.5">
+                                                    <span
+                                                        className={[
+                                                            'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-white/[0.04] shadow-[0_0_18px_rgba(124,58,237,0.18)]',
+                                                            isActive ? 'border-white/25' : 'border-white/15',
+                                                        ].join(' ')}
+                                                    >
+                                                        <Icon active={isActive} />
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-[13px] font-semibold">{label}</p>
+                                                        <p className="mt-0.5 line-clamp-1 text-[10px] text-[#94A3B8]">{meta.subtitle}</p>
+                                                    </div>
+                                                    <svg
+                                                        className="mt-1 h-4 w-4 shrink-0 text-[#A78BFA] transition group-hover:translate-x-0.5"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
                                             </>
-                                        )}
+                                            );
+                                        }}
                                     </NavLink>
                                 </li>
                             ))}
                         </ul>
-                        <div className="border-t border-white/[0.08] px-4 py-3">
-                            <NavLink
-                                to="/member/programme"
-                                onClick={() => setMoreSheetOpen(false)}
-                                className="flex items-center justify-center gap-2 rounded-xl bg-[#6C4CF1]/20 py-3 text-sm font-semibold text-[#C4B5FD] ring-1 ring-[#8E6BFF]/30"
-                            >
-                                {t('member.fullIncomeProgramme')}
-                            </NavLink>
+                        <div className="border-t border-white/[0.08] px-4 py-4">
+                            <div className="rounded-2xl border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)]">
+                                <p className="text-sm font-bold text-white">Full Income Programme</p>
+                                <p className="mt-0.5 text-[11px] text-[#A0AEC0]">Unlock all earning opportunities</p>
+                                <NavLink
+                                    to="/member/programme"
+                                    onClick={() => setMoreSheetOpen(false)}
+                                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.35)] ring-1 ring-[#A78BFA]/35"
+                                >
+                                    {t('member.fullIncomeProgramme')}
+                                    <span aria-hidden>→</span>
+                                </NavLink>
+                            </div>
                         </div>
+                        <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" />
                     </div>
                 </div>
             ) : null}
