@@ -10,6 +10,8 @@ export default function MemberDashboardPage() {
     const [user, setUser] = useState(null);
     const [summary, setSummary] = useState(null);
     const [overview, setOverview] = useState(null);
+    const [teamOverview, setTeamOverview] = useState(null);
+    const [levelIncome, setLevelIncome] = useState(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState(null);
 
@@ -39,8 +41,18 @@ export default function MemberDashboardPage() {
             setUser(u.data.user);
             setSummary(sum.data);
             setOverview(ov.data);
+
+            // Optional extras for the UI tiles. If these fail, dashboard should still render.
+            const [team, li] = await Promise.allSettled([
+                window.axios.get('api/member/team/overview'),
+                window.axios.get('api/member/programme/level-income'),
+            ]);
+            setTeamOverview(team.status === 'fulfilled' ? team.value.data : null);
+            setLevelIncome(li.status === 'fulfilled' ? li.value.data : null);
         } catch (e) {
             setErr(e.response?.data?.message ?? e.message ?? t('member.dashboard.loadFailed'));
+            setTeamOverview(null);
+            setLevelIncome(null);
         } finally {
             setLoading(false);
         }
@@ -63,6 +75,11 @@ export default function MemberDashboardPage() {
 
     const e = summary?.earnings_summary_usd;
     const q = summary?.quick_stats;
+
+    const directReferralsCount = teamOverview?.direct?.count ?? 0;
+    const surveysCompletedCount = q?.completed_surveys_count ?? 0;
+    const todayEarningsUsd = levelIncome?.earned_today_usd ?? 0;
+    const totalEarningsUsd = e?.total_from_programme ?? 0;
 
     /** Mirrored from `wallet` / `users` (main = spend/withdraw; P2P = internal pool). */
     const mainWalletUsd = overview?.wallet_balance ?? summary?.wallet_main_usd ?? user?.wallet_balance;
@@ -265,22 +282,76 @@ export default function MemberDashboardPage() {
                         {t('member.dashboard.allTransactions')}
                     </Link>
                 </div>
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                    {earningCards.map((c) => (
-                        <Link key={c.to} to={c.to}>
-                            <RmsCard variant="inset" className="!p-3 transition hover:ring-1 hover:ring-[#8E6BFF]/30 active:scale-[0.99]" padding={false}>
-                                <div className="p-3">
-                                    <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">{c.label}</p>
-                                    <p className="mt-1 text-sm font-bold tabular-nums text-white">{c.value}</p>
-                                    {c.hint ? (
-                                        <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">{c.hint}</p>
-                                    ) : null}
-                                </div>
-                            </RmsCard>
-                        </Link>
-                    ))}
+                <div className="grid grid-cols-2 gap-2">
+                    {/* Direct Referrals */}
+                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-[#7C3AED]/25 !bg-[#0f162b]/90" padding={false}>
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#7C3AED]/40 bg-gradient-to-br from-[#7C3AED]/25 to-[#2563EB]/10 shadow-[0_0_26px_rgba(124,58,237,0.25)]">
+                                <svg className="h-5 w-5 text-[#DDD6FE]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.5 11a4 4 0 100-8 4 4 0 000 8z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20 8v6" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M23 11h-6" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Direct Referrals</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{directReferralsCount}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Total direct members</p>
+                            </div>
+                        </div>
+                    </RmsCard>
+
+                    {/* Surveys Completed */}
+                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-[#06B6D4]/25 !bg-[#0f162b]/90" padding={false}>
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#06B6D4]/35 bg-gradient-to-br from-[#06B6D4]/20 to-[#3B82F6]/10 shadow-[0_0_26px_rgba(6,182,212,0.18)]">
+                                <svg className="h-5 w-5 text-[#A5F3FC]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l2-2 4 4" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5h18v14H3z" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Surveys Completed</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{surveysCompletedCount}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Completed surveys</p>
+                            </div>
+                        </div>
+                    </RmsCard>
+
+                    {/* Today’s Earnings */}
+                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-emerald-400/20 !bg-[#0f162b]/90" padding={false}>
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/20 to-[#06B6D4]/10 shadow-[0_0_26px_rgba(16,185,129,0.18)]">
+                                <svg className="h-5 w-5 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 1v22" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 5H9.5a3.5 3.5 0 000 7H14a3.5 3.5 0 010 7H7" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Today's Earnings</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{fmtUsd(todayEarningsUsd)}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Level income today</p>
+                            </div>
+                        </div>
+                    </RmsCard>
+
+                    {/* Total Earnings */}
+                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-[#F59E0B]/25 !bg-[#0f162b]/90" padding={false}>
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#F59E0B]/35 bg-gradient-to-br from-[#F59E0B]/20 to-[#7C3AED]/10 shadow-[0_0_26px_rgba(245,158,11,0.20)]">
+                                <svg className="h-5 w-5 text-amber-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 2l3 7h7l-5.5 4.2L18 22l-6-3.8L6 22l1.5-8.8L2 9h7z" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Total Earnings</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{fmtUsd(totalEarningsUsd)}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Lifetime programme income</p>
+                            </div>
+                        </div>
+                    </RmsCard>
                 </div>
-             
             </div>
 
             <div className="grid grid-cols-2 gap-2">
