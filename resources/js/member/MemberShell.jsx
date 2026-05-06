@@ -576,6 +576,21 @@ export default function MemberShell() {
                         <div className="flex justify-center pt-3 pb-3">
                             <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#7C3AED]/80 to-[#3B82F6]/70 shadow-[0_0_16px_rgba(124,58,237,0.55)]" />
                         </div>
+                        <div className="mx-3 mb-2 rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-3 py-2.5 backdrop-blur-xl">
+                            <div className="flex items-center justify-between gap-2.5">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <AppLogo alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+                                    <p className="truncate text-[13px] font-bold tracking-[0.12em] text-white">RM SURVEY</p>
+                                </div>
+                                <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
+                                    <HomeLanguageSwitcher variant="compact" density="tight" />
+                                </div>
+                                <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#8B5CF6]/65 bg-gradient-to-br from-[#7C3AED]/40 to-[#3B82F6]/25 text-[11px] font-semibold text-white shadow-[0_0_14px_rgba(124,58,237,0.45)]">
+                                    Y
+                                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0B1120] bg-emerald-400" />
+                                </span>
+                            </div>
+                        </div>
                         <div className="relative overflow-hidden px-4 pb-3 pt-1 text-center">
                             <div className="pointer-events-none absolute left-6 top-2 h-2 w-2 rounded-full bg-[#8B5CF6]/70 blur-[1px]" />
                             <div className="pointer-events-none absolute right-8 top-6 h-1.5 w-1.5 rounded-full bg-cyan-300/70 blur-[1px]" />
@@ -640,13 +655,23 @@ export default function MemberShell() {
                             ))}
                         </ul>
                         <div className="border-t border-white/[0.08] px-4 py-4">
-                            <div className="rounded-2xl border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)]">
-                                <p className="text-sm font-bold text-white">Full Income Programme</p>
-                                <p className="mt-0.5 text-[11px] text-[#A0AEC0]">Unlock all earning opportunities</p>
+                            <div className="relative overflow-hidden rounded-2xl border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)]">
+                                <div className="pointer-events-none absolute -left-6 top-1/2 h-16 w-16 -translate-y-1/2 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                                <div className="relative flex items-start gap-2.5">
+                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#8B5CF6]/35 bg-[#7C3AED]/20 text-[#DDD6FE] shadow-[0_0_20px_rgba(124,58,237,0.28)]">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7h18M5 7l1 10a2 2 0 002 2h8a2 2 0 002-2l1-10M9 11v4m6-4v4" />
+                                        </svg>
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-white">Full Income Programme</p>
+                                        <p className="mt-0.5 text-[11px] text-[#A0AEC0]">Unlock all earning opportunities</p>
+                                    </div>
+                                </div>
                                 <NavLink
                                     to="/member/programme"
                                     onClick={() => setMoreSheetOpen(false)}
-                                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.35)] ring-1 ring-[#A78BFA]/35"
+                                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.35)] ring-1 ring-[#A78BFA]/35 hover:brightness-110"
                                 >
                                     {t('member.fullIncomeProgramme')}
                                     <span aria-hidden>→</span>
