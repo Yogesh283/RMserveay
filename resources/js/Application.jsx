@@ -22,7 +22,6 @@ import PublisherWalletDepositPage from './publisher/pages/PublisherWalletDeposit
 import MemberShell from './member/MemberShell';
 import MemberDashboardPage from './member/pages/MemberDashboardPage';
 import MemberTeamPage from './member/pages/MemberTeamPage';
-import MemberProgrammePage from './member/pages/MemberProgrammePage';
 import MemberSurveysPage from './member/pages/MemberSurveysPage';
 import MemberSurveySessionPage from './member/pages/MemberSurveySessionPage';
 import MemberWalletHubPage from './member/pages/MemberWalletHubPage';
@@ -51,13 +50,13 @@ export default function Application() {
                     <Route path="/member" element={<MemberShell />}>
                         <Route index element={<MemberDashboardPage />} />
                         <Route path="team" element={<MemberTeamPage />} />
-                        <Route path="programme" element={<MemberProgrammePage />} />
+                        <Route path="programme" element={<Navigate to="/member" replace />} />
                         <Route path="surveys/:surveyId/session" element={<MemberSurveySessionPage />} />
                         <Route path="surveys" element={<MemberSurveysPage />} />
                         <Route path="profile" element={<MemberProfilePage />} />
                         <Route path="plans" element={<Navigate to="/member" replace />} />
                         <Route path="transactions" element={<MemberTransactionsPage />} />
-                        <Route path="self-survey-income" element={<Navigate to="/member/programme" replace />} />
+                        <Route path="self-survey-income" element={<Navigate to="/member" replace />} />
                         <Route path="active-panels" element={<MemberActivePanelsPage />} />
                         <Route path="sub-panels" element={<MemberSubPanelsPage />} />
                         <Route path="super-sub-panels" element={<MemberSuperSubPanelsPage />} />

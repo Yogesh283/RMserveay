@@ -169,7 +169,9 @@ export default function MemberProfilePage() {
 
     return (
         <div className="relative mx-auto max-w-lg space-y-3 sm:space-y-4">
-            <header className="mb-0.5">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-violet-600/15 blur-[85px]" />
+            <div className="pointer-events-none absolute -left-6 top-44 h-28 w-28 rounded-full bg-fuchsia-600/10 blur-[75px]" />
+            <header className="mb-0.5 rounded-2xl border border-violet-300/15 bg-[#0b1020]/60 px-3 py-2.5 backdrop-blur-xl">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-transparent bg-gradient-to-r from-[#8E6BFF] to-[#6C4CF1] bg-clip-text sm:text-[11px]">
                     RM Survey
                 </p>
@@ -177,7 +179,7 @@ export default function MemberProfilePage() {
                 <p className="mt-0.5 text-xs leading-snug text-[#A0AEC0]">Update your details and password.</p>
             </header>
 
-            <RmsCard variant="elevated" className="!p-3 sm:!p-4">
+            <RmsCard variant="elevated" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6C4CF1] to-[#8E6BFF] text-lg font-bold text-white shadow-md shadow-[#6C4CF1]/25 sm:h-14 sm:w-14 sm:rounded-2xl sm:text-xl">
                         {(user.name || user.email || '?').charAt(0).toUpperCase()}
@@ -199,7 +201,7 @@ export default function MemberProfilePage() {
             </RmsCard>
 
             {(user.binary_side === 'left' || user.binary_side === 'right') ? (
-                <RmsCard variant="inset" className="!border-[#8E6BFF]/30 !bg-[#111827]/90" padding={false}>
+                <RmsCard variant="inset" className="!rounded-[18px] !border-[#8E6BFF]/30 !bg-[#0b1020]/85 !shadow-[0_0_24px_rgba(139,92,246,0.12)]" padding={false}>
                     <div className="p-3 sm:p-3.5">
                         <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#C4B5FD] sm:text-[10px]">Network placement</p>
                         <p className="mt-1.5 text-xs leading-snug text-[#E2E8F0] sm:text-sm sm:leading-relaxed">
@@ -225,7 +227,7 @@ export default function MemberProfilePage() {
             ) : null}
 
             <form onSubmit={onSubmit} noValidate>
-                <RmsCard variant="elevated" className="!p-3 sm:!p-4">
+                <RmsCard variant="elevated" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A0AEC0] sm:text-[10px]">Your details</p>
                     <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">You can change these anytime.</p>
 
@@ -379,18 +381,24 @@ export default function MemberProfilePage() {
             </form>
 
             <div className="space-y-1.5">
-                <p className="px-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#A0AEC0] sm:text-[10px]">Settings &amp; programme</p>
+                <p className="px-0.5 text-[9px] font-semibold uppercase tracking-wider text-violet-200/80 sm:text-[10px]">Quick links</p>
                 {[
-                    { to: '/member/programme', label: 'Income programme', desc: 'All income streams' },
                     { to: '/member/transactions', label: 'Transactions', desc: 'Full ledger history' },
                     { to: '/member/wallet', label: 'Wallet & deposits', desc: 'USDT BEP-20, deposit & withdraw' },
                     { to: '/member/terms', label: 'Terms & conditions', desc: 'Rules and limits' },
                 ].map((item) => (
                     <Link key={item.to} to={item.to}>
-                        <RmsCard variant="inset" className="!p-0 transition hover:border-[#8E6BFF]/25 active:scale-[0.99]" padding={false}>
-                            <div className="px-3 py-2.5 sm:px-3.5 sm:py-3">
-                                <p className="text-sm font-semibold text-white">{item.label}</p>
-                                <p className="text-[11px] text-[#A0AEC0] sm:text-xs">{item.desc}</p>
+                        <RmsCard variant="inset" className="!rounded-[16px] !border-violet-300/20 !bg-[#0b1020]/75 !p-0 transition hover:border-[#8E6BFF]/35 active:scale-[0.99]" padding={false}>
+                            <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-3.5 sm:py-3">
+                                <div>
+                                    <p className="text-sm font-semibold text-white">{item.label}</p>
+                                    <p className="text-[11px] text-[#A0AEC0] sm:text-xs">{item.desc}</p>
+                                </div>
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-violet-300/25 bg-violet-500/10 text-violet-200">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </span>
                             </div>
                         </RmsCard>
                     </Link>
@@ -402,7 +410,7 @@ export default function MemberProfilePage() {
                 <span className="text-[11px] font-semibold text-[#A0AEC0] sm:text-xs">RM Survey</span>
             </div>
 
-            <RmsButton variant="danger" className="w-full" onClick={logout}>
+            <RmsButton variant="danger" className="w-full !border !border-red-400/35 !bg-gradient-to-r !from-red-600/90 !to-rose-600/90 !shadow-[0_10px_24px_rgba(239,68,68,0.22)]" onClick={logout}>
                 Logout
             </RmsButton>
         </div>

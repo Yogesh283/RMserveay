@@ -89,13 +89,16 @@ export default function MemberSuperSubPanelsPage() {
     const canBuyNext = qualified && count < maxSuper && !busy;
 
     return (
-        <div className="relative mx-auto max-w-5xl space-y-6">
+        <div className="relative mx-auto max-w-5xl space-y-4">
+            <div className="pointer-events-none absolute -top-10 right-0 h-44 w-44 rounded-full bg-violet-600/20 blur-[95px]" />
+            <div className="pointer-events-none absolute top-44 left-2 h-40 w-40 rounded-full bg-fuchsia-500/14 blur-[84px]" />
             <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/45">RM Survey</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200/75">RM Survey</p>
                 <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    <span className="text-white">Super sub panel </span>
-                    <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">Income</span>
+                    <span className="text-white">Super panel </span>
+                    <span className="bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">Income</span>
                 </h1>
+                <p className="text-xs text-[#94A3B8]">Premium tier slots for maximum per-survey rewards and matching growth.</p>
             </div>
 
             {loadError ? (
@@ -104,7 +107,7 @@ export default function MemberSuperSubPanelsPage() {
             {actionError ? <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{actionError}</p> : null}
 
             {!qualified && data ? (
-                <p className="rounded-xl border border-amber-500/25 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+                <p className="rounded-xl border border-amber-500/25 bg-amber-950/30 px-3.5 py-2.5 text-sm text-amber-100">
                     Complete{' '}
                     <Link to="/member/active-panels" className="font-semibold text-amber-300 underline underline-offset-2 hover:text-white">
                         active panelist
@@ -121,9 +124,9 @@ export default function MemberSuperSubPanelsPage() {
                 <>
                     <section aria-labelledby="super-package-heading">
                         <h2 id="super-package-heading" className="sr-only">
-                            Super sub panel income package
+                            Super panel income package
                         </h2>
-                        <div className="relative overflow-hidden rounded-3xl border border-violet-500/25 bg-[#0d1629] shadow-[0_0_60px_-12px_rgba(139,92,246,0.18)]">
+                        <div className="relative overflow-hidden rounded-[24px] border border-violet-500/28 bg-[#0d1629] shadow-[0_0_56px_-12px_rgba(139,92,246,0.2)]">
                             <div
                                 className="pointer-events-none absolute inset-0 opacity-[0.07]"
                                 style={{
@@ -131,10 +134,10 @@ export default function MemberSuperSubPanelsPage() {
                                     backgroundSize: '20px 20px',
                                 }}
                             />
-                            <div className="relative border-b border-white/[0.08] bg-gradient-to-r from-[#1e3a5f] via-[#1a1040] to-[#0f2847] px-5 py-4 sm:px-6">
+                            <div className="relative border-b border-white/[0.08] bg-gradient-to-r from-[#1e3a5f] via-[#1a1040] to-[#0f2847] px-4 py-3.5 sm:px-5">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-300/90">Package</p>
                                 <p className="mt-1 text-lg font-bold text-white">
-                                    Super sub panel <span className="text-orange-400">structure</span>
+                                    Super panel <span className="text-fuchsia-300">structure</span>
                                 </p>
                                 <p className="mt-1 max-w-xl text-xs text-white/60">
                                     <span className="font-semibold text-orange-200/90">{entryFee}</span> →{' '}
@@ -144,9 +147,9 @@ export default function MemberSuperSubPanelsPage() {
                             </div>
 
                             <div className="relative grid lg:grid-cols-[1fr_1fr] xl:grid-cols-[1.2fr_1fr_280px] lg:gap-0">
-                                <div className="space-y-5 border-white/[0.06] p-5 sm:p-6 lg:border-r xl:border-r">
+                                <div className="space-y-4 border-white/[0.06] p-4 sm:p-5 lg:border-r xl:border-r">
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-4 rounded-2xl bg-white px-4 py-4 shadow-lg shadow-black/25">
+                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
                                             <IconWalletEntry />
                                             <div>
                                                 <p className="text-xs font-medium text-slate-600">Entry fee</p>
@@ -160,12 +163,12 @@ export default function MemberSuperSubPanelsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 rounded-2xl bg-white px-4 py-4 shadow-lg shadow-black/25">
+                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
                                             <IconMaxPanels />
                                             <div>
                                                 <p className="text-xs font-medium text-slate-600">Maximum panels</p>
                                                 <p className="mt-0.5 text-base font-bold text-slate-900">
-                                                    <span className="text-orange-500">{maxSuper} super sub panels</span>
+                                                    <span className="text-orange-500">{maxSuper} super panels</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -173,14 +176,14 @@ export default function MemberSuperSubPanelsPage() {
 
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-wider text-white/45">Panel tree</p>
-                                        <div className="relative mt-4 flex flex-col items-center">
+                                        <div className="relative mt-3.5 flex flex-col items-center">
                                             <div className="relative z-[1] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-[#1e3a5f] text-sm font-bold text-white shadow-xl ring-4 ring-violet-400/30">
                                                 You
                                             </div>
                                             <div className="relative -mt-1 flex h-10 w-[85%] max-w-md justify-around border-t border-dashed border-white/25 pt-2">
                                                 <span className="absolute -top-px left-1/2 h-5 w-px -translate-x-1/2 border-l border-dashed border-white/25" />
                                             </div>
-                                            <div className="-mt-2 flex max-w-full flex-wrap justify-center gap-2 px-1">
+                                            <div className="-mt-2 flex max-w-full flex-wrap justify-center gap-1.5 px-1">
                                                 {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
                                                     const altBlue = n % 2 === 1;
                                                     const active = n <= count;
@@ -189,7 +192,7 @@ export default function MemberSuperSubPanelsPage() {
                                                         <div
                                                             key={n}
                                                             className={[
-                                                                'flex h-10 w-10 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md ring-2 transition',
+                                                                'flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold tabular-nums shadow-md ring-2 transition',
                                                                 active
                                                                     ? 'bg-emerald-500 text-white ring-emerald-300/50'
                                                                     : isNext
@@ -199,7 +202,7 @@ export default function MemberSuperSubPanelsPage() {
                                                                         : 'bg-orange-500/90 text-white ring-orange-300/40',
                                                                 !active && !isNext ? 'opacity-80' : '',
                                                             ].join(' ')}
-                                                            title={`Super sub panel ${n}`}
+                                                            title={`Super panel ${n}`}
                                                         >
                                                             {n}
                                                         </div>
@@ -216,7 +219,7 @@ export default function MemberSuperSubPanelsPage() {
                                         <span className="mx-2 text-white/30">·</span>
                                         <Link
                                             to="/member/wallet/deposit"
-                                            className="font-medium text-orange-400 underline-offset-2 hover:text-orange-300 hover:underline"
+                                            className="font-medium text-violet-300 underline-offset-2 hover:text-violet-200 hover:underline"
                                         >
                                             Add funds
                                         </Link>
@@ -224,7 +227,7 @@ export default function MemberSuperSubPanelsPage() {
                                 </div>
 
                                 <div className="flex flex-col border-t border-white/[0.06] bg-black/20 lg:border-t-0 xl:border-r xl:border-t-0">
-                                    <div className="border-b border-[#1e3a5f]/90 bg-[#1e3a5f] px-5 py-3 sm:px-6">
+                                    <div className="border-b border-[#1e3a5f]/90 bg-[#1e3a5f] px-4 py-2.5 sm:px-5">
                                         <p className="text-sm font-bold tracking-tight text-white">Income structure:</p>
                                     </div>
                                     <div className="flex-1 overflow-x-auto">
@@ -232,7 +235,7 @@ export default function MemberSuperSubPanelsPage() {
                                             <thead>
                                                 <tr>
                                                     <th className="bg-orange-500 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-                                                        Super sub panels
+                                                        Super panels
                                                     </th>
                                                     <th className="bg-[#152f52] px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
                                                         Total entry
@@ -246,7 +249,7 @@ export default function MemberSuperSubPanelsPage() {
                                                 {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => (
                                                     <tr key={n} className="border-t border-white/[0.06]">
                                                         <td className="px-3 py-2.5 text-white/90 sm:px-4">
-                                                            {n} super sub panel{n !== 1 ? 's' : ''}
+                                                            {n} super panel{n !== 1 ? 's' : ''}
                                                         </td>
                                                         <td className="px-3 py-2.5 text-right sm:px-4">
                                                             <span className="font-semibold tabular-nums text-sky-200">
@@ -254,7 +257,7 @@ export default function MemberSuperSubPanelsPage() {
                                                             </span>
                                                         </td>
                                                         <td className="px-3 py-2.5 text-right sm:px-4">
-                                                            <span className="font-bold tabular-nums text-orange-400">
+                                                            <span className="font-bold tabular-nums text-fuchsia-300">
                                                                 {fmtUsd((n * eachSuper).toFixed(2))}
                                                             </span>
                                                             <span className="text-xs font-medium text-white/55"> /survey</span>
@@ -270,11 +273,11 @@ export default function MemberSuperSubPanelsPage() {
                                     </p>
                                 </div>
 
-                                <div className="space-y-3 border-t border-white/[0.06] p-4 sm:p-5 xl:border-t-0">
+                                <div className="space-y-3 border-t border-white/[0.06] p-3.5 sm:p-4 xl:border-t-0">
                                     <div className="rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Important notes</p>
                                         <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[11px] text-white/70">
-                                            <li>Max 9 panels each on Sub panels and Super sub panels.</li>
+                                            <li>Max 9 panels each on Sub panels and Super panels.</li>
                                             <li>More panels mean higher tier income on completed surveys.</li>
                                             <li>All earnings depend on completing surveys.</li>
                                         </ul>
@@ -283,7 +286,7 @@ export default function MemberSuperSubPanelsPage() {
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300">Conclusion</p>
                                         <p className="mt-2 text-[11px] leading-relaxed text-white/75">
                                             Self survey income = panelist + active + <Link to="/member/sub-panels" className="text-sky-400 underline">sub panel</Link> +{' '}
-                                            <span className="text-orange-200">super sub panel</span>. Upgrading stacks your income faster.
+                                            <span className="text-orange-200">super panel</span>. Upgrading stacks your income faster.
                                         </p>
                                     </div>
                                 </div>
@@ -291,15 +294,15 @@ export default function MemberSuperSubPanelsPage() {
                         </div>
                     </section>
 
-                    <RmsCard variant="neon" className="!p-4 sm:!p-5">
+                    <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
                         <h2 className="text-base font-bold text-white">Buy package slots</h2>
                         <p className="mt-1 text-xs text-white/50">
                             Owned: <span className="font-medium text-white">{count}</span> / {maxSuper} · Next:{' '}
-                            <span className="font-medium text-orange-400">{fmtUsd(data.fees.super_sub_panel_usd)}</span> · Paid in so far:{' '}
+                            <span className="font-medium text-fuchsia-300">{fmtUsd(data.fees.super_sub_panel_usd)}</span> · Paid in so far:{' '}
                             <span className="font-medium tabular-nums text-white">{fmtUsd((count * safePanelFee).toFixed(2))}</span> /{' '}
                             <span className="tabular-nums text-white/80">{maxEntryLabel}</span>
                         </p>
-                        <ul className="mt-4 grid list-none grid-cols-2 gap-2.5 sm:grid-cols-3">
+                        <ul className="mt-3.5 grid list-none grid-cols-2 gap-2 sm:grid-cols-3">
                             {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
                                 const owned = n <= count;
                                 const isNext = n === nextSlot;
@@ -309,7 +312,7 @@ export default function MemberSuperSubPanelsPage() {
                                     <li
                                         key={n}
                                         className={[
-                                            'rounded-xl border px-3 py-3.5 transition',
+                                            'rounded-xl border px-2.5 py-3 transition',
                                             owned
                                                 ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
                                                 : isNext && canBuyNext
@@ -332,7 +335,7 @@ export default function MemberSuperSubPanelsPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="mt-2 text-lg font-bold tabular-nums text-orange-400">{fmtUsd((n * safePanelFee).toFixed(2))}</p>
+                                        <p className="mt-2 text-lg font-bold tabular-nums text-fuchsia-300">{fmtUsd((n * safePanelFee).toFixed(2))}</p>
                                         <p className="mt-0.5 text-[11px] tabular-nums text-white/45">
                                             package entry · +{fmtUsd((n * eachSuper).toFixed(2))}{' '}
                                             <span className="text-white/35">/survey</span>
@@ -342,7 +345,7 @@ export default function MemberSuperSubPanelsPage() {
                                                 type="button"
                                                 disabled={!canBuyNext || !qualified}
                                                 onClick={() => postSuperSubPanel()}
-                                                className="mt-3 w-full rounded-lg bg-gradient-to-r from-violet-600 to-orange-500 py-2 text-xs font-semibold text-white shadow-md shadow-violet-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                                                className="mt-3 w-full rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-500 py-2 text-xs font-semibold text-white shadow-md shadow-violet-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
                                             >
                                                 {qualified ? `Upgrade ${fmtUsd(data.fees.super_sub_panel_usd)}` : 'Locked'}
                                             </button>
@@ -352,7 +355,7 @@ export default function MemberSuperSubPanelsPage() {
                             })}
                         </ul>
                         {count >= maxSuper ? (
-                            <p className="mt-4 text-center text-sm font-medium text-emerald-400">Full package — all {maxSuper} super sub panels active.</p>
+                            <p className="mt-4 text-center text-sm font-medium text-emerald-400">Full package — all {maxSuper} super panels active.</p>
                         ) : null}
                     </RmsCard>
                 </>

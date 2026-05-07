@@ -84,144 +84,122 @@ export default function MemberActivePanelsPage() {
     const activationPaid = data?.activation_fee_paid === true;
     const activeSurveyMin = data?.fees?.active_panelist_per_survey_usd;
 
-    return (
-        <div className="relative mx-auto max-w-4xl space-y-5">
-            <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/45">Active panelist</p>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    <span className="text-white">Active panelist </span>
-                    <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">Income</span>
-                </h1>
-                <p className="max-w-xl text-sm text-white/65">
-                    Pay <span className="font-semibold text-white">{data ? fmtUsd(data.fees.activation_usd) : '$1'}</span> once, then{' '}
-                    <span className="font-semibold text-white">{data ? fmtUsd(data.fees.minimum_panel_usd) : '$10'}</span> in one payment.
-                </p>
-            </div>
+    const progressPct = qualified ? 100 : activationPaid ? 50 : 0;
+    const timeline = ['Start', 'Verify', 'Submit', 'Complete'];
 
-            {loadError ? (
-                <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
-            ) : null}
+    return (
+        <div className="relative mx-auto max-w-2xl space-y-4">
+            <div className="pointer-events-none absolute -top-10 right-0 h-40 w-40 rounded-full bg-violet-600/20 blur-[90px]" />
+            <div className="pointer-events-none absolute top-40 left-2 h-36 w-36 rounded-full bg-fuchsia-500/12 blur-[78px]" />
+
+            {loadError ? <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p> : null}
             {actionError ? <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{actionError}</p> : null}
 
             {data ? (
                 <>
-                <RmsCard variant="neon" className="overflow-hidden !p-0">
-                    {/* Wallet strip */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] px-5 py-3 sm:px-6">
-                        <p className="text-sm text-white/70">
-                            Total per survey{' '}
-                            <span className="font-bold tabular-nums text-white">{fmtUsd(data.per_survey_total)}</span>
-                        </p>
-                        <p className="text-sm text-white/70">
-                            Wallet <span className="font-semibold tabular-nums text-white">{fmtUsd(data.wallet_balance)}</span>
-                            <span className="mx-2 text-white/30">·</span>
-                            <Link to="/member/wallet/deposit" className="text-[#F59E0B] underline-offset-2 hover:text-amber-300 hover:underline">
-                                Add funds
-                            </Link>
-                        </p>
-                    </div>
-
-                    {/* Slide-style row: activation | minimum | survey income */}
-                    <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
-                        <div className="flex flex-col rounded-2xl border border-white/[0.1] bg-white/[0.04] px-4 py-4">
-                            <div className="flex items-start gap-3">
-                                <IconPerson />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-medium text-white/70">Activation fee</p>
-                                    <p className="mt-1 text-lg font-bold">
-                                        <span className="text-orange-400 tabular-nums">{fmtUsd(data.fees.activation_usd)}</span>
-                                    </p>
-                                    <p className="mt-0.5 text-[11px] text-white/45">One-time</p>
-                                </div>
-                            </div>
-                            {data.activation_fee_paid ? (
-                                <p className="mt-3 text-xs font-semibold text-emerald-400">Paid</p>
-                            ) : (
-                                <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => postAction('pay-activation')}
-                                    className="mt-4 w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:opacity-50"
-                                >
-                                    Pay {fmtUsd(data.fees.activation_usd)}
-                                </button>
-                            )}
+                    <RmsCard variant="neon" className="overflow-hidden !rounded-[24px] !border-violet-300/30 !bg-[#0b1020]/86 !p-0 shadow-[0_0_42px_rgba(139,92,246,0.16)] backdrop-blur-xl">
+                        <div className="border-b border-violet-300/15 px-4 py-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-fuchsia-200/90">✨ IMPROVED VERSION</p>
                         </div>
 
-                        <div className="flex flex-col rounded-2xl border border-white/[0.1] bg-white/[0.04] px-4 py-4">
-                            <div className="flex items-start gap-3">
-                                <IconPeople />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-medium text-white/70">Minimum panel fee</p>
-                                    <p className="mt-1 text-lg font-bold">
-                                        <span className="text-orange-400 tabular-nums">{fmtUsd(data.fees.minimum_panel_usd)}</span>
-                                    </p>
-                                    <p className="mt-0.5 text-[11px] text-white/45">Single payment</p>
+                        <div className="grid gap-3 p-3.5">
+                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-violet-300/20 bg-white/[0.03] p-3">
+                                <div className="flex items-center gap-3">
+                                    <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-violet-300/55 bg-violet-500/20 text-base font-bold text-white shadow-[0_0_22px_rgba(139,92,246,0.45)]">
+                                        V
+                                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0B1120] bg-emerald-400" />
+                                    </span>
+                                    <div>
+                                        <p className="text-xs text-[#A0AEC0]">Welcome back, vijay damor</p>
+                                        <div className="mt-1 flex items-center gap-1.5">
+                                            <span className="rounded-full border border-violet-300/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-100">ID: vjd</span>
+                                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
+                                                <span>✓</span> Verified
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
+                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/25 bg-violet-500/10 text-violet-200 shadow-[0_0_18px_rgba(139,92,246,0.25)]">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+                                    </svg>
+                                </span>
                             </div>
-                            {data.minimum_panel_fee_paid ? (
-                                <p className="mt-3 text-xs font-semibold text-emerald-400">Paid</p>
-                            ) : (
-                                <>
+
+                            <div className="rounded-2xl border border-violet-300/25 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-3.5">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative h-12 w-12 shrink-0 rounded-full border border-violet-300/40 bg-[#0b1020]">
+                                        <div className="absolute inset-[5px] rounded-full border border-violet-300/50" />
+                                        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-violet-200">{progressPct}%</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-white">Complete your ID Activation</p>
+                                        <p className="text-[11px] text-[#94A3B8]">Unlock full rewards, referrals and matching income flow.</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
                                     <button
                                         type="button"
-                                        disabled={busy || !activationPaid}
-                                        onClick={() => postAction('pay-minimum-panel')}
-                                        className="mt-4 w-full rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={busy || data.activation_fee_paid}
+                                        onClick={() => postAction('pay-activation')}
+                                        className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(168,85,247,0.35)] disabled:opacity-45"
                                     >
-                                        Pay {fmtUsd(data.fees.minimum_panel_usd)}
+                                        {data.activation_fee_paid ? 'Activation Paid' : `Activate ID → ${fmtUsd(data.fees.activation_usd)}`}
                                     </button>
-                                    {!activationPaid ? (
-                                        <p className="mt-2 text-center text-[10px] text-white/45">Pay activation first</p>
-                                    ) : null}
-                                </>
-                            )}
-                        </div>
+                                    <button
+                                        type="button"
+                                        disabled={busy || !activationPaid || data.minimum_panel_fee_paid}
+                                        onClick={() => postAction('pay-minimum-panel')}
+                                        className="rounded-xl border border-amber-400/55 bg-amber-500/10 py-2.5 text-sm font-semibold text-amber-200 transition hover:border-amber-300/80 hover:bg-amber-500/15 disabled:opacity-40"
+                                    >
+                                        {data.minimum_panel_fee_paid ? 'Minimum Paid' : `Pay Min ${fmtUsd(data.fees.minimum_panel_usd)}`}
+                                    </button>
+                                </div>
 
-                        <div className="flex flex-col rounded-2xl border border-white/[0.1] bg-white/[0.04] px-4 py-4">
-                            <div className="flex items-start gap-3">
-                                <IconClipboard />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-medium text-white/70">Survey income</p>
-                                    <p className="mt-1 text-lg font-bold leading-snug">
-                                        <span className="text-orange-400">
-                                            Min {activeSurveyMin != null ? fmtUsd(activeSurveyMin) : '$1.00'} per survey
-                                        </span>
-                                    </p>
-                                    <p className="mt-0.5 text-[11px] text-white/45">Active panelist portion</p>
+                                <div className="mt-3 grid grid-cols-4 gap-1.5">
+                                    {timeline.map((step, i) => {
+                                        const active = i <= Math.floor(progressPct / 34);
+                                        return (
+                                            <div key={step} className="text-center">
+                                                <span className={`mx-auto block h-2 w-2 rounded-full ${active ? 'bg-violet-400 shadow-[0_0_10px_rgba(168,85,247,0.7)]' : 'bg-white/20'}`} />
+                                                <p className="mt-1 text-[9px] text-[#94A3B8]">{step}</p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                            <p className="mt-auto pt-3 text-xs text-white/55">
-                                Current total rate: <span className="font-semibold tabular-nums text-white">{fmtUsd(data.per_survey_total)}</span>
-                            </p>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-2 border-t border-violet-300/15 p-3">
+                            {[
+                                ['More Rewards', 'Unlock exclusive offers and bonuses'],
+                                ['Referral Boost', 'Earn more with your network'],
+                                ['Secure & Verified', 'Your account stays safe and trusted'],
+                                ['Instant Access', 'Get full access to all features'],
+                            ].map(([title, sub]) => (
+                                <div key={title} className="rounded-xl border border-violet-300/20 bg-white/[0.03] p-2.5">
+                                    <p className="text-[11px] font-semibold text-white">{title}</p>
+                                    <p className="mt-0.5 text-[9px] text-[#94A3B8]">{sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </RmsCard>
+
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                        <Link
+                            to="/member/sub-panels"
+                            className="inline-flex w-full items-center justify-center rounded-2xl border border-violet-400/45 bg-gradient-to-br from-violet-950/60 via-fuchsia-950/40 to-[#111827] px-4 py-3 text-sm font-semibold text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.2)] ring-1 ring-violet-500/20 transition hover:border-violet-300/70 hover:shadow-[0_0_36px_rgba(168,85,247,0.22)] active:scale-[0.99]"
+                        >
+                            Sub panel
+                        </Link>
+                        <Link
+                            to="/member/super-sub-panels"
+                            className="inline-flex w-full items-center justify-center rounded-2xl border border-violet-400/45 bg-gradient-to-br from-[#29124a]/70 via-[#2b1246]/50 to-[#111827] px-4 py-3 text-sm font-semibold text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.2)] ring-1 ring-violet-500/25 transition hover:border-violet-300/70 hover:shadow-[0_0_36px_rgba(168,85,247,0.24)] active:scale-[0.99]"
+                        >
+                            Super panel
+                        </Link>
                     </div>
-
-                    {!qualified ? (
-                        <p className="border-t border-amber-500/15 bg-amber-950/20 px-5 py-2.5 text-center text-[11px] text-amber-100/90 sm:px-6">
-                            Pay both fees above for full active panelist survey income.
-                        </p>
-                    ) : (
-                        <p className="border-t border-emerald-500/15 bg-emerald-950/20 px-5 py-2.5 text-center text-[11px] text-emerald-100/90 sm:px-6">
-                            Active panelist — your survey rate includes the active tier.
-                        </p>
-                    )}
-                </RmsCard>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <Link
-                        to="/member/sub-panels"
-                        className="inline-flex w-full items-center justify-center rounded-2xl border border-fuchsia-500/45 bg-gradient-to-br from-fuchsia-950/55 via-violet-950/40 to-[#111827] px-4 py-3.5 text-sm font-semibold text-fuchsia-100 shadow-[0_0_28px_rgba(192,38,211,0.18)] ring-1 ring-fuchsia-500/20 transition hover:border-fuchsia-400/60 hover:shadow-[0_0_36px_rgba(217,70,239,0.22)] active:scale-[0.99]"
-                    >
-                        Sub panel
-                    </Link>
-                    <Link
-                        to="/member/super-sub-panels"
-                        className="inline-flex w-full items-center justify-center rounded-2xl border border-amber-500/50 bg-gradient-to-br from-amber-950/50 via-orange-950/35 to-[#111827] px-4 py-3.5 text-sm font-semibold text-amber-100 shadow-[0_0_28px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/25 transition hover:border-amber-400/65 hover:shadow-[0_0_36px_rgba(251,191,36,0.22)] active:scale-[0.99]"
-                    >
-                        Super panel
-                    </Link>
-                </div>
                 </>
             ) : (
                 !loadError && (

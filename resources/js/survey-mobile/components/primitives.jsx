@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  */
 
 const cardBase =
-    'rounded-[20px] border backdrop-blur-xl transition-all duration-300 sm:rounded-[24px]';
+    'rounded-[16px] border backdrop-blur-xl transition-all duration-300 sm:rounded-[18px]';
 
 export function Card({ children, variant = 'default', className = '', padding = true }) {
     const variants = {
@@ -20,7 +20,7 @@ export function Card({ children, variant = 'default', className = '', padding = 
         neon: 'border-[rgba(59,130,246,0.25)] bg-gradient-to-br from-[rgba(124,58,237,0.12)] to-[rgba(59,130,246,0.06)] shadow-[0_0_32px_rgba(124,58,237,0.2)]',
     };
     return (
-        <div className={[cardBase, variants[variant] ?? variants.default, padding ? 'p-4 sm:p-5' : '', className].join(' ')}>
+        <div className={[cardBase, variants[variant] ?? variants.default, padding ? 'p-3 sm:p-4' : '', className].join(' ')}>
             {children}
         </div>
     );
@@ -30,9 +30,9 @@ const btnBase =
     'inline-flex items-center justify-center rounded-[18px] font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none';
 
 const btnSizes = {
-    sm: 'px-4 py-2.5 text-xs',
-    md: 'px-5 py-3.5 text-sm',
-    lg: 'px-6 py-4 text-base',
+    sm: 'px-3.5 py-2 text-xs',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-5 py-3 text-base',
 };
 
 const btnVariants = {
@@ -80,6 +80,7 @@ export function Input({ className = '', ...props }) {
         <input
             className={[
                 'w-full rounded-[18px] border border-white/[0.1] bg-[#111827] px-4 py-3.5 text-sm text-white placeholder:text-[#A0AEC0]',
+                'sm:rounded-[16px] sm:px-3.5 sm:py-2.5',
                 'focus:border-[#8E6BFF]/55 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/35',
                 className,
             ].join(' ')}
@@ -101,7 +102,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search…' }) {
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full rounded-[20px] border border-white/[0.1] bg-[#111827] py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-[#A0AEC0] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
+                className="w-full rounded-[16px] border border-white/[0.1] bg-[#111827] py-2.5 pl-11 pr-3.5 text-sm text-white placeholder:text-[#A0AEC0] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
             />
         </div>
     );
@@ -109,14 +110,14 @@ export function SearchInput({ value, onChange, placeholder = 'Search…' }) {
 
 export function ScreenTitle({ eyebrow, title, subtitle }) {
     return (
-        <header className="mb-6">
+        <header className="mb-4">
             {eyebrow ? (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-transparent bg-gradient-to-r from-[#8E6BFF] to-[#6C4CF1] bg-clip-text">
                     {eyebrow}
                 </p>
             ) : null}
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">{title}</h1>
-            {subtitle ? <p className="mt-1.5 text-sm leading-relaxed text-[#A0AEC0]">{subtitle}</p> : null}
+            <h1 className="mt-1 text-[22px] font-bold tracking-tight text-white">{title}</h1>
+            {subtitle ? <p className="mt-1 text-sm leading-snug text-[#A0AEC0]">{subtitle}</p> : null}
         </header>
     );
 }
@@ -126,7 +127,7 @@ export function GlassCard({ children, glow, className = '' }) {
         <div
             className={[
                 cardBase,
-                'border-white/[0.08] bg-[rgba(15,23,42,0.5)] p-4 backdrop-blur-xl sm:p-5',
+                'border-white/[0.08] bg-[rgba(15,23,42,0.5)] p-3 backdrop-blur-xl sm:p-4',
                 glow
                     ? 'shadow-[0_0_48px_rgba(124,58,237,0.2)] ring-1 ring-[rgba(59,130,246,0.25)]'
                     : 'shadow-[0_8px_32px_rgba(0,0,0,0.35)]',

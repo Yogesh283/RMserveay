@@ -656,8 +656,8 @@ class MemberWalletController extends Controller
                 $panels = $m['milestone_panels'] ?? $m['cumulative_matched_panels'] ?? null;
 
                 return $panels !== null && $panels !== ''
-                    ? 'Super sub-panel matching · milestone at '.$panels.' panels'
-                    : 'Super sub-panel matching payout';
+                    ? 'Super panel matching · milestone at '.$panels.' panels'
+                    : 'Super panel matching payout';
             })(),
             WalletTransaction::TYPE_P2P_TRANSFER_IN => (function () use ($m, $whoFromFull) {
                 if ($whoFromFull !== '') {
@@ -734,7 +734,7 @@ class MemberWalletController extends Controller
             WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE => (function () use ($m) {
                 $ix = isset($m['panel_index']) ? (int) $m['panel_index'] : null;
 
-                return $ix !== null && $ix > 0 ? 'Super sub-panel slot #'.$ix.' · entry fee' : 'Super sub-panel entry fee';
+                return $ix !== null && $ix > 0 ? 'Super panel slot #'.$ix.' · entry fee' : 'Super panel entry fee';
             })(),
             default => ucfirst(str_replace('_', ' ', $t->type)),
         };

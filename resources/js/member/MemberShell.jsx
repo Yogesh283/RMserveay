@@ -7,7 +7,6 @@ import { fetchSessionUser, prepareSanctum } from '../lib/auth';
 import RmsPageBackdrop from './components/RmsPageBackdrop';
 
 const programmeNavConfig = [
-    { to: '/member/programme', labelKey: 'member.nav.incomeOverview', icon: IconLayers },
     { to: '/member/direct-income', labelKey: 'member.nav.directIncome', icon: IconUsers },
     { to: '/member/panel-matching', labelKey: 'member.nav.panelMatching', icon: IconScale },
     { to: '/member/sub-panel-matching', labelKey: 'member.nav.subPanelMatching', icon: IconGrid },
@@ -27,18 +26,11 @@ const primaryNavQuickConfig = [
 const primaryNavMoreConfig = [
     { to: '/member/transactions', labelKey: 'member.nav.transactions', icon: IconTransactionsNav },
     { to: '/member/support-tickets', labelKey: 'member.nav.supportTickets', icon: IconSupportTicket },
-    { to: '/member/active-panels', labelKey: 'member.nav.activePanels', icon: IconPanels },
-    { to: '/member/sub-panels', labelKey: 'member.nav.subPanels', icon: IconSubPanels },
-    { to: '/member/super-sub-panels', labelKey: 'member.nav.superSub', icon: IconSuperSubPanels },
     { to: '/member/profile', labelKey: 'member.nav.profile', icon: IconUser },
 ];
 
 /** Mobile More sheet only — same icons/theme as programme nav; desktop lists these under Programme. */
-const primaryNavMoreMobileExtraConfig = [
-    { to: '/member/panel-matching', labelKey: 'member.nav.panelMatching', icon: IconScale },
-    { to: '/member/sub-panel-matching', labelKey: 'member.nav.subPanelMatching', icon: IconGrid },
-    { to: '/member/super-sub-panel-matching', labelKey: 'member.nav.superSubPanel', icon: IconStack },
-];
+const primaryNavMoreMobileExtraConfig = [];
 
 const moreMenuMetaByRoute = {
     '/member/transactions': { subtitle: 'Wallet and earnings', glow: 'from-[#7C3AED]/28 to-[#3B82F6]/12', ring: 'ring-[#8B5CF6]/45' },
@@ -113,7 +105,7 @@ function IconPanels({ active }) {
     );
 }
 
-/** Super sub panels — stacked tiers */
+/** Super panels — stacked tiers */
 function IconSuperSubPanels({ active }) {
     const c = active ? '#C084FC' : '#A0AEC0';
     return (
@@ -304,6 +296,7 @@ export default function MemberShell() {
     const [user, setUser] = useState(undefined);
     const [menuOpen, setMenuOpen] = useState(false);
     const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+    const [moreActionMsg, setMoreActionMsg] = useState('');
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -356,6 +349,42 @@ export default function MemberShell() {
             [...primaryNavMoreConfig, ...primaryNavMoreMobileExtraConfig].map((item) => ({ ...item, label: t(item.labelKey) })),
         [t, i18n.resolvedLanguage],
     );
+    const referralUrl = useMemo(() => {
+        const code = user?.referral_code;
+        if (!code) return '';
+        const base = (window?.location?.origin || '').replace(/\/$/, '');
+        if (!base) return '';
+        return `${base}/register?ref=${encodeURIComponent(code)}`;
+    }, [user?.referral_code]);
+
+    function showMoreActionMsg(message) {
+        setMoreActionMsg(message);
+        window.setTimeout(() => setMoreActionMsg(''), 1800);
+    }
+
+    async function copyReferralLink() {
+        if (!referralUrl) return;
+        try {
+            await navigator.clipboard.writeText(referralUrl);
+            showMoreActionMsg('Referral link copied');
+        } catch {
+            showMoreActionMsg('Copy failed');
+        }
+    }
+
+    async function shareReferralLink() {
+        if (!referralUrl) return;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'RM Survey', text: 'Join RM Survey', url: referralUrl });
+                showMoreActionMsg('Referral link shared');
+                return;
+            }
+            await copyReferralLink();
+        } catch {
+            /* share cancelled */
+        }
+    }
 
     async function logout() {
         try {
@@ -456,7 +485,7 @@ export default function MemberShell() {
             </aside>
 
             <div className="relative lg:pl-[280px]">
-                <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.08] bg-[#0B0F1A]/95 px-4 backdrop-blur-xl max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:left-0 max-lg:right-0 max-lg:z-[90] max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:z-20 lg:bg-[#0B0F1A]/90 lg:pt-0">
+                <header className="flex h-12 shrink-0 items-center gap-3 border-b border-white/[0.08] bg-[#0B0F1A]/95 px-3.5 backdrop-blur-xl max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:left-0 max-lg:right-0 max-lg:z-[90] max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:z-20 lg:bg-[#0B0F1A]/90 lg:pt-0">
                     <div className="min-w-0 flex-1 lg:hidden">
                         <Link to="/member" className="flex items-center gap-2">
                             <AppLogo alt="RM Survey" className="h-12 w-12" />
@@ -513,14 +542,14 @@ export default function MemberShell() {
                     </div>
                 </header>
 
-                <main className="relative mx-auto max-w-6xl px-4 pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] sm:px-6 lg:pb-10 max-lg:pt-[calc(3.5rem+1.25rem+env(safe-area-inset-top,0px))] sm:max-lg:pt-[calc(3.5rem+1.5rem+env(safe-area-inset-top,0px))] lg:pt-6">
+                <main className="relative mx-auto max-w-6xl px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:px-4 lg:pb-8 max-lg:pt-[calc(3.25rem+1rem+env(safe-area-inset-top,0px))] sm:max-lg:pt-[calc(3.25rem+1.25rem+env(safe-area-inset-top,0px))] lg:pt-4">
                     <Outlet key={i18n.resolvedLanguage} context={{ dark: true }} />
                 </main>
             </div>
 
             {/* Mobile bottom: 4 quick + More (transactions, panels, profile) */}
             <nav className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/[0.08] bg-[rgba(11,15,26,0.92)] shadow-[0_-8px_24px_rgba(0,0,0,0.35)] backdrop-blur-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 lg:hidden">
-                <div className="mx-auto flex max-w-lg items-end justify-around gap-0.5 px-1 pb-3 pt-2 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
+                <div className="mx-auto flex max-w-lg items-end justify-around gap-0.5 px-1 pb-2.5 pt-1.5 [padding-bottom:max(0.65rem,env(safe-area-inset-bottom))]">
                     {primaryNavQuick.map(({ to, label, end, icon: Icon }) => (
                         <NavLink
                             key={to}
@@ -582,11 +611,41 @@ export default function MemberShell() {
                             <span className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#7C3AED]/80 to-[#3B82F6]/70 shadow-[0_0_14px_rgba(124,58,237,0.5)]" />
                         </div>
                         <div className="relative overflow-hidden px-3 pb-2 pt-0.5 text-center">
+                            <button
+                                type="button"
+                                onClick={() => setMoreSheetOpen(false)}
+                                className="absolute left-0 top-0 inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-[#CBD5E1] transition hover:border-violet-300/35 hover:text-white"
+                            >
+                                <span aria-hidden>←</span> Back
+                            </button>
                             <div className="pointer-events-none absolute left-6 top-2 h-2 w-2 rounded-full bg-[#8B5CF6]/70 blur-[1px]" />
                             <div className="pointer-events-none absolute right-8 top-6 h-1.5 w-1.5 rounded-full bg-cyan-300/70 blur-[1px]" />
                             <p className="text-[14px] font-bold tracking-tight text-white">More Options</p>
                             <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account & earnings</p>
                         </div>
+                        {referralUrl ? (
+                            <div className="mx-2 mb-2 rounded-lg border border-violet-300/20 bg-[#0b1020]/75 p-2 backdrop-blur-xl">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-200/85">Referral link</p>
+                                <p className="mt-1 truncate rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[10px] text-[#A0AEC0]">{referralUrl}</p>
+                                <div className="mt-2 grid grid-cols-2 gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={copyReferralLink}
+                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                    >
+                                        Copy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={shareReferralLink}
+                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                    >
+                                        Share
+                                    </button>
+                                </div>
+                                {moreActionMsg ? <p className="mt-1 text-[10px] text-emerald-300">{moreActionMsg}</p> : null}
+                            </div>
+                        ) : null}
                         <ul className="grid auto-rows-fr grid-cols-2 gap-1.5 px-2 pb-2.5">
                             {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }, idx) => (
                                 <li key={to} className={idx === primaryNavMoreItemsMobile.length - 1 && primaryNavMoreItemsMobile.length % 2 === 1 ? 'col-span-2' : ''}>
@@ -641,30 +700,6 @@ export default function MemberShell() {
                                 </li>
                             ))}
                         </ul>
-                        <div className="border-t border-white/[0.08] px-2.5 py-2.5">
-                            <div className="relative overflow-hidden rounded-lg border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-2 shadow-[0_8px_18px_rgba(0,0,0,0.35)]">
-                                <div className="pointer-events-none absolute -left-6 top-1/2 h-16 w-16 -translate-y-1/2 rounded-full bg-[#7C3AED]/25 blur-2xl" />
-                                <div className="relative flex items-start gap-1.5">
-                                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#8B5CF6]/35 bg-[#7C3AED]/20 text-[#DDD6FE] shadow-[0_0_16px_rgba(124,58,237,0.22)]">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7h18M5 7l1 10a2 2 0 002 2h8a2 2 0 002-2l1-10M9 11v4m6-4v4" />
-                                        </svg>
-                                    </span>
-                                    <div className="min-w-0">
-                                        <p className="text-[12px] font-bold text-white">Full Income Programme</p>
-                                        <p className="mt-0.5 text-[10px] text-[#A0AEC0]">Unlock all earning opportunities</p>
-                                    </div>
-                                </div>
-                                <NavLink
-                                    to="/member/programme"
-                                    onClick={() => setMoreSheetOpen(false)}
-                                    className="mt-2 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2 text-[12px] font-semibold text-white shadow-[0_8px_18px_rgba(124,58,237,0.28)] ring-1 ring-[#A78BFA]/35 hover:brightness-110"
-                                >
-                                    {t('member.fullIncomeProgramme')}
-                                    <span aria-hidden>→</span>
-                                </NavLink>
-                            </div>
-                        </div>
                         <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" />
                     </div>
                 </div>

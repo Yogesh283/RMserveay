@@ -154,7 +154,7 @@
             "wallet": "Wallet",
             "activePanels": "Active panels",
             "subPanels": "Sub panels",
-            "superSub": "Super sub",
+            "superSub": "Super panel",
             "profile": "Profile",
             "incomeOverview": "Income overview",
             "transactions": "Transactions",
@@ -162,7 +162,7 @@
             "directIncome": "Direct income",
             "panelMatching": "Panel matching",
             "subPanelMatching": "Sub-panel matching",
-            "superSubPanel": "Super sub-panel",
+            "superSubPanel": "Super panel",
             "levelIncome": "Level income",
             "terms": "Terms"
         },
@@ -266,7 +266,7 @@
                 "direct": "Direct income",
                 "panelMatch": "Panel matching income",
                 "subPanelMatch": "Sub-panel matching income",
-                "superSubPanelMatch": "Super sub-panel matching income",
+                "superSubPanelMatch": "Super panel matching income",
                 "level": "Level income"
             },
             "cards": {
@@ -279,7 +279,7 @@
                     "desc": "$10 per panel, up to 9 slots — income scales $1–$9 per survey on the sub tier."
                 },
                 "superSubPanels": {
-                    "title": "Super sub panel income",
+                    "title": "Super panel income",
                     "desc": "$100 per panel, up to 9 slots — survey tier $100–$900 plus matching programme."
                 },
                 "team": {
@@ -303,7 +303,7 @@
                     "desc": "Tabular matching on sub panels — up to $256 daily cap."
                 },
                 "superSubPanelMatching": {
-                    "title": "Super sub-panel matching income",
+                    "title": "Super panel matching income",
                     "desc": "$100 panel tier — same structure, higher rewards ($2,560 daily cap)."
                 },
                 "levelIncome": {
@@ -420,8 +420,8 @@
             "rowTeamSubPanels": "Team sub panels",
             "rowMatchingSubToday": "Matching sub panels (today)",
             "rowCarryPanelLR": "Carry forward · panel",
-            "rowTeamSuperSub": "Team super sub panels",
-            "rowMatchingSuperToday": "Matching super sub panels (today)",
+            "rowTeamSuperSub": "Team super panels",
+            "rowMatchingSuperToday": "Matching super panels (today)",
             "rowCarrySuperLR": "Carry forward · super",
             "rowMatchingPanels": "Matching panels",
             "rowSubMatchingPanels": "Sub matching panels",

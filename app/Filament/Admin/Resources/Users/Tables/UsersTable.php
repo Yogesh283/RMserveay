@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Users\Tables;
 
+use App\Filament\Admin\Resources\Users\UserResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -14,8 +15,11 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record): string => UserResource::getUrl('view', ['record' => $record]))
             ->columns([
                 TextColumn::make('name')
+                    ->weight('semibold')
+                    ->color('primary')
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email address')

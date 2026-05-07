@@ -64,7 +64,8 @@ export default function MemberTransactionsPage() {
     }, [load]);
 
     return (
-        <div className="relative space-y-6">
+        <div className="relative space-y-4">
+            <div className="pointer-events-none absolute -top-12 right-0 h-40 w-40 rounded-full bg-violet-600/15 blur-[80px]" />
             <RmsScreenTitle
                 eyebrow={t('member.transactionsPage.eyebrow')}
                 title={t('member.transactionsPage.title')}
@@ -78,7 +79,7 @@ export default function MemberTransactionsPage() {
                         setType(e.target.value);
                         setPage(1);
                     }}
-                    className="rounded-xl border border-white/10 bg-[#111827] px-3 py-2.5 text-sm text-white focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
+                    className="rounded-xl border border-violet-300/20 bg-[#0b1020]/85 px-3 py-2 text-sm text-white shadow-[0_0_18px_rgba(139,92,246,0.12)] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
                 >
                     {TYPE_VALUES.map((v) => (
                         <option key={v || 'all'} value={v}>
@@ -90,10 +91,10 @@ export default function MemberTransactionsPage() {
 
             {err ? <p className="text-sm text-red-400">{err}</p> : null}
 
-            <RmsCard variant="elevated" className="!p-0 overflow-x-auto" padding={false}>
+            <RmsCard variant="elevated" className="!overflow-x-auto !rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-0 backdrop-blur-xl" padding={false}>
                 <table className="w-full min-w-[720px] text-left text-sm">
                     <thead>
-                        <tr className="border-b border-white/10 text-[#A0AEC0]">
+                        <tr className="border-b border-white/10 bg-white/[0.02] text-[#A0AEC0]">
                             <th className="px-4 py-3 font-semibold">{t('member.transactionsPage.colDate')}</th>
                             <th className="px-4 py-3 font-semibold whitespace-nowrap">{t('member.transactionsPage.colTxId')}</th>
                             <th className="px-4 py-3 font-semibold">{t('member.transactionsPage.colType')}</th>
@@ -104,7 +105,7 @@ export default function MemberTransactionsPage() {
                     </thead>
                     <tbody>
                         {rows.map((row) => (
-                            <tr key={row.id} className="border-b border-white/5 align-top">
+                            <tr key={row.id} className="border-b border-white/5 align-top transition hover:bg-violet-500/[0.06]">
                                 <td className="px-4 py-3 text-xs text-[#A0AEC0] whitespace-nowrap">
                                     {row.created_at ? new Date(row.created_at).toLocaleString(i18n.language) : t('member.ui.dash')}
                                 </td>
@@ -134,7 +135,7 @@ export default function MemberTransactionsPage() {
                         type="button"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        className="rounded-xl border border-white/10 bg-[#111827] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                        className="rounded-xl border border-violet-300/20 bg-[#0b1020]/85 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
                     >
                         {t('member.ui.previous')}
                     </button>
@@ -145,7 +146,7 @@ export default function MemberTransactionsPage() {
                         type="button"
                         disabled={page >= meta.last_page}
                         onClick={() => setPage((p) => p + 1)}
-                        className="rounded-xl border border-white/10 bg-[#111827] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                        className="rounded-xl border border-violet-300/20 bg-[#0b1020]/85 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
                     >
                         {t('member.ui.next')}
                     </button>

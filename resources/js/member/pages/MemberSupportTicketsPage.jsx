@@ -57,14 +57,15 @@ export default function MemberSupportTicketsPage() {
     }
 
     return (
-        <div className="relative space-y-6">
+        <div className="relative space-y-4">
+            <div className="pointer-events-none absolute -top-10 right-0 h-40 w-40 rounded-full bg-violet-600/15 blur-[85px]" />
             <RmsScreenTitle
                 eyebrow={t('member.supportTickets.eyebrow')}
                 title={t('member.supportTickets.title')}
                 subtitle={t('member.supportTickets.subtitle')}
             />
 
-            <RmsCard variant="elevated" className="space-y-4" padding>
+            <RmsCard variant="elevated" className="space-y-4 !rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-4 shadow-[0_0_28px_rgba(139,92,246,0.12)] backdrop-blur-xl" padding>
                 <form onSubmit={submitTicket} className="space-y-3">
                     <div>
                         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#A0AEC0]">
@@ -77,7 +78,7 @@ export default function MemberSupportTicketsPage() {
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
                             placeholder={t('member.supportTickets.subjectPlaceholder')}
-                            className="w-full rounded-xl border border-white/10 bg-[#0B0F1A] px-3 py-2 text-sm text-white focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
+                            className="w-full rounded-xl border border-violet-300/20 bg-[#0B0F1A]/90 px-3 py-2 text-sm text-white shadow-[0_0_14px_rgba(139,92,246,0.08)] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
                         />
                     </div>
 
@@ -92,7 +93,7 @@ export default function MemberSupportTicketsPage() {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder={t('member.supportTickets.messagePlaceholder')}
-                            className="w-full rounded-xl border border-white/10 bg-[#0B0F1A] px-3 py-2 text-sm text-white focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
+                            className="w-full rounded-xl border border-violet-300/20 bg-[#0B0F1A]/90 px-3 py-2 text-sm text-white shadow-[0_0_14px_rgba(139,92,246,0.08)] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
                         />
                     </div>
 
@@ -102,14 +103,14 @@ export default function MemberSupportTicketsPage() {
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="rounded-xl bg-gradient-to-r from-[#6C4CF1] to-[#8E6BFF] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                        className="rounded-xl bg-gradient-to-r from-[#6C4CF1] to-[#8E6BFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.3)] transition hover:brightness-110 disabled:opacity-50"
                     >
                         {submitting ? t('member.supportTickets.submitting') : t('member.supportTickets.submit')}
                     </button>
                 </form>
             </RmsCard>
 
-            <RmsCard variant="inset" className="!p-0 overflow-x-auto" padding={false}>
+            <RmsCard variant="inset" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-0 overflow-x-auto backdrop-blur-xl" padding={false}>
                 {loading ? (
                     <p className="p-4 text-sm text-[#A0AEC0]">{t('member.loading')}</p>
                 ) : rows.length === 0 ? (
@@ -117,7 +118,7 @@ export default function MemberSupportTicketsPage() {
                 ) : (
                     <table className="w-full min-w-[640px] text-left text-sm">
                         <thead>
-                            <tr className="border-b border-white/10 text-[#A0AEC0]">
+                            <tr className="border-b border-white/10 bg-white/[0.02] text-[#A0AEC0]">
                                 <th className="px-4 py-3 font-semibold">{t('member.supportTickets.colDate')}</th>
                                 <th className="px-4 py-3 font-semibold">{t('member.supportTickets.colTicket')}</th>
                                 <th className="px-4 py-3 font-semibold">{t('member.supportTickets.colSubject')}</th>
@@ -126,7 +127,7 @@ export default function MemberSupportTicketsPage() {
                         </thead>
                         <tbody>
                             {rows.map((row) => (
-                                <tr key={row.id} className="border-b border-white/5">
+                                <tr key={row.id} className="border-b border-white/5 transition hover:bg-violet-500/[0.06]">
                                     <td className="px-4 py-3 text-xs text-[#A0AEC0]">
                                         {row.created_at ? new Date(row.created_at).toLocaleString(i18n.language) : t('member.ui.dash')}
                                     </td>

@@ -172,7 +172,7 @@ class MemberProgrammeController extends Controller
         $fee = (string) config('self_survey.super_sub_panel_entry_fee');
 
         if ((int) $user->super_sub_panel_count >= $max) {
-            return response()->json(['message' => 'Maximum super sub panels reached.'], 422);
+            return response()->json(['message' => 'Maximum super panels reached.'], 422);
         }
 
         $this->selfSurveyIncome->debitFee($user, $fee, WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE, [

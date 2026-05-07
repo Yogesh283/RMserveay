@@ -34,9 +34,10 @@ export default function MemberSubPanelMatchingPage() {
     }, [load]);
 
     return (
-        <div className="space-y-4">
+        <div className="relative space-y-4">
+            <div className="pointer-events-none absolute -top-8 right-0 h-36 w-36 rounded-full bg-violet-600/15 blur-[75px]" />
             <header className="space-y-1">
-                <p className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-emerald-400' : 'text-emerald-600'}`}>RM Survey</p>
+                <p className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-violet-300' : 'text-violet-600'}`}>RM Survey</p>
                 <MemberHeading dark={dark}>Sub Panel Matching Income</MemberHeading>
             </header>
 
@@ -51,7 +52,9 @@ export default function MemberSubPanelMatchingPage() {
             ) : null}
 
             {!loading && panelData && subData ? (
-                <MatchingIncomeTable dark={dark} variant="sub" panelData={panelData} subData={subData} />
+                <div className="rounded-[20px] border border-violet-300/20 bg-[#0b1020]/75 p-2 shadow-[0_0_26px_rgba(139,92,246,0.12)] backdrop-blur-xl">
+                    <MatchingIncomeTable dark={dark} variant="sub" panelData={panelData} subData={subData} />
+                </div>
             ) : null}
         </div>
     );

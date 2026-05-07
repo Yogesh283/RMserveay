@@ -45,8 +45,8 @@ class AdminOverviewStats extends StatsOverviewWidget
             Stat::make('Today Deposit (USD)', '$'.number_format($todayDepositUsd, 2)),
             Stat::make('Total Sub Panel Used', number_format($totalSubPanelsUsed)),
             Stat::make('Today Sub Panel Used', number_format($todaySubPanelsUsed)),
-            Stat::make('Total Super Sub Used', number_format($totalSuperSubPanelsUsed)),
-            Stat::make('Today Super Sub Used', number_format($todaySuperSubPanelsUsed)),
+            Stat::make('Total Super Panel Used', number_format($totalSuperSubPanelsUsed)),
+            Stat::make('Today Super Panel Used', number_format($todaySuperSubPanelsUsed)),
         ];
     }
 }

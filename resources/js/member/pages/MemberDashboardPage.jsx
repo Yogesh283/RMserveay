@@ -91,7 +91,7 @@ export default function MemberDashboardPage() {
             {
                 label: t('member.dashboard.earnTotal'),
                 value: fmtUsd(e.total_from_programme),
-                to: '/member/programme',
+                to: '/member/transactions',
             },
             {
                 label: t('member.dashboard.earnDirect'),
@@ -128,31 +128,54 @@ export default function MemberDashboardPage() {
 
     return (
         <div className="relative space-y-4 pb-24">
-            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0d1428] to-[#1b130a] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
-                    <div className="pointer-events-none absolute -right-7 -top-8 h-28 w-28 rounded-full bg-[#7C3AED]/25 blur-2xl" />
-                    <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
-                    <div className="relative flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-3">
-                            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#8B5CF6]/50 bg-[#7C3AED]/25 text-white shadow-[0_0_18px_rgba(124,58,237,0.3)]">
+            <div className="relative overflow-hidden rounded-[16px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0d1428] to-[#1b130a] p-2.5 shadow-[0_12px_24px_rgba(76,29,149,0.22)]">
+                <div className="pointer-events-none absolute -right-7 -top-8 h-24 w-24 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                <div className="pointer-events-none absolute -left-6 bottom-0 h-12 w-12 rounded-full bg-cyan-400/15 blur-2xl" />
+                <div className="relative">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-start gap-2">
+                            <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-violet-300/55 bg-violet-500/20 text-sm font-bold text-white shadow-[0_0_18px_rgba(124,58,237,0.4)]">
                                 {(user?.name || 'Y').charAt(0).toUpperCase()}
+                                <span className="absolute -right-0.5 top-0.5 h-2 w-2 rounded-full border border-[#0B1120] bg-emerald-400" />
                             </span>
                             <div className="min-w-0">
-                                <p className="text-xs text-slate-300">{t('member.dashboard.welcomeBack')}</p>
-                                <p className="truncate text-base font-semibold text-white">{user?.name || 'yogesh'}</p>
-                                <p className="truncate text-[11px] text-slate-400">ID: {user?.login_uid || '—'}</p>
+                                <p className="text-[10px] text-slate-300">{t('member.dashboard.welcomeBack')}</p>
+                                <p className="truncate text-sm font-semibold leading-tight text-white">{user?.name || 'yogesh'}</p>
+                                <div className="mt-1 flex items-center gap-1">
+                                    <span className="rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-300">ID: {user?.login_uid || '—'}</span>
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-300/25 bg-violet-500/15 px-1.5 py-0.5 text-[9px] text-violet-100">✓ Verified</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="max-w-[48%]">
-                            <p className="text-xs font-semibold text-white">Complete your ID Activation</p>
-                            <p className="mt-1 text-[10px] leading-snug text-slate-300">Unlock full rewards, referrals and matching income flow.</p>
-                            <Link
-                                to="/member/active-panels"
-                                className="mt-2 inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#F59E0B] px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(124,58,237,0.34)]"
-                            >
-                                ID Activation
-                                <span aria-hidden>→</span>
+                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-300/35 bg-violet-500/10 text-violet-100 shadow-[0_0_18px_rgba(124,58,237,0.22)]">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.8 1.8 3.2-3.2" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
+                        <div className="flex items-center gap-2.5">
+                            <div className="relative h-9 w-9 shrink-0 rounded-full border border-violet-300/40 bg-[#0b1020]">
+                                <div className="absolute inset-[4px] rounded-full border border-violet-300/45" />
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-violet-200">0%</div>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-white">Complete your ID Activation</p>
+                                <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-300">Unlock full rewards, referrals and matching income flow.</p>
+                            </div>
+                            <Link to="/member/active-panels" className="shrink-0 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#F59E0B] px-2 py-1.5 text-[10px] font-semibold text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
+                                Activate →
                             </Link>
+                        </div>
+                        <div className="mt-2 grid grid-cols-4 gap-1 text-center">
+                            {['Start', 'Verify', 'Submit', 'Complete'].map((step, idx) => (
+                                <div key={step} className="relative">
+                                    <span className={`mx-auto mb-1 block h-1.5 w-1.5 rounded-full ${idx === 0 ? 'bg-violet-400 shadow-[0_0_8px_rgba(168,85,247,0.7)]' : 'bg-white/20'}`} />
+                                    <p className="text-[9px] text-slate-400">{step}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -167,44 +190,44 @@ export default function MemberDashboardPage() {
             ) : null}
 
             <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0e1529]/95 !p-0" padding={false}>
-                <div className="space-y-4 p-4 sm:p-5">
-                    <div className="min-w-0 space-y-3">
+                <div className="space-y-3 p-3 sm:p-3.5">
+                    <div className="min-w-0 space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">Total Balance</p>
-                            <button type="button" className="rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-slate-300">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <button type="button" className="rounded-lg border border-white/10 bg-white/[0.04] p-1 text-slate-300">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                             </button>
                         </div>
-                        <p className="text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] sm:leading-none">
+                        <p className="text-3xl font-bold tabular-nums tracking-tight text-white sm:text-[2.1rem] sm:leading-none">
                             {mainWalletUsd != null && mainWalletUsd !== '' ? fmtUsd(mainWalletUsd) : '—'}
                         </p>
                         <RmsCard variant="inset" className="!p-0" padding={false}>
-                            <div className="flex flex-wrap items-end justify-between gap-3 p-3 sm:p-3.5">
+                            <div className="flex flex-wrap items-end justify-between gap-2.5 p-2.5 sm:p-3">
                                 <div className="min-w-0">
                                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">
                                         {t('member.dashboard.p2pWalletTitle')}
                                     </p>
-                                    <p className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">
+                                    <p className="mt-0.5 text-lg font-bold tabular-nums text-white sm:text-xl">
                                         {p2pWalletUsd != null && p2pWalletUsd !== '' ? fmtUsd(p2pWalletUsd) : '—'}
                                     </p>
                                 </div>
                                 <Link
                                     to="/member/wallet/internal"
-                                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#C4B5FD] transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] hover:text-white active:scale-[0.98]"
+                                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#C4B5FD] transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] hover:text-white active:scale-[0.98]"
                                 >
                                     Main ↔ P2P
                                 </Link>
                             </div>
                         </RmsCard>
-                        <div className="flex flex-wrap gap-2 pt-0.5">
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
                             <RmsButtonLink
                                 to="/member/wallet/deposit"
                                 variant="neon"
                                 size="sm"
-                                className="!w-auto flex-1 min-w-[140px] rounded-xl"
+                                className="!w-auto flex-1 min-w-[130px] rounded-xl !py-2"
                             >
                                 {t('member.dashboard.deposit')}
                             </RmsButtonLink>
@@ -212,7 +235,7 @@ export default function MemberDashboardPage() {
                                 to="/member/wallet/withdraw"
                                 variant="ghost"
                                 size="sm"
-                                className="!w-auto flex-1 min-w-[120px] rounded-xl border-white/15 bg-white/[0.06] hover:border-[#8E6BFF]/40 hover:bg-white/[0.1]"
+                                className="!w-auto flex-1 min-w-[110px] rounded-xl border-white/15 bg-white/[0.06] hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] !py-2"
                             >
                                 {t('member.dashboard.withdrawal')}
                             </RmsButtonLink>
@@ -390,15 +413,6 @@ export default function MemberDashboardPage() {
                             </div>
                         </div>
                     </RmsCard>
-                </Link>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                <Link
-                    to="/member/programme"
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/10 bg-[#111827] px-4 py-3 text-sm font-semibold text-white transition hover:border-[#8E6BFF]/35 active:scale-[0.98] min-w-[140px]"
-                >
-                    {t('member.dashboard.incomeProgramme')}
                 </Link>
             </div>
 

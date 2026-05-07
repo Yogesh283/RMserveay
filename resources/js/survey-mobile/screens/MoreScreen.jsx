@@ -6,11 +6,11 @@ const menuItems = [
     { to: '/survey/support', title: 'Support tickets', sub: 'Help and issue tracking', icon: '✦', glow: 'blue' },
     { to: '/survey/team', title: 'Active panels', sub: 'Activation progress panel', icon: '◎', glow: 'cyan' },
     { to: '/survey/dashboard', title: 'Sub panels', sub: 'Sub panel management', icon: '◈', glow: 'purple' },
-    { to: '/survey/surveys', title: 'Super sub', sub: 'Super hierarchy overview', icon: '⬡', glow: 'orange' },
+    { to: '/survey/surveys', title: 'Super panel', sub: 'Super hierarchy overview', icon: '⬡', glow: 'orange' },
     { to: '/survey/account', title: 'Profile', sub: 'Profile and account details', icon: '◉', glow: 'pink' },
     { to: '/survey/panel-matching', title: 'Panel matching', sub: 'Panel matching insights', icon: '◌', glow: 'green' },
     { to: '/survey/sub-panel-matching', title: 'Sub-panel matching', sub: 'Sub matching network', icon: '⌁', glow: 'cyan' },
-    { to: '/survey/super-sub-panel', title: 'Super sub-panel', sub: 'Super matching analytics', icon: '⬢', glow: 'orange' },
+    { to: '/survey/super-sub-panel', title: 'Super panel', sub: 'Super matching analytics', icon: '⬢', glow: 'orange' },
 ];
 
 const glowStyles = {

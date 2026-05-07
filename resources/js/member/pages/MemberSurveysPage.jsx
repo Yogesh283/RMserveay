@@ -112,7 +112,7 @@ function tierLockHint(tier) {
         case 'sub_panel':
             return 'Unlock: hold at least one sub panel.';
         case 'super_panel':
-            return 'Unlock: hold at least one super sub panel.';
+            return 'Unlock: hold at least one super panel.';
         default:
             return '';
     }

@@ -75,7 +75,7 @@ export default function MemberDirectIncomePage() {
                             </span>
                         </li>
                         <li className="flex flex-wrap items-center justify-between gap-2">
-                            <span>At least 1 panel slot (sub or super sub panel purchased)</span>
+                            <span>At least 1 panel slot (sub or super panel purchased)</span>
                             <span className={data.requirements.has_panel_slot ? 'text-emerald-500' : 'text-amber-600'}>{data.requirements.has_panel_slot ? 'Yes' : 'No'}</span>
                         </li>
                     </ul>
@@ -101,7 +101,7 @@ export default function MemberDirectIncomePage() {
                         'Requirements to earn this income:',
                         'You must be an active panelist (activation + minimum panel fee completed)',
                         '$1 activation fee paid',
-                        'At least one panel slot active — meaning at least one sub or super sub panel purchased',
+                        'At least one panel slot active — meaning at least one sub or super panel purchased',
                     ]}
                 />
             </section>

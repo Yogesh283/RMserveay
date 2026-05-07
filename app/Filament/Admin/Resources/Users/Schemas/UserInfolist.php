@@ -2,11 +2,66 @@
 
 namespace App\Filament\Admin\Resources\Users\Schemas;
 
+use App\Models\User;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
 class UserInfolist
 {
+    private const MAX_TREE_DEPTH = 3;
+
+    private static function nodeBadge(?User $user, string $side): string
+    {
+        if (! $user) {
+            return "<span style='color:#94a3b8;'>{$side}: -</span>";
+        }
+
+        $name = e($user->name ?? '-');
+        $code = e($user->login_uid ?? '#'.$user->id);
+
+        return "<strong>{$side}</strong>: {$name} <span style='color:#94a3b8;'>({$code})</span>";
+    }
+
+    private static function buildTeamTreeHtml(User $root): string
+    {
+        $rootLabel = e($root->name ?? '-');
+        $rootCode = e($root->login_uid ?? '#'.$root->id);
+
+        $html = "<div style='line-height:1.55;'>";
+        $html .= "<div><strong>Root</strong>: {$rootLabel} <span style='color:#94a3b8;'>({$rootCode})</span></div>";
+        $html .= self::renderChildren($root, 1);
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    private static function renderChildren(User $parent, int $depth): string
+    {
+        if ($depth > self::MAX_TREE_DEPTH) {
+            return '';
+        }
+
+        $left = $parent->left_child_id ? User::query()->find($parent->left_child_id) : null;
+        $right = $parent->right_child_id ? User::query()->find($parent->right_child_id) : null;
+
+        if (! $left && ! $right) {
+            return '';
+        }
+
+        $html = "<ul style='margin:6px 0 0 14px; padding-left:12px; border-left:1px solid #334155;'>";
+        $html .= "<li style='margin:2px 0;'>".self::nodeBadge($left, 'L').'</li>';
+        if ($left) {
+            $html .= self::renderChildren($left, $depth + 1);
+        }
+        $html .= "<li style='margin:2px 0;'>".self::nodeBadge($right, 'R').'</li>';
+        if ($right) {
+            $html .= self::renderChildren($right, $depth + 1);
+        }
+        $html .= '</ul>';
+
+        return $html;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -41,6 +96,11 @@ class UserInfolist
                     ->placeholder('-'),
                 TextEntry::make('binary_side')
                     ->placeholder('-'),
+                TextEntry::make('team_structure_tree')
+                    ->label('Team structure tree')
+                    ->state(fn (User $record): string => self::buildTeamTreeHtml($record))
+                    ->html()
+                    ->columnSpanFull(),
                 TextEntry::make('left_child_id')
                     ->numeric()
                     ->placeholder('-'),

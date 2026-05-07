@@ -19,7 +19,7 @@ return [
 
     'super_sub_panel_entry_fee' => env('SELF_SURVEY_SUPER_SUB_FEE_USD', '100.00'),
 
-    'super_sub_panel_per_survey_each' => env('SELF_SURVEY_SUPER_SUB_PER_SURVEY_USD', '100.00'),
+    'super_sub_panel_per_survey_each' => env('SELF_SURVEY_SUPER_SUB_PER_SURVEY_USD', '10.00'),
 
     'max_sub_panels' => (int) env('SELF_SURVEY_MAX_SUB_PANELS', 9),
 
