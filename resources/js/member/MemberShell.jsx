@@ -41,15 +41,15 @@ const primaryNavMoreMobileExtraConfig = [
 ];
 
 const moreMenuMetaByRoute = {
-    '/member/transactions': { subtitle: 'Wallet and earning history', glow: 'from-[#7C3AED]/24 to-[#3B82F6]/10', ring: 'ring-[#8B5CF6]/40' },
-    '/member/support-tickets': { subtitle: 'Help and issue tracking', glow: 'from-[#3B82F6]/24 to-[#06B6D4]/10', ring: 'ring-[#38BDF8]/40' },
-    '/member/active-panels': { subtitle: 'Activation progress panel', glow: 'from-[#06B6D4]/24 to-[#0EA5E9]/10', ring: 'ring-cyan-400/40' },
-    '/member/sub-panels': { subtitle: 'Sub panel management', glow: 'from-[#7C3AED]/24 to-[#A855F7]/10', ring: 'ring-fuchsia-400/35' },
-    '/member/super-sub-panels': { subtitle: 'Super hierarchy overview', glow: 'from-[#F59E0B]/24 to-[#FB923C]/10', ring: 'ring-amber-400/40' },
-    '/member/profile': { subtitle: 'Profile and account details', glow: 'from-[#EC4899]/20 to-[#A855F7]/10', ring: 'ring-pink-400/35' },
-    '/member/panel-matching': { subtitle: 'Panel matching insights', glow: 'from-emerald-500/20 to-[#06B6D4]/10', ring: 'ring-emerald-400/35' },
-    '/member/sub-panel-matching': { subtitle: 'Sub matching network', glow: 'from-cyan-500/22 to-[#3B82F6]/10', ring: 'ring-cyan-400/35' },
-    '/member/super-sub-panel-matching': { subtitle: 'Super matching analytics', glow: 'from-[#F59E0B]/24 to-[#FB7185]/10', ring: 'ring-orange-400/35' },
+    '/member/transactions': { subtitle: 'Wallet and earnings', glow: 'from-[#7C3AED]/28 to-[#3B82F6]/12', ring: 'ring-[#8B5CF6]/45' },
+    '/member/support-tickets': { subtitle: 'Help and issues', glow: 'from-[#6D28D9]/28 to-[#8B5CF6]/12', ring: 'ring-[#A78BFA]/40' },
+    '/member/active-panels': { subtitle: 'Activation status', glow: 'from-[#7C3AED]/28 to-[#4C1D95]/12', ring: 'ring-[#8B5CF6]/45' },
+    '/member/sub-panels': { subtitle: 'Sub panel management', glow: 'from-[#8B5CF6]/26 to-[#4C1D95]/10', ring: 'ring-[#A78BFA]/40' },
+    '/member/super-sub-panels': { subtitle: 'Super hierarchy', glow: 'from-[#9333EA]/26 to-[#6D28D9]/10', ring: 'ring-[#C4B5FD]/35' },
+    '/member/profile': { subtitle: 'Profile and security', glow: 'from-[#7C3AED]/26 to-[#A855F7]/10', ring: 'ring-[#C4B5FD]/35' },
+    '/member/panel-matching': { subtitle: 'Matching rewards', glow: 'from-[#5B21B6]/26 to-[#7C3AED]/10', ring: 'ring-[#8B5CF6]/40' },
+    '/member/sub-panel-matching': { subtitle: 'Sub matching analytics', glow: 'from-[#6D28D9]/26 to-[#3B82F6]/10', ring: 'ring-[#A78BFA]/35' },
+    '/member/super-sub-panel-matching': { subtitle: 'Super matching analytics', glow: 'from-[#7C3AED]/26 to-[#EC4899]/10', ring: 'ring-[#C4B5FD]/35' },
 };
 
 const MORE_PATH_PREFIXES = [
@@ -572,32 +572,22 @@ export default function MemberShell() {
                         onClick={() => setMoreSheetOpen(false)}
                         aria-label={t('common.closeMenu')}
                     />
-                    <div className="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-[28px] border border-white/[0.12] bg-gradient-to-b from-[#050816]/98 via-[#0A1020]/98 to-[#0B1120]/98 shadow-[0_-24px_56px_rgba(0,0,0,0.6)]">
-                        <div className="flex justify-center pt-3 pb-3">
-                            <span className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#7C3AED]/80 to-[#3B82F6]/70 shadow-[0_0_16px_rgba(124,58,237,0.55)]" />
+                    <div className="absolute inset-x-0 bottom-0 max-h-[84vh] overflow-y-auto rounded-t-[22px] border border-white/[0.12] bg-gradient-to-b from-[#040712]/98 via-[#090f1f]/98 to-[#0a1120]/98 shadow-[0_-20px_44px_rgba(0,0,0,0.62)]">
+                        <div className="pointer-events-none absolute inset-0">
+                            <span className="absolute left-6 top-14 h-2 w-2 rounded-full bg-violet-300/80 blur-[1px]" />
+                            <span className="absolute right-8 top-24 h-1.5 w-1.5 rounded-full bg-fuchsia-300/70 blur-[1px]" />
+                            <span className="absolute right-16 top-10 h-1 w-1 rounded-full bg-indigo-300/80 blur-[1px]" />
                         </div>
-                        <div className="mx-3 mb-2 rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-3 py-2.5 backdrop-blur-xl">
-                            <div className="flex items-center justify-between gap-2.5">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <AppLogo alt="" className="h-8 w-8 shrink-0 rounded-lg" />
-                                    <p className="truncate text-[13px] font-bold tracking-[0.12em] text-white">RM SURVEY</p>
-                                </div>
-                                <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px]">
-                                    <HomeLanguageSwitcher variant="compact" density="tight" />
-                                </div>
-                                <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#8B5CF6]/65 bg-gradient-to-br from-[#7C3AED]/40 to-[#3B82F6]/25 text-[11px] font-semibold text-white shadow-[0_0_14px_rgba(124,58,237,0.45)]">
-                                    Y
-                                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0B1120] bg-emerald-400" />
-                                </span>
-                            </div>
+                        <div className="flex justify-center pb-1.5 pt-2">
+                            <span className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#7C3AED]/80 to-[#3B82F6]/70 shadow-[0_0_14px_rgba(124,58,237,0.5)]" />
                         </div>
-                        <div className="relative overflow-hidden px-4 pb-3 pt-1 text-center">
+                        <div className="relative overflow-hidden px-3 pb-2 pt-0.5 text-center">
                             <div className="pointer-events-none absolute left-6 top-2 h-2 w-2 rounded-full bg-[#8B5CF6]/70 blur-[1px]" />
                             <div className="pointer-events-none absolute right-8 top-6 h-1.5 w-1.5 rounded-full bg-cyan-300/70 blur-[1px]" />
-                            <p className="text-[16px] font-bold tracking-tight text-white">More Options</p>
-                            <p className="mt-1 text-[11px] text-[#94A3B8]">Manage your account & earnings</p>
+                            <p className="text-[14px] font-bold tracking-tight text-white">More Options</p>
+                            <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account & earnings</p>
                         </div>
-                        <ul className="grid grid-cols-2 gap-2.5 px-3 pb-4">
+                        <ul className="grid auto-rows-fr grid-cols-2 gap-1.5 px-2 pb-2.5">
                             {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }, idx) => (
                                 <li key={to} className={idx === primaryNavMoreItemsMobile.length - 1 && primaryNavMoreItemsMobile.length % 2 === 1 ? 'col-span-2' : ''}>
                                     <NavLink
@@ -611,11 +601,11 @@ export default function MemberShell() {
                                             };
                                             return (
                                             [
-                                                'group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-300 backdrop-blur-xl',
+                                                'group relative flex h-full min-h-[70px] items-start overflow-hidden rounded-lg border px-2 py-2 text-left transition-all duration-300 backdrop-blur-xl',
                                                 'bg-[linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]',
                                                 isActive
                                                     ? `border-white/20 text-white ring-1 ${meta.ring} shadow-[0_12px_30px_rgba(0,0,0,0.48)]`
-                                                    : 'border-white/10 text-[#CBD5E1] hover:border-white/20 hover:text-white hover:shadow-[0_10px_26px_rgba(0,0,0,0.35)]',
+                                                    : 'border-white/10 text-[#CBD5E1] hover:border-violet-300/35 hover:text-white hover:shadow-[0_10px_26px_rgba(0,0,0,0.35)]',
                                             ].join(' ')
                                             );
                                         }}
@@ -625,27 +615,24 @@ export default function MemberShell() {
                                             return (
                                             <>
                                                 <div className={`pointer-events-none absolute -left-8 top-1/2 h-20 w-20 -translate-y-1/2 rounded-full bg-gradient-to-r ${meta.glow} opacity-45 blur-2xl`} />
-                                                <div className="flex items-start gap-2.5">
+                                                <div className="flex items-start gap-1.5">
                                                     <span
                                                         className={[
-                                                            'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-white/[0.04] shadow-[0_0_18px_rgba(124,58,237,0.18)]',
+                                                            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-white/[0.04] shadow-[0_0_14px_rgba(124,58,237,0.15)]',
                                                             isActive ? 'border-white/25' : 'border-white/15',
                                                         ].join(' ')}
                                                     >
                                                         <Icon active={isActive} />
                                                     </span>
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-[13px] font-semibold">{label}</p>
-                                                        <p className="mt-0.5 line-clamp-1 text-[10px] text-[#94A3B8]">{meta.subtitle}</p>
+                                                        <p className="truncate text-[11px] font-semibold">{label}</p>
+                                                        <p className="mt-0.5 line-clamp-1 text-[9px] text-[#94A3B8]">{meta.subtitle}</p>
                                                     </div>
-                                                    <svg
-                                                        className="mt-1 h-4 w-4 shrink-0 text-[#A78BFA] transition group-hover:translate-x-0.5"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
+                                                    <span className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border border-violet-300/20 bg-violet-500/10 text-[#A78BFA] transition group-hover:translate-x-0.5 group-hover:border-violet-300/45 group-hover:bg-violet-500/20">
+                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </span>
                                                 </div>
                                             </>
                                             );
@@ -654,24 +641,24 @@ export default function MemberShell() {
                                 </li>
                             ))}
                         </ul>
-                        <div className="border-t border-white/[0.08] px-4 py-4">
-                            <div className="relative overflow-hidden rounded-2xl border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)]">
+                        <div className="border-t border-white/[0.08] px-2.5 py-2.5">
+                            <div className="relative overflow-hidden rounded-lg border border-[#8B5CF6]/28 bg-gradient-to-r from-[#18122b]/95 to-[#111a2f]/95 p-2 shadow-[0_8px_18px_rgba(0,0,0,0.35)]">
                                 <div className="pointer-events-none absolute -left-6 top-1/2 h-16 w-16 -translate-y-1/2 rounded-full bg-[#7C3AED]/25 blur-2xl" />
-                                <div className="relative flex items-start gap-2.5">
-                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#8B5CF6]/35 bg-[#7C3AED]/20 text-[#DDD6FE] shadow-[0_0_20px_rgba(124,58,237,0.28)]">
+                                <div className="relative flex items-start gap-1.5">
+                                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#8B5CF6]/35 bg-[#7C3AED]/20 text-[#DDD6FE] shadow-[0_0_16px_rgba(124,58,237,0.22)]">
                                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7h18M5 7l1 10a2 2 0 002 2h8a2 2 0 002-2l1-10M9 11v4m6-4v4" />
                                         </svg>
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-bold text-white">Full Income Programme</p>
-                                        <p className="mt-0.5 text-[11px] text-[#A0AEC0]">Unlock all earning opportunities</p>
+                                        <p className="text-[12px] font-bold text-white">Full Income Programme</p>
+                                        <p className="mt-0.5 text-[10px] text-[#A0AEC0]">Unlock all earning opportunities</p>
                                     </div>
                                 </div>
                                 <NavLink
                                     to="/member/programme"
                                     onClick={() => setMoreSheetOpen(false)}
-                                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.35)] ring-1 ring-[#A78BFA]/35 hover:brightness-110"
+                                    className="mt-2 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2 text-[12px] font-semibold text-white shadow-[0_8px_18px_rgba(124,58,237,0.28)] ring-1 ring-[#A78BFA]/35 hover:brightness-110"
                                 >
                                     {t('member.fullIncomeProgramme')}
                                     <span aria-hidden>→</span>
