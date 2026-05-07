@@ -801,7 +801,11 @@ export default function MemberTeamPage() {
                             tone="active"
                         />
                         <StatCard label={t('member.team.statYourSubPanels')} value={data.self.sub_panel_count} tone="sub" />
-                        <StatCard label={t('member.team.statSuperSubPanels')} value={data.self.super_sub_panel_count} tone="super" />
+                        <StatCard
+                            label={t('member.team.statSuperSubPanels')}
+                            value={data.self.super_panel_count ?? data.self.super_sub_panel_count ?? 0}
+                            tone="super"
+                        />
                     </div>
 
                     <RmsCard variant="elevated" className="!p-3 sm:!p-4">

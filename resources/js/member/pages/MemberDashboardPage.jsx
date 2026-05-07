@@ -355,19 +355,39 @@ export default function MemberDashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-                <RmsCard variant="elevated" className="!p-3 text-center" padding={false}>
-                    <div className="p-3">
-                        <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">{t('member.dashboard.surveyCredits')}</p>
-                        <p className="mt-1 text-sm font-bold tabular-nums text-white">{e ? fmtUsd(e.survey_credits) : '—'}</p>
-                        <p className="mt-0.5 text-[9px] text-[#A0AEC0]">{t('member.dashboard.payouts', { count: q?.survey_credits_count ?? 0 })}</p>
+                <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-emerald-400/20 !bg-[#0f162b]/90" padding={false}>
+                    <div className="flex items-start gap-2">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/20 to-[#06B6D4]/10 shadow-[0_0_26px_rgba(16,185,129,0.18)]">
+                            <svg className="h-5 w-5 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-2.5 0-4.5 1.7-4.5 3.8S9.5 15.6 12 15.6s4.5-1.7 4.5-3.8S14.5 8 12 8z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4.8v2.1M12 16.9V19m6-7.2h-2.1M8.1 11.8H6m9.9-4.8l-1.5 1.5M9.6 15.4 8.1 17m0-10 1.5 1.5m4.8 6.9 1.5 1.5" />
+                            </svg>
+                        </span>
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">{t('member.dashboard.surveyCredits')}</p>
+                            <p className="mt-1 text-sm font-bold tabular-nums text-white">{e ? fmtUsd(e.survey_credits) : '—'}</p>
+                            <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">{t('member.dashboard.payouts', { count: q?.survey_credits_count ?? 0 })}</p>
+                        </div>
                     </div>
                 </RmsCard>
                 <Link to="/member/surveys">
-                    <RmsCard variant="elevated" className="!p-3 text-center transition hover:ring-1 hover:ring-[#8E6BFF]/30 active:scale-[0.99]" padding={false}>
-                        <div className="p-3">
-                            <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">{t('member.dashboard.availableSurveys')}</p>
-                            <p className="mt-1 text-sm font-bold tabular-nums text-white">{q?.available_surveys_count ?? '—'}</p>
-                            <p className="mt-0.5 text-[9px] text-[#A0AEC0]">{surveySubtext}</p>
+                    <RmsCard
+                        variant="inset"
+                        className="!p-3 !rounded-[22px] !border-[#8E6BFF]/25 !bg-[#0f162b]/90 transition hover:ring-1 hover:ring-[#8E6BFF]/30 active:scale-[0.99]"
+                        padding={false}
+                    >
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#8E6BFF]/35 bg-gradient-to-br from-[#8E6BFF]/25 to-[#2563EB]/10 shadow-[0_0_26px_rgba(142,107,255,0.24)]">
+                                <svg className="h-5 w-5 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5h6M7 9h10M7 13h10M7 17h6" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="m16 17 2 2 4-4" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">{t('member.dashboard.availableSurveys')}</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{q?.available_surveys_count ?? '—'}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">{surveySubtext}</p>
+                            </div>
                         </div>
                     </RmsCard>
                 </Link>

@@ -2,14 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
-import { formatTransactionDetailRow } from '../lib/formatTransactionDetail';
-import { RmsButtonLink, RmsCard, RmsScreenTitle } from '../components/rms';
+import { RmsCard } from '../components/rms';
 
-function txTypeLabel(type, t) {
-    const k = `member.transactionsPage.types.${type}`;
-    const tr = t(k);
-    if (tr !== k) return tr;
-    return String(type).replace(/_/g, ' ');
+function IconArrow() {
+    return (
+        <svg className="h-4 w-4 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+    );
 }
 
 export default function MemberWalletHubPage() {
@@ -47,102 +47,151 @@ export default function MemberWalletHubPage() {
 
     const quickLinks = useMemo(
         () => [
-            { to: '/member/wallet/deposit', label: t('member.walletHub.deposit') },
-            { to: '/member/wallet/internal', label: t('member.ui.mainP2p') },
-            { to: '/member/wallet/p2p', label: t('member.walletHub.p2pSendQr') },
+            {
+                to: '/member/wallet/deposit',
+                label: t('member.walletHub.deposit'),
+                subtitle: 'Top up your main wallet',
+                icon: (
+                    <svg className="h-5 w-5 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
+                    </svg>
+                ),
+            },
+            {
+                to: '/member/wallet/internal',
+                label: t('member.ui.mainP2p'),
+                subtitle: 'Move balance instantly',
+                icon: (
+                    <svg className="h-5 w-5 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h11m0 0-3-3m3 3-3 3M17 16H6m0 0 3 3m-3-3 3-3" />
+                    </svg>
+                ),
+            },
+            {
+                to: '/member/wallet/p2p',
+                label: t('member.walletHub.p2pSendQr'),
+                subtitle: 'Send by code or QR',
+                icon: (
+                    <svg className="h-5 w-5 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 14h2m4 0h-2m-2 2v2m4-2v2m-2 2h2" />
+                    </svg>
+                ),
+            },
         ],
         [t, i18n.resolvedLanguage],
     );
 
+    const navItems = useMemo(
+        () => [
+            { to: '/member/dashboard', label: 'Dashboard' },
+            { to: '/member/team', label: 'Team' },
+            { to: '/member/surveys', label: 'Surveys' },
+            { to: '/member/wallet', label: 'Wallet', active: true },
+            { to: '/member/terms', label: 'More' },
+        ],
+        [],
+    );
+
     return (
-        <div className="relative space-y-6">
-            <RmsScreenTitle eyebrow={t('member.walletHub.eyebrow')} title={t('member.walletHub.title')} />
+            <div className="relative space-y-3 overflow-hidden rounded-[26px] bg-[#070b16] p-2.5 pb-24 sm:p-3">
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[90px]" />
+            <div className="pointer-events-none absolute right-0 top-20 h-52 w-52 rounded-full bg-violet-600/20 blur-[90px]" />
+            <div className="pointer-events-none absolute bottom-16 left-0 h-44 w-44 rounded-full bg-violet-500/10 blur-[90px]" />
 
             {err ? <p className="text-sm text-red-400">{err}</p> : null}
 
-            <div className="relative overflow-hidden rounded-[24px] border border-[#8E6BFF]/25 bg-gradient-to-br from-[#6C4CF1]/22 via-[#111827] to-[#0B0F1A] p-5 shadow-[0_0_40px_rgba(108,76,241,0.18)]">
-                <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[#8E6BFF]/15 blur-2xl" />
-                <p className="relative text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A0AEC0]">{t('member.walletHub.mainWalletEyebrow')}</p>
-                <p className="relative mt-2 text-3xl font-bold tabular-nums text-white">
+           
+
+            <div className="relative overflow-hidden rounded-[22px] border border-violet-400/35 bg-gradient-to-br from-white/[0.07] to-[#0b1020]/85 p-3 shadow-[0_0_32px_rgba(108,76,241,0.2)] backdrop-blur-xl">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-2xl" />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a5b4fc]">YOUR MAIN WALLET</p>
+                <p className="mt-2 text-3xl font-bold tabular-nums text-white">
                     {overview ? fmtUsd(overview.wallet_balance) : t('member.ui.dash')}
                 </p>
-                <div className="relative mt-5 flex flex-wrap gap-2">
-                    <RmsButtonLink to="/member/wallet/withdraw" variant="neon" size="sm" className="!w-auto flex-1 min-w-[120px]">
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Link
+                        to="/member/wallet/withdraw"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-3 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(168,85,247,0.4)] transition hover:brightness-110 active:scale-[0.99]"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0-7-7m7 7V3" />
+                        </svg>
                         {t('member.walletHub.withdraw')}
-                    </RmsButtonLink>
-                    <RmsButtonLink to="/member/wallet/deposit" variant="ghost" size="sm" className="!w-auto flex-1 min-w-[120px] border-[#8E6BFF]/25">
+                    </Link>
+                    <Link
+                        to="/member/wallet/deposit"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-300/45 bg-[#0a1020]/70 px-3 py-2.5 text-sm font-semibold text-violet-100 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.2),0_0_24px_rgba(139,92,246,0.16)] transition hover:border-violet-300/70 active:scale-[0.99]"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
+                        </svg>
                         {t('member.walletHub.deposit')}
-                    </RmsButtonLink>
+                    </Link>
                 </div>
             </div>
 
-            {overview ? (
-                <div className="rounded-2xl border border-white/10 bg-[#0B0F1A]/60 px-4 py-3 text-sm text-[#A0AEC0]">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400/90">{t('member.walletHub.p2pNote')}</span>
-                    <p className="mt-1.5 flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-lg font-bold tabular-nums text-emerald-400">{fmtUsd(overview.p2p_wallet_balance ?? 0)}</span>
-                        <Link to="/member/wallet/internal" className="shrink-0 text-sm font-semibold text-[#8E6BFF] hover:underline">
-                            {t('member.ui.mainP2p')}
-                        </Link>
-                    </p>
+            <RmsCard variant="elevated" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/70 !p-0 backdrop-blur-xl">
+                <div className="px-3 py-2.5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-violet-200/80">{t('member.walletHub.quickLinks')}</p>
                 </div>
-            ) : null}
-
-            <RmsCard variant="elevated" className="!p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#A0AEC0]">{t('member.walletHub.quickLinks')}</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="divide-y divide-white/10">
                     {quickLinks.map((l) => (
                         <Link
                             key={l.to}
                             to={l.to}
-                            className="rounded-2xl border border-white/10 bg-[#0B0F1A]/50 px-4 py-3 text-sm font-semibold text-white transition hover:border-[#8E6BFF]/35 active:scale-[0.98]"
+                            className="group flex items-center gap-2.5 px-3 py-3 transition hover:bg-violet-500/10"
                         >
-                            {l.label}
+                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 shadow-[0_0_16px_rgba(139,92,246,0.2)]">
+                                {l.icon}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-white">{l.label}</p>
+                                <p className="truncate text-xs text-[#94A3B8]">{l.subtitle}</p>
+                            </div>
+                            <span className="transition group-hover:translate-x-0.5">
+                                <IconArrow />
+                            </span>
                         </Link>
                     ))}
                 </div>
             </RmsCard>
 
-            {overview?.recent_transactions?.length > 0 ? (
-                <RmsCard variant="elevated" className="!p-0 overflow-hidden" padding={false}>
-                    <div className="border-b border-white/10 px-4 py-3">
-                        <p className="text-sm font-bold text-white">{t('member.walletHub.recentTitle')}</p>
+            <div className="rounded-[20px] border border-violet-300/22 bg-gradient-to-r from-[#101528]/90 via-[#101a32]/90 to-[#161736]/90 px-3 py-2.5 shadow-[0_0_24px_rgba(139,92,246,0.12)]">
+                <div className="flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/35 bg-violet-500/15 shadow-[0_0_18px_rgba(139,92,246,0.25)]">
+                        <svg className="h-5 w-5 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.8 1.8 3.2-3.2" />
+                        </svg>
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white">Safe & Secure Transactions</p>
+                        <p className="mt-0.5 text-xs text-[#94A3B8]">Every wallet operation is protected with secure verification and encrypted transfer flow.</p>
+                        <span className="mt-2 inline-flex rounded-full border border-violet-300/35 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-200">
+                            100% Secure
+                        </span>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[320px] text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-white/10 text-[#A0AEC0]">
-                                    <th className="px-4 py-2 font-semibold">{t('member.walletHub.colType')}</th>
-                                    <th className="px-4 py-2 font-semibold">{t('member.walletHub.colAmount')}</th>
-                                    <th className="px-4 py-2 font-semibold">{t('member.walletHub.colWhen')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {overview.recent_transactions.map((row) => (
-                                    <tr key={row.id} className="border-b border-white/5">
-                                        <td className="max-w-[min(100vw-3rem,280px)] px-4 py-2.5 text-[#A0AEC0] sm:max-w-none">
-                                            <div className="font-medium text-white/90">{txTypeLabel(row.type, t)}</div>
-                                            <div className="mt-1 text-[10px] leading-snug text-[#94A3B8]">{formatTransactionDetailRow(row, t)}</div>
-                                        </td>
-                                        <td
-                                            className={`px-4 py-2.5 tabular-nums font-medium ${
-                                                Number.parseFloat(row.amount) < 0 ? 'text-amber-400' : 'text-emerald-400'
-                                            }`}
-                                        >
-                                            {fmtUsd(row.amount)}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-xs text-[#A0AEC0]">
-                                            {row.created_at ? new Date(row.created_at).toLocaleString(i18n.language) : t('member.ui.dash')}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </RmsCard>
-            ) : (
-                <p className="text-sm text-[#A0AEC0]">{t('member.walletHub.noTransactions')}</p>
-            )}
+                </div>
+            </div>
+
+            <div className="fixed bottom-2 left-1/2 z-20 w-[min(460px,calc(100vw-16px))] -translate-x-1/2 rounded-[24px] border border-white/10 bg-[#0b1020]/90 p-2 shadow-[0_20px_44px_rgba(0,0,0,0.5)] backdrop-blur-xl md:hidden">
+                <div className="grid grid-cols-5 gap-1 text-[10px]">
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.label}
+                            to={item.to}
+                            className={`flex min-h-[44px] items-center justify-center rounded-xl px-1 font-semibold transition ${
+                                item.active
+                                    ? 'bg-gradient-to-br from-violet-600/60 to-fuchsia-600/50 text-white shadow-[0_0_22px_rgba(139,92,246,0.45)] ring-1 ring-violet-300/40'
+                                    : 'text-[#A0AEC0] hover:bg-white/[0.05] hover:text-white'
+                            }`}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
