@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Models\User;
+use App\Services\BinaryPlacementService;
 use App\Support\DashboardRoute;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,7 @@ class RegisteredUserController extends Controller
         }
 
         return DB::transaction(function () use ($request, $validated, $email) {
+            $placement = null;
             $sponsor = null;
             $code = $validated['sponsor_referral_code'] ?? null;
             $side = $validated['binary_side'] ?? null;
@@ -41,21 +43,14 @@ class RegisteredUserController extends Controller
                     ]);
                 }
                 if ($side === 'left' || $side === 'right') {
-                    if ($side === 'left' && $sponsor->left_child_id) {
+                    $placement = app(BinaryPlacementService::class)->findAvailableSlotInLeg($sponsor, $side);
+                    if ($placement === null) {
                         throw ValidationException::withMessages([
-                            'binary_side' => ['Left position is already filled for this sponsor.'],
-                        ]);
-                    }
-                    if ($side === 'right' && $sponsor->right_child_id) {
-                        throw ValidationException::withMessages([
-                            'binary_side' => ['Right position is already filled for this sponsor.'],
+                            'binary_side' => ['No placement slot found for this sponsor leg.'],
                         ]);
                     }
                 }
             }
-
-            $binaryParentId = ($sponsor !== null && ($side === 'left' || $side === 'right')) ? $sponsor->id : null;
-            $binarySideStored = ($side === 'left' || $side === 'right') ? $side : null;
 
             $user = User::create([
                 'name' => $validated['name'],
@@ -66,18 +61,20 @@ class RegisteredUserController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'referral_code' => User::generateReferralCode(),
                 'sponsor_id' => $sponsor?->id,
-                'binary_parent_id' => $binaryParentId,
-                'binary_side' => $binarySideStored,
+                'binary_parent_id' => $placement['parent']->id ?? null,
+                'binary_side' => $placement['side'] ?? null,
                 'profile_completed_at' => now(),
             ]);
 
-            if ($sponsor !== null && ($side === 'left' || $side === 'right')) {
-                if ($side === 'left') {
-                    $sponsor->left_child_id = $user->id;
+            if ($placement !== null) {
+                /** @var User $parent */
+                $parent = $placement['parent'];
+                if ($placement['side'] === 'left') {
+                    $parent->left_child_id = $user->id;
                 } else {
-                    $sponsor->right_child_id = $user->id;
+                    $parent->right_child_id = $user->id;
                 }
-                $sponsor->save();
+                $parent->save();
             }
 
             event(new Registered($user));

@@ -21,6 +21,7 @@ class UserRegistrationService
         $email = strtolower($validated['email']);
 
         return DB::transaction(function () use ($request, $validated, $email) {
+            $placement = null;
             $sponsor = null;
             $code = isset($validated['sponsor_referral_code']) ? strtoupper(trim((string) $validated['sponsor_referral_code'])) : null;
             $side = $validated['binary_side'] ?? null;
@@ -32,15 +33,14 @@ class UserRegistrationService
                         'sponsor_referral_code' => ['Invalid referral code.'],
                     ]);
                 }
-                if ($side === 'left' && $sponsor->left_child_id) {
-                    throw ValidationException::withMessages([
-                        'binary_side' => ['Left position is already filled for this sponsor.'],
-                    ]);
-                }
-                if ($side === 'right' && $sponsor->right_child_id) {
-                    throw ValidationException::withMessages([
-                        'binary_side' => ['Right position is already filled for this sponsor.'],
-                    ]);
+
+                if ($side === 'left' || $side === 'right') {
+                    $placement = app(BinaryPlacementService::class)->findAvailableSlotInLeg($sponsor, $side);
+                    if ($placement === null) {
+                        throw ValidationException::withMessages([
+                            'binary_side' => ['No placement slot found for this sponsor leg.'],
+                        ]);
+                    }
                 }
             }
 
@@ -54,18 +54,20 @@ class UserRegistrationService
                 'phone' => $validated['phone'] ?? null,
                 'referral_code' => User::generateReferralCode(),
                 'sponsor_id' => $sponsor?->id,
-                'binary_parent_id' => $sponsor?->id,
-                'binary_side' => $side,
+                'binary_parent_id' => $placement['parent']->id ?? null,
+                'binary_side' => $placement['side'] ?? null,
                 'profile_completed_at' => now(),
             ]);
 
-            if ($sponsor && $side) {
-                if ($side === 'left') {
-                    $sponsor->left_child_id = $user->id;
+            if ($placement !== null) {
+                /** @var User $parent */
+                $parent = $placement['parent'];
+                if ($placement['side'] === 'left') {
+                    $parent->left_child_id = $user->id;
                 } else {
-                    $sponsor->right_child_id = $user->id;
+                    $parent->right_child_id = $user->id;
                 }
-                $sponsor->save();
+                $parent->save();
             }
 
             event(new Registered($user));
