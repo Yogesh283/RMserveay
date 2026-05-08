@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -330,6 +332,27 @@ class User extends Authenticatable
     public function surveys(): HasMany
     {
         return $this->hasMany(Survey::class);
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() !== 'admin') {
+            return false;
+        }
+
+        $email = strtolower((string) $this->email);
+        $uid = strtolower((string) $this->login_uid);
+
+        $allowedEmails = array_values(array_filter(array_map(
+            static fn (string $v): string => strtolower(trim($v)),
+            explode(',', (string) env('FILAMENT_ADMIN_EMAILS', ''))
+        )));
+        $allowedUids = array_values(array_filter(array_map(
+            static fn (string $v): string => strtolower(trim($v)),
+            explode(',', (string) env('FILAMENT_ADMIN_LOGIN_UIDS', ''))
+        )));
+
+        return in_array($email, $allowedEmails, true) || in_array($uid, $allowedUids, true);
     }
 
     public function qualifiesActivePanelistIncome(): bool
