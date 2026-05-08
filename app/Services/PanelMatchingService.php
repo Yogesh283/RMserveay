@@ -123,6 +123,28 @@ class PanelMatchingService
         return (int) $sum;
     }
 
+    /**
+     * Lifetime sub-panel purchases that flowed into this earner's binary carry,
+     * split by left / right leg (immediate binary children only — same scope
+     * as `processSubPanelPurchase`).
+     *
+     * @return array{left:int,right:int}
+     */
+    public function lifetimeSubPanelBuys(User $earner): array
+    {
+        $rows = User::query()
+            ->where('binary_parent_id', $earner->id)
+            ->whereIn('binary_side', ['left', 'right'])
+            ->selectRaw('binary_side, COALESCE(SUM(sub_panel_count), 0) AS total')
+            ->groupBy('binary_side')
+            ->pluck('total', 'binary_side');
+
+        return [
+            'left' => (int) ($rows['left'] ?? 0),
+            'right' => (int) ($rows['right'] ?? 0),
+        ];
+    }
+
     public function status(User $earner): array
     {
         $max = (int) config('panel_matching.max_pairs_per_day');
@@ -134,11 +156,15 @@ class PanelMatchingService
         $carryR = (int) $earner->panel_match_carry_right;
         $pairsAvailable = min($carryL, $carryR);
         $slotsLeftToday = max(0, $max - $used);
+        $lifetime = $this->lifetimeSubPanelBuys($earner);
 
         return [
             'eligible' => $earner->qualifiesForPanelMatchingIncome(),
             'carry_left' => $carryL,
             'carry_right' => $carryR,
+            /** Lifetime cumulative left/right sub-panel buys under this earner (live). */
+            'total_left_subs' => $lifetime['left'],
+            'total_right_subs' => $lifetime['right'],
             'pairs_available' => $pairsAvailable,
             'pairs_paid_today' => $used,
             'pairs_remaining_today' => $slotsLeftToday,

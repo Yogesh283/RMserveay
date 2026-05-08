@@ -149,6 +149,27 @@ class SuperSubPanelMatchingService
         ]);
     }
 
+    /**
+     * Lifetime super-sub-panel purchases that flowed into this earner's binary carry,
+     * split by left / right leg (immediate binary children only).
+     *
+     * @return array{left:int,right:int}
+     */
+    public function lifetimeSuperSubPanelBuys(User $earner): array
+    {
+        $rows = User::query()
+            ->where('binary_parent_id', $earner->id)
+            ->whereIn('binary_side', ['left', 'right'])
+            ->selectRaw('binary_side, COALESCE(SUM(super_sub_panel_count), 0) AS total')
+            ->groupBy('binary_side')
+            ->pluck('total', 'binary_side');
+
+        return [
+            'left' => (int) ($rows['left'] ?? 0),
+            'right' => (int) ($rows['right'] ?? 0),
+        ];
+    }
+
     public function status(User $earner): array
     {
         $cap = (string) config('super_sub_panel_matching.daily_cap_usd');
@@ -168,6 +189,8 @@ class SuperSubPanelMatchingService
             ];
         }
 
+        $lifetime = $this->lifetimeSuperSubPanelBuys($earner);
+
         return [
             'eligible' => $earner->qualifiesForSuperSubPanelMatchingIncome(),
             'daily_cap_usd' => $cap,
@@ -177,6 +200,9 @@ class SuperSubPanelMatchingService
             'milestones_hit_mask' => (int) ($earner->sspm_match_day !== null && now()->isSameDay($earner->sspm_match_day) ? $earner->sspm_milestone_mask : 0),
             'carry_left' => (int) $earner->super_panel_match_carry_left,
             'carry_right' => (int) $earner->super_panel_match_carry_right,
+            /** Lifetime cumulative left/right super-sub-panel buys (live). */
+            'total_left_supers' => $lifetime['left'],
+            'total_right_supers' => $lifetime['right'],
             'pairs_available' => min((int) $earner->super_panel_match_carry_left, (int) $earner->super_panel_match_carry_right),
             'tier_rows' => $tiers,
             'income_multiplier' => $mult,

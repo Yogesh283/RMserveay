@@ -81,19 +81,52 @@ export function MatchingIncomeTable({
               }`
             : `${tdBase} border-amber-100 text-right ${paid ? 'bg-emerald-50 font-semibold text-emerald-800' : `${stripe ? 'bg-amber-50' : 'bg-amber-50/60'} text-amber-900`}`;
 
+    /**
+     * Per-tier progress cell: shows `done/required` where done is min(total, required).
+     * Renders a small green ring when the side fully meets this tier.
+     */
+    function progressCell(stripeFn, total, required, side) {
+        const done = Math.min(Math.max(0, total | 0), required);
+        const reached = done >= required && required > 0;
+        return (
+            <td className={stripeFn}>
+                <span className={`inline-flex items-center gap-1 ${reached ? (side === 'L' ? 'text-cyan-100' : 'text-fuchsia-100') : ''}`}>
+                    <span className="tabular-nums">{done}</span>
+                    <span className="opacity-60">/</span>
+                    <span className="tabular-nums opacity-80">{required}</span>
+                    {reached ? (
+                        <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                    ) : null}
+                </span>
+            </td>
+        );
+    }
+
     let rows = null;
+    let summary = null;
 
     if (variant === 'panel' && panelData) {
-        const L = panelData.carry_left ?? 0;
-        const R = panelData.carry_right ?? 0;
+        const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
+        const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
         const perPair = panelData.per_pair_income_usd;
+        summary = {
+            l: totalL,
+            r: totalR,
+            carryL: panelData.carry_left | 0,
+            carryR: panelData.carry_right | 0,
+            extraLabel: 'Pairs paid today',
+            extraValue: panelData.pairs_paid_today ?? 0,
+        };
         rows = MILESTONES.map((m, i) => {
             const stripe = i % 2 === 1;
+            const required = Math.max(1, m / 2);
             return (
                 <tr key={m} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{m}</td>
-                    <td className={cellL(stripe)}>{L}</td>
-                    <td className={cellR(stripe)}>{R}</td>
+                    {progressCell(cellL(stripe), totalL, required, 'L')}
+                    {progressCell(cellR(stripe), totalR, required, 'R')}
                     <td className={cellIncome(stripe, false)}>
                         <span className="tabular-nums text-amber-200">{fmtUsd(perPair)}</span>
                     </td>
@@ -101,18 +134,27 @@ export function MatchingIncomeTable({
             );
         });
     } else if (variant === 'sub' && panelData && subData) {
-        const L = panelData.carry_left ?? 0;
-        const R = panelData.carry_right ?? 0;
+        const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
+        const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
         const mask = subData.milestones_hit_mask ?? 0;
         const tiers = subData.tier_rows ?? [];
+        summary = {
+            l: totalL,
+            r: totalR,
+            carryL: panelData.carry_left | 0,
+            carryR: panelData.carry_right | 0,
+            extraLabel: 'Matched today',
+            extraValue: subData.cumulative_matched_panels_today ?? 0,
+        };
         rows = tiers.map((row, idx) => {
             const paid = tierPaid(mask, idx);
             const stripe = idx % 2 === 1;
+            const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (
                 <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    <td className={cellL(stripe)}>{L}</td>
-                    <td className={cellR(stripe)}>{R}</td>
+                    {progressCell(cellL(stripe), totalL, required, 'L')}
+                    {progressCell(cellR(stripe), totalR, required, 'R')}
                     <td className={cellIncome(stripe, paid)}>
                         <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
                         {paid ? (
@@ -127,18 +169,27 @@ export function MatchingIncomeTable({
             );
         });
     } else if (variant === 'super' && superData) {
-        const L = superData.carry_left ?? 0;
-        const R = superData.carry_right ?? 0;
+        const totalL = (superData.total_left_supers ?? superData.carry_left) | 0;
+        const totalR = (superData.total_right_supers ?? superData.carry_right) | 0;
         const mask = superData.milestones_hit_mask ?? 0;
         const tiers = superData.tier_rows ?? [];
+        summary = {
+            l: totalL,
+            r: totalR,
+            carryL: superData.carry_left | 0,
+            carryR: superData.carry_right | 0,
+            extraLabel: 'Matched today',
+            extraValue: superData.cumulative_matched_panels_today ?? 0,
+        };
         rows = tiers.map((row, idx) => {
             const paid = tierPaid(mask, idx);
             const stripe = idx % 2 === 1;
+            const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (
                 <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    <td className={cellL(stripe)}>{L}</td>
-                    <td className={cellR(stripe)}>{R}</td>
+                    {progressCell(cellL(stripe), totalL, required, 'L')}
+                    {progressCell(cellR(stripe), totalR, required, 'R')}
                     <td className={cellIncome(stripe, paid)}>
                         <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
                         {paid ? (
@@ -158,8 +209,34 @@ export function MatchingIncomeTable({
         return null;
     }
 
+    const summaryChipBase = dark
+        ? 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:text-xs'
+        : 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-slate-700 sm:text-xs';
+
     return (
         <div className={card}>
+            {summary ? (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className={`${summaryChipBase} ${dark ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50'}`}>
+                        <span className="opacity-70">Left:</span>
+                        <span className="tabular-nums">{summary.l}</span>
+                        <span className="opacity-50">·</span>
+                        <span className="text-[10px] opacity-70">unmatched</span>
+                        <span className="tabular-nums">{summary.carryL}</span>
+                    </span>
+                    <span className={`${summaryChipBase} ${dark ? 'border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-100' : 'border-fuchsia-300 bg-fuchsia-50'}`}>
+                        <span className="opacity-70">Right:</span>
+                        <span className="tabular-nums">{summary.r}</span>
+                        <span className="opacity-50">·</span>
+                        <span className="text-[10px] opacity-70">unmatched</span>
+                        <span className="tabular-nums">{summary.carryR}</span>
+                    </span>
+                    <span className={`${summaryChipBase} ${dark ? 'border-amber-400/30 bg-amber-500/10 text-amber-100' : 'border-amber-300 bg-amber-50'}`}>
+                        <span className="opacity-70">{summary.extraLabel}:</span>
+                        <span className="tabular-nums">{summary.extraValue}</span>
+                    </span>
+                </div>
+            ) : null}
             <div className={embedded ? 'overflow-x-auto' : 'overflow-x-auto rounded-xl ring-1 ring-white/10'}>
                 <table className={`w-full min-w-[320px] border-collapse ${comfortable ? 'text-base' : 'text-sm'}`}>
                     <thead>
