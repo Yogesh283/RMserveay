@@ -82,8 +82,8 @@ export function MatchingIncomeTable({
             : `${tdBase} border-amber-100 text-right ${paid ? 'bg-emerald-50 font-semibold text-emerald-800' : `${stripe ? 'bg-amber-50' : 'bg-amber-50/60'} text-amber-900`}`;
 
     /**
-     * Per-tier progress cell: shows `done/required` where done is min(total, required).
-     * Renders a small green ring when the side fully meets this tier.
+     * Per-tier progress cell: shows the live count (capped at required for the tier).
+     * Adds a small green check when the side fully meets this tier.
      */
     function progressCell(stripeFn, total, required, side) {
         const done = Math.min(Math.max(0, total | 0), required);
@@ -92,8 +92,6 @@ export function MatchingIncomeTable({
             <td className={stripeFn}>
                 <span className={`inline-flex items-center gap-1 ${reached ? (side === 'L' ? 'text-cyan-100' : 'text-fuchsia-100') : ''}`}>
                     <span className="tabular-nums">{done}</span>
-                    <span className="opacity-60">/</span>
-                    <span className="tabular-nums opacity-80">{required}</span>
                     {reached ? (
                         <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
