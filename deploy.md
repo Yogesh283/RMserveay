@@ -254,3 +254,27 @@ git pull --ff-only origin main
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FILAMENT_ADMIN_EMAILS=support@rmsurveyai.com
+FILAMENT_ADMIN_LOGIN_UIDS=admin001

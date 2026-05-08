@@ -296,6 +296,9 @@ class MemberTeamService
             'super_sub_panel_count' => $super,
             'is_active' => $active,
             'kind' => $super > 0 ? 'super' : ($sub > 0 ? 'sub' : 'member'),
+            /** Tree clients use these to show "click to expand" on truncated leaves. */
+            'has_left' => $u->left_child_id !== null,
+            'has_right' => $u->right_child_id !== null,
         ];
 
         if ($remainingDepth === 0) {

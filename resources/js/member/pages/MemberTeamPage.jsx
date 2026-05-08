@@ -159,7 +159,7 @@ function StatCard({ label, value, hint, tone = 'neutral' }) {
     );
 }
 
-function NodeChip({ node }) {
+function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChildren = false }) {
     const { t } = useTranslation();
     const superN = node.super_sub_panel_count > 0;
     const subOnly = !superN && node.sub_panel_count > 0;
@@ -171,9 +171,23 @@ function NodeChip({ node }) {
           ? 'border-sky-400/45 bg-sky-500/10 text-sky-50'
           : 'border-white/15 bg-white/[0.06] text-white';
 
+    const interactive = typeof onClick === 'function' && hasChildren;
+    const cursorCls = interactive ? 'cursor-pointer hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
+
+    const Wrapper = interactive ? 'button' : 'div';
+    const wrapperProps = interactive
+        ? {
+              type: 'button',
+              onClick,
+              'aria-expanded': isExpanded,
+              'aria-label': isExpanded ? `Collapse ${node.login_uid || node.name}` : `Expand ${node.login_uid || node.name}`,
+          }
+        : {};
+
     return (
-        <div
-            className={`flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.34)] ring-offset-1 ring-offset-[#0b0f1a] sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_8px_28px_rgba(0,0,0,0.38)] sm:ring-offset-2 ${tierStyle} ${ring}`}
+        <Wrapper
+            {...wrapperProps}
+            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.34)] ring-offset-1 ring-offset-[#0b0f1a] transition sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_8px_28px_rgba(0,0,0,0.38)] sm:ring-offset-2 ${tierStyle} ${ring} ${cursorCls}`}
         >
             <p className="max-w-[92%] truncate text-[9px] font-semibold leading-none sm:text-[11px] sm:leading-tight">
                 {node.login_uid || node.name || t('member.ui.dash')}
@@ -202,7 +216,27 @@ function NodeChip({ node }) {
             <p className="max-w-[94%] truncate text-[8px] leading-none text-white/55 sm:text-[10px] sm:leading-tight">
                 {t('member.team.nodeSubSuper', { sub: node.sub_panel_count, super: node.super_sub_panel_count })}
             </p>
-        </div>
+            {hasChildren ? (
+                <span
+                    className={`absolute -bottom-1 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold leading-none shadow-[0_4px_10px_rgba(0,0,0,0.4)] sm:-bottom-1.5 sm:right-1.5 sm:h-6 sm:w-6 sm:text-[12px] ${
+                        isExpanded
+                            ? 'border-emerald-300/55 bg-emerald-500/85 text-white'
+                            : 'border-violet-300/55 bg-violet-500/85 text-white'
+                    }`}
+                    aria-hidden
+                >
+                    {isLoading ? (
+                        <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
+                        </svg>
+                    ) : isExpanded ? (
+                        '−'
+                    ) : (
+                        '+'
+                    )}
+                </span>
+            ) : null}
+        </Wrapper>
     );
 }
 
@@ -392,33 +426,90 @@ function buildTreeLegMatchingRows(legs, t) {
     ];
 }
 
-function TreeNode({ node }) {
+function EmptyNodeSlot() {
+    const { t } = useTranslation();
+    return (
+        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[9px] text-[#64748B] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+            {t('member.ui.empty')}
+        </div>
+    );
+}
+
+function LoadingNodeSlot() {
+    return (
+        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/45 bg-violet-500/[0.06] text-[9px] text-violet-200/85 sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+                <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
+            </svg>
+        </div>
+    );
+}
+
+function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
     const { t } = useTranslation();
     if (!node) {
-        return (
-            <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[9px] text-[#64748B] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
-                {t('member.ui.empty')}
-            </div>
-        );
+        return <EmptyNodeSlot />;
     }
+
+    const hasChildren = Boolean(node.has_left || node.has_right);
+    const isExpanded = hasChildren && expandedIds.has(node.id);
+    const isLoading = loadingIds.has(node.id);
 
     return (
         <div className="flex flex-col items-center gap-1.5 sm:gap-2.5">
-            <NodeChip node={node} />
-            {node.left || node.right ? (
+            <NodeChip
+                node={node}
+                onClick={hasChildren ? () => onToggle(node) : undefined}
+                isExpanded={isExpanded}
+                isLoading={isLoading}
+                hasChildren={hasChildren}
+            />
+            {hasChildren && isExpanded ? (
                 <div className="flex gap-2.5 border-t border-white/[0.12] pt-2 sm:gap-10 sm:pt-4">
                     <div className="flex flex-col items-center gap-1 sm:gap-1.5">
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-sky-300/95 sm:text-[10px]">{t('member.ui.left')}</span>
-                        <TreeNode node={node.left} />
+                        {node.has_left ? (
+                            node.left ? (
+                                <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                            ) : (
+                                <LoadingNodeSlot />
+                            )
+                        ) : (
+                            <EmptyNodeSlot />
+                        )}
                     </div>
                     <div className="flex flex-col items-center gap-1 sm:gap-1.5">
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-300/95 sm:text-[10px]">{t('member.ui.right')}</span>
-                        <TreeNode node={node.right} />
+                        {node.has_right ? (
+                            node.right ? (
+                                <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                            ) : (
+                                <LoadingNodeSlot />
+                            )
+                        ) : (
+                            <EmptyNodeSlot />
+                        )}
                     </div>
                 </div>
             ) : null}
         </div>
     );
+}
+
+/** Replace a node in the tree with a fresh subtree (immutable). */
+function replaceTreeNode(root, id, replacement) {
+    if (!root) {
+        return root;
+    }
+    if (root.id === id) {
+        return replacement;
+    }
+    const nextLeft = replaceTreeNode(root.left, id, replacement);
+    const nextRight = replaceTreeNode(root.right, id, replacement);
+    if (nextLeft === root.left && nextRight === root.right) {
+        return root;
+    }
+    return { ...root, left: nextLeft, right: nextRight };
 }
 
 function totalTeamTableCaption(tab, t) {
@@ -438,10 +529,13 @@ export default function MemberTeamPage() {
     const { t, i18n } = useTranslation();
     const [data, setData] = useState(null);
     const [tree, setTree] = useState(null);
-    const [depth, setDepth] = useState(4);
+    const [depth, setDepth] = useState(2);
     const [showTree, setShowTree] = useState(false);
     const [err, setErr] = useState(null);
     const [treeErr, setTreeErr] = useState(null);
+    /** Per-node expanded / fetch state for click-to-open binary tree. */
+    const [expandedIds, setExpandedIds] = useState(() => new Set());
+    const [loadingIds, setLoadingIds] = useState(() => new Set());
     const [totalTeamTab, setTotalTeamTab] = useState('active');
     const [directExpanded, setDirectExpanded] = useState(false);
     const [treePreviewExpanded, setTreePreviewExpanded] = useState(true);
@@ -481,12 +575,72 @@ export default function MemberTeamPage() {
             await prepareSanctum();
             const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth } });
             setTree(json.tree);
+            /** Root is auto-expanded; deeper nodes require a click. */
+            setExpandedIds(json.tree?.id != null ? new Set([json.tree.id]) : new Set());
+            setLoadingIds(new Set());
             setShowTree(true);
             setTreePreviewExpanded(true);
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
         }
     }, [depth, t]);
+
+    const fetchSubtree = useCallback(async (nodeId) => {
+        setLoadingIds((prev) => {
+            const next = new Set(prev);
+            next.add(nodeId);
+            return next;
+        });
+        try {
+            await prepareSanctum();
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', {
+                params: { node_id: nodeId, depth: 2 },
+            });
+            if (json?.tree) {
+                setTree((prev) => replaceTreeNode(prev, nodeId, json.tree));
+            }
+        } catch (e) {
+            setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
+        } finally {
+            setLoadingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(nodeId);
+                return next;
+            });
+        }
+    }, [t]);
+
+    const toggleTreeNode = useCallback(
+        (node) => {
+            if (!node) {
+                return;
+            }
+            const id = node.id;
+            const hasChildren = Boolean(node.has_left || node.has_right);
+            if (!hasChildren) {
+                return;
+            }
+
+            setExpandedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) {
+                    next.delete(id);
+                } else {
+                    next.add(id);
+                }
+                return next;
+            });
+
+            /** First-time expand: pull this subtree if its children weren't fetched yet. */
+            const needsFetch = (node.has_left && !node.left) || (node.has_right && !node.right);
+            const alreadyExpanded = expandedIds.has(id);
+            const alreadyLoading = loadingIds.has(id);
+            if (!alreadyExpanded && needsFetch && !alreadyLoading) {
+                fetchSubtree(id);
+            }
+        },
+        [expandedIds, loadingIds, fetchSubtree],
+    );
 
     useEffect(() => {
         load();
@@ -581,8 +735,16 @@ export default function MemberTeamPage() {
                                 <span className="rounded-full border border-sky-400/40 bg-sky-500/12 px-1.5 py-0.5 font-medium text-sky-100 sm:px-2">{t('member.ui.sub')}</span>
                                 <span className="rounded-full border border-amber-400/45 bg-amber-500/12 px-1.5 py-0.5 font-medium text-amber-100 sm:px-2">{t('member.ui.super')}</span>
                             </div>
-                            <div className="mt-4 flex justify-center overflow-x-auto pb-1 sm:mt-8 sm:pb-2">
-                                <TreeNode node={tree} />
+                            <p className="mt-3 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
+                                {t('member.team.tapToExpandHint', { defaultValue: 'Click any node with a + badge to expand its branch.' })}
+                            </p>
+                            <div className="mt-3 flex justify-center overflow-x-auto pb-1 sm:mt-6 sm:pb-2">
+                                <TreeNode
+                                    node={tree}
+                                    expandedIds={expandedIds}
+                                    loadingIds={loadingIds}
+                                    onToggle={toggleTreeNode}
+                                />
                             </div>
                         </div>
                     </RmsCard>
