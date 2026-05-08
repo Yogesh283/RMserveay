@@ -11,17 +11,22 @@ use Illuminate\Support\Carbon;
  * Cron entry point for the binary 1:1 daily closing.
  *
  * Examples:
- *  php artisan binary:daily-closing                         # close yesterday (IST)
- *  php artisan binary:daily-closing --date=2026-05-08       # close a specific date
- *  php artisan binary:daily-closing --report                # only print latest report (no work)
+ *  php artisan binary:daily-closing                                # close yesterday (IST), all scopes
+ *  php artisan binary:daily-closing --date=2026-05-08              # close a specific date
+ *  php artisan binary:daily-closing --scope=active_panel           # only active-panel matching ($1/pair)
+ *  php artisan binary:daily-closing --scope=panel                  # only sub-panel milestone matching
+ *  php artisan binary:daily-closing --scope=super                  # only super-sub-panel milestone matching
+ *  php artisan binary:daily-closing --scope=active_panel --date=today
+ *  php artisan binary:daily-closing --report                       # only print latest report (no work)
  */
 class BinaryDailyClosingCommand extends Command
 {
     protected $signature = 'binary:daily-closing
-        {--date= : Closing date (YYYY-MM-DD) in the configured timezone. Defaults to "yesterday".}
+        {--date= : Closing date (YYYY-MM-DD) in the configured timezone. Use "today" for the current day. Defaults to "yesterday".}
+        {--scope=* : Limit closing to specific scopes (active_panel, panel, super). Repeatable.}
         {--report : Skip processing — only print the report for the given (or latest) date.}';
 
-    protected $description = 'Run the binary 1:1 daily closing: match pairs, credit wallets, lapse weak side, carry strong side.';
+    protected $description = 'Run the binary 1:1 daily closing: match pairs, credit wallets, carry leftover, lapse milestone excess.';
 
     public function handle(BinaryDailyClosingService $closing): int
     {
@@ -33,20 +38,29 @@ class BinaryDailyClosingCommand extends Command
 
         $tz = $closing->timezone();
         $dateOpt = $this->option('date');
-        $date = $dateOpt
-            ? Carbon::parse($dateOpt, $tz)->startOfDay()
-            : Carbon::now($tz)->subDay()->startOfDay();
+        if ($dateOpt === null || $dateOpt === '') {
+            $date = Carbon::now($tz)->subDay()->startOfDay();
+        } elseif (strtolower((string) $dateOpt) === 'today') {
+            $date = Carbon::now($tz)->startOfDay();
+        } else {
+            $date = Carbon::parse($dateOpt, $tz)->startOfDay();
+        }
+
+        $scopes = (array) $this->option('scope');
+        $scopes = array_values(array_filter(array_map('strval', $scopes), fn ($s) => $s !== ''));
+        $scopeFilter = $scopes !== [] ? $scopes : null;
 
         $this->line(sprintf(
-            '<info>Binary daily closing</info>  date=%s  tz=%s  cut-off=%s',
+            '<info>Binary daily closing</info>  date=%s  tz=%s  cut-off=%s  scopes=%s',
             $date->toDateString(),
             $tz,
             $closing->closingTime(),
+            $scopeFilter ? implode(',', $scopeFilter) : 'all',
         ));
 
         if (! $this->option('report')) {
             $start = microtime(true);
-            $totals = $closing->closeAll($date);
+            $totals = $closing->closeAll($date, $scopeFilter);
             $elapsed = number_format((microtime(true) - $start) * 1000, 1);
 
             $this->line('');

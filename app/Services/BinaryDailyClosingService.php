@@ -45,7 +45,7 @@ class BinaryDailyClosingService
      *     closing_date: string,
      * }
      */
-    public function closeAll(?CarbonInterface $closingDate = null): array
+    public function closeAll(?CarbonInterface $closingDate = null, ?array $only = null): array
     {
         $tz = $this->timezone();
         $date = $this->resolveClosingDate($closingDate);
@@ -59,7 +59,12 @@ class BinaryDailyClosingService
             'closing_date' => $date->toDateString(),
         ];
 
+        $filter = $only !== null ? array_flip(array_map('strval', $only)) : null;
+
         foreach ($this->enabledScopes() as $scope => $cfg) {
+            if ($filter !== null && ! isset($filter[$scope])) {
+                continue;
+            }
             $scopeTotals = $this->closeScope($scope, $cfg, $date);
 
             $totals['processed'] += $scopeTotals['processed'];
