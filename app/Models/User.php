@@ -345,11 +345,11 @@ class User extends Authenticatable implements FilamentUser
 
         $allowedEmails = array_values(array_filter(array_map(
             static fn (string $v): string => strtolower(trim($v)),
-            explode(',', (string) env('FILAMENT_ADMIN_EMAILS', ''))
+            (array) config('admin.filament_admin_emails', [])
         )));
         $allowedUids = array_values(array_filter(array_map(
             static fn (string $v): string => strtolower(trim($v)),
-            explode(',', (string) env('FILAMENT_ADMIN_LOGIN_UIDS', ''))
+            (array) config('admin.filament_admin_login_uids', [])
         )));
 
         return in_array($email, $allowedEmails, true) || in_array($uid, $allowedUids, true);
