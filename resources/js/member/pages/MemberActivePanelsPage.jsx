@@ -46,6 +46,7 @@ function IconClipboard() {
 
 export default function MemberActivePanelsPage() {
     const [data, setData] = useState(null);
+    const [user, setUser] = useState(null);
     const [loadError, setLoadError] = useState(null);
     const [busy, setBusy] = useState(false);
     const [actionError, setActionError] = useState(null);
@@ -54,8 +55,12 @@ export default function MemberActivePanelsPage() {
         setLoadError(null);
         try {
             await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/programme/self-survey');
+            const [{ data: json }, { data: userJson }] = await Promise.all([
+                window.axios.get('api/member/programme/self-survey'),
+                window.axios.get('api/user'),
+            ]);
             setData(json);
+            setUser(userJson?.user ?? null);
         } catch (e) {
             setLoadError(e.response?.data?.message ?? e.message ?? 'Failed to load programme');
         }
@@ -86,6 +91,10 @@ export default function MemberActivePanelsPage() {
 
     const progressPct = qualified ? 100 : activationPaid ? 50 : 0;
     const timeline = ['Start', 'Verify', 'Submit', 'Complete'];
+    const displayName = user?.name?.trim() || 'Member';
+    const displayId = user?.login_uid || '—';
+    const displayInitial = displayName.charAt(0).toUpperCase();
+    const isVerified = Boolean(user?.email_verified_at || user?.phone_verified_at);
 
     return (
         <div className="relative mx-auto max-w-2xl space-y-4">
@@ -106,16 +115,18 @@ export default function MemberActivePanelsPage() {
                             <div className="flex items-start justify-between gap-3 rounded-2xl border border-violet-300/20 bg-white/[0.03] p-3">
                                 <div className="flex items-center gap-3">
                                     <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-violet-300/55 bg-violet-500/20 text-base font-bold text-white shadow-[0_0_22px_rgba(139,92,246,0.45)]">
-                                        V
+                                        {displayInitial}
                                         <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0B1120] bg-emerald-400" />
                                     </span>
                                     <div>
-                                        <p className="text-xs text-[#A0AEC0]">Welcome back, vijay damor</p>
+                                        <p className="text-xs text-[#A0AEC0]">Welcome back, {displayName}</p>
                                         <div className="mt-1 flex items-center gap-1.5">
-                                            <span className="rounded-full border border-violet-300/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-100">ID: vjd</span>
-                                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
-                                                <span>✓</span> Verified
-                                            </span>
+                                            <span className="rounded-full border border-violet-300/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-100">ID: {displayId}</span>
+                                            {isVerified ? (
+                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
+                                                    <span>✓</span> Verified
+                                                </span>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>

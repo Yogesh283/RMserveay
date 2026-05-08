@@ -291,12 +291,6 @@ export default function MemberSuperSubPanelsPage() {
 
                     <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
                         <h2 className="text-base font-bold text-white">Buy package slots</h2>
-                        <p className="mt-1 text-xs text-white/50">
-                            Owned: <span className="font-medium text-white">{count}</span> / {maxSuper} · Next:{' '}
-                            <span className="font-medium text-fuchsia-300">{fmtUsd(data.fees.super_sub_panel_usd)}</span> · Paid in so far:{' '}
-                            <span className="font-medium tabular-nums text-white">{fmtUsd((count * safePanelFee).toFixed(2))}</span> /{' '}
-                            <span className="tabular-nums text-white/80">{maxEntryLabel}</span>
-                        </p>
                         <ul className="mt-3.5 grid list-none grid-cols-2 gap-2 sm:grid-cols-3">
                             {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
                                 const owned = n <= count;

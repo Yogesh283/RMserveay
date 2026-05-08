@@ -8,7 +8,7 @@ use Filament\Schemas\Schema;
 
 class UserInfolist
 {
-    private const MAX_TREE_DEPTH = 3;
+    private const MAX_TREE_DEPTH = 6;
 
     private static function nodeBadge(?User $user, string $side): string
     {
@@ -19,16 +19,16 @@ class UserInfolist
         $name = e($user->name ?? '-');
         $code = e($user->login_uid ?? '#'.$user->id);
 
-        return "<strong>{$side}</strong>: {$name} <span style='color:#94a3b8;'>({$code})</span>";
+        return "<strong>{$side}</strong>: {$code} <span style='color:#94a3b8;'>({$name})</span>";
     }
 
     private static function buildTeamTreeHtml(User $root): string
     {
-        $rootLabel = e($root->name ?? '-');
-        $rootCode = e($root->login_uid ?? '#'.$root->id);
+        $rootLabel = e($root->login_uid ?? '#'.$root->id);
+        $rootName = e($root->name ?? '-');
 
         $html = "<div style='line-height:1.55;'>";
-        $html .= "<div><strong>Root</strong>: {$rootLabel} <span style='color:#94a3b8;'>({$rootCode})</span></div>";
+        $html .= "<div><strong>Root</strong>: {$rootLabel} <span style='color:#94a3b8;'>({$rootName})</span></div>";
         $html .= self::renderChildren($root, 1);
         $html .= '</div>';
 
@@ -97,7 +97,7 @@ class UserInfolist
                 TextEntry::make('binary_side')
                     ->placeholder('-'),
                 TextEntry::make('team_structure_tree')
-                    ->label('Team structure tree')
+                    ->label('Team structure tree (UID first)')
                     ->state(fn (User $record): string => self::buildTeamTreeHtml($record))
                     ->html()
                     ->columnSpanFull(),

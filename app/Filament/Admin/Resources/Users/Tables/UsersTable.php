@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Users\Tables;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -42,18 +43,32 @@ class UsersTable
                     ->searchable(),
                 TextColumn::make('p2p_receive_code')
                     ->searchable(),
-                TextColumn::make('sponsor.name')
+                TextColumn::make('sponsor.login_uid')
+                    ->label('Sponsor UID')
+                    ->placeholder('-')
                     ->searchable(),
-                TextColumn::make('binaryParent.name')
+                TextColumn::make('binaryParent.login_uid')
+                    ->label('Parent UID')
+                    ->placeholder('-')
                     ->searchable(),
                 TextColumn::make('binary_side')
                     ->searchable(),
+                TextColumn::make('left_child_uid')
+                    ->label('Left Child UID')
+                    ->state(fn (User $record): ?string => $record->left_child_id ? User::query()->whereKey($record->left_child_id)->value('login_uid') : null)
+                    ->placeholder('-'),
+                TextColumn::make('right_child_uid')
+                    ->label('Right Child UID')
+                    ->state(fn (User $record): ?string => $record->right_child_id ? User::query()->whereKey($record->right_child_id)->value('login_uid') : null)
+                    ->placeholder('-'),
                 TextColumn::make('left_child_id')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('right_child_id')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('wallet_balance')
                     ->numeric()
                     ->sortable(),

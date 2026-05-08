@@ -135,9 +135,9 @@ function AvailableSurveyRow({ s, tier }) {
     const meta = TIER_SECTIONS[tier];
     const inner = (
         <RmsCard variant="elevated" className="!p-0 transition active:scale-[0.99]" padding={false}>
-            <div className="flex items-start gap-2.5 p-3">
+            <div className="flex items-start gap-2 p-2.5">
                 <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.iconBg} ring-1`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.iconBg} ring-1`}
                 >
                     <SurveyIcon strokeClass={meta.iconStroke} />
                 </span>
@@ -153,7 +153,7 @@ function AvailableSurveyRow({ s, tier }) {
                     <p className="text-[8px] uppercase tracking-wider text-[#A0AEC0]">Est.</p>
                 </div>
             </div>
-            <div className="border-t border-white/5 px-3 py-1.5">
+            <div className="border-t border-white/5 px-2.5 py-1">
                 {eligible ? (
                     <span
                         className={`inline-block rounded-lg border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${meta.ctaEligible}`}
@@ -241,13 +241,13 @@ export default function MemberSurveysPage() {
     const anyAvailable = filteredAvailable.length > 0;
 
     return (
-        <div className="relative min-h-[40vh] space-y-4 pb-24">
-            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
+        <div className="relative min-h-[40vh] space-y-3 pb-24">
+            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-3 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
                 <div className="flex gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/30 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                     type="button"
                     onClick={() => setSection('available')}
-                    className={`shrink-0 flex-1 rounded-full px-4 py-2 text-[12px] font-semibold transition active:scale-[0.98] ${
+                    className={`shrink-0 flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-[0.98] ${
                         section === 'available'
                             ? 'bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-[0_10px_26px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45'
                             : 'text-[#A0AEC0] hover:text-white'
@@ -258,7 +258,7 @@ export default function MemberSurveysPage() {
                 <button
                     type="button"
                     onClick={() => setSection('completed')}
-                    className={`shrink-0 flex-1 rounded-full px-4 py-2 text-[12px] font-semibold transition active:scale-[0.98] ${
+                    className={`shrink-0 flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-[0.98] ${
                         section === 'completed'
                             ? 'bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-[0_10px_26px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45'
                             : 'text-[#A0AEC0] hover:text-white'
@@ -284,8 +284,8 @@ export default function MemberSurveysPage() {
                     </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                    <div className="flex min-h-[46px] flex-1 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3">
+                <div className="mt-3 flex gap-2">
+                    <div className="flex min-h-[40px] flex-1 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2.5">
                         <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.1-4.4a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
@@ -298,7 +298,7 @@ export default function MemberSurveysPage() {
                     </div>
                     <button
                         type="button"
-                        className="inline-flex min-h-[46px] items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200"
+                        className="inline-flex min-h-[40px] items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.04] px-2.5 text-xs font-semibold text-slate-200"
                     >
                         <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5h18M6 12h12M10 19h4" />
@@ -341,15 +341,15 @@ export default function MemberSurveysPage() {
                       const meta = TIER_SECTIONS[tier];
                       const expanded = openAvailableTiers[tier];
                       return (
-                          <RmsCard key={tier} variant="elevated" className={`!p-3 sm:!p-4 ${meta.cardBorder}`}>
-                              <div className="flex items-center justify-between gap-3">
+                          <RmsCard key={tier} variant="elevated" className={`!p-2.5 sm:!p-3.5 ${meta.cardBorder}`}>
+                              <div className="flex items-center justify-between gap-2.5">
                                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                                      <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.iconBg} ring-1`}>
+                                      <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.iconBg} ring-1`}>
                                           <SurveyIcon strokeClass={meta.iconStroke} />
                                       </span>
                                       <div className="min-w-0">
-                                          <h2 className={`text-base font-bold leading-tight ${meta.titleClass}`}>{meta.title.toUpperCase()}</h2>
-                                          <p className="line-clamp-1 text-[11px] text-slate-300">{meta.subtitle}</p>
+                                          <h2 className={`text-[15px] font-bold leading-tight ${meta.titleClass}`}>{meta.title.toUpperCase()}</h2>
+                                          <p className="line-clamp-1 text-[10.5px] text-slate-300">{meta.subtitle}</p>
                                       </div>
                                   </div>
                                   <div className="flex shrink-0 items-center gap-2">
@@ -376,7 +376,7 @@ export default function MemberSurveysPage() {
                               {expanded ? (
                                   <>
                                       <div className={meta.accentStrip} aria-hidden />
-                                      <div id={`tier-available-${tier}`} className="mt-2 space-y-2">
+                                      <div id={`tier-available-${tier}`} className="mt-1.5 space-y-1.5">
                                           {list.length === 0 ? (
                                               <p className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2 text-xs text-[#94A3B8]">None in this tier.</p>
                                           ) : (

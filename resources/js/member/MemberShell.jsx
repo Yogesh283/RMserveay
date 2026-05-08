@@ -709,13 +709,13 @@ export default function MemberShell() {
             {referralPopupOpen ? (
                 <div className="fixed inset-0 z-[120] lg:hidden" role="dialog" aria-modal="true" aria-label="Referral links">
                     <button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setReferralPopupOpen(false)} aria-label={t('common.closeMenu')} />
-                    <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 rounded-2xl border border-violet-300/30 bg-[#0b1020]/95 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.62)] backdrop-blur-xl">
+                    <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 rounded-2xl border border-violet-300/35 bg-[linear-gradient(160deg,rgba(124,58,237,0.18),rgba(59,130,246,0.10)_55%,rgba(11,16,32,0.92))] p-3 shadow-[0_22px_60px_rgba(0,0,0,0.68),0_0_0_1px_rgba(167,139,250,0.16)] backdrop-blur-xl">
                         <div className="mb-2 flex items-center justify-between">
                             <p className="text-sm font-semibold text-white">Referral Links</p>
                             <button
                                 type="button"
                                 onClick={() => setReferralPopupOpen(false)}
-                                className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-[#CBD5E1] transition hover:text-white"
+                                className="rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-white/80 transition hover:border-violet-300/35 hover:bg-white/[0.10] hover:text-white"
                             >
                                 Close
                             </button>
@@ -725,21 +725,21 @@ export default function MemberShell() {
                             { key: 'left', label: 'Left Link', url: referralInviteUrls.left },
                             { key: 'right', label: 'Right Link', url: referralInviteUrls.right },
                         ].map((item) => (
-                            <div key={item.key} className="mb-2 rounded-lg border border-white/10 bg-black/20 p-2 last:mb-0">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-200/85">{item.label}</p>
-                                <p className="mt-1 truncate rounded-md border border-white/10 bg-black/25 px-2 py-1 text-[10px] text-[#A0AEC0]">{item.url}</p>
+                            <div key={item.key} className="mb-2 rounded-lg border border-white/10 bg-black/20 p-2 last:mb-0 shadow-[0_0_26px_rgba(124,58,237,0.10)]">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/75">{item.label}</p>
+                                <p className="mt-1 truncate rounded-md border border-violet-300/18 bg-black/25 px-2 py-1 text-[10px] text-white/85">{item.url}</p>
                                 <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                                     <button
                                         type="button"
                                         onClick={() => copyReferralLink(item.url, item.label)}
-                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                        className="rounded-md border border-violet-300/25 bg-gradient-to-r from-[#7C3AED]/20 to-[#3B82F6]/15 px-2 py-1.5 text-[10px] font-semibold text-white transition hover:border-violet-300/55 hover:shadow-[0_0_26px_rgba(124,58,237,0.22)]"
                                     >
                                         Copy
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => shareReferralLink(item.url, item.label)}
-                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                        className="rounded-md border border-violet-300/25 bg-gradient-to-r from-[#7C3AED]/20 to-[#3B82F6]/15 px-2 py-1.5 text-[10px] font-semibold text-white transition hover:border-violet-300/55 hover:shadow-[0_0_26px_rgba(59,130,246,0.22)]"
                                     >
                                         Share
                                     </button>

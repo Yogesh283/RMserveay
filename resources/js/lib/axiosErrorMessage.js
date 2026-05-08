@@ -7,9 +7,9 @@ export function describeAxiosNetworkError(err) {
     const tail = [msg, code].filter(Boolean).join(' · ');
 
     return [
-        'ब्राउज़र सर्वर से जवाब नहीं ले पाया (कोई HTTP स्टेटस नहीं)।',
+        "Couldn't reach the server from your browser (no HTTP status).",
         tail ? ` (${tail})` : '',
-        ' लाइव सर्वर पर चेक करें: `.env` में `APP_URL` वही पूरा URL हो जिस से साइट खुलती है (`https://your-domain.com`); `CORS_ALLOWED_ORIGINS` और `SANCTUM_STATEFUL_DOMAINS` में वही डोमेन; फिर `php artisan config:clear`।',
-        ' अगर पेज `/member` या `/publisher` से खुला है तो पहले होम या `/login` से लॉगिन करें (पुरानी बिल्ड में API गलत रास्ते पर जा सकती थी)।',
+        'Check your live config: in `.env`, `APP_URL` must exactly match the full URL you open in the browser (e.g. `https://your-domain.com`); make sure `CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` include the same domain. Then run `php artisan config:clear`.',
+        'If you opened `/member` or `/publisher` directly, try logging in from the Home page or `/login` first (older builds can sometimes hit wrong API routes).',
     ].join('');
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import PubButton from '../components/PubButton';
 import PubCard from '../components/PubCard';
@@ -29,6 +29,38 @@ export default function PublisherWalletDepositPage() {
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState(null);
     const [err, setErr] = useState(null);
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState(null);
+    const successAutoCloseRef = useRef(null);
+    const errorAutoCloseRef = useRef(null);
+    const AUTO_CLOSE_MS = 180000; // 3 minutes
+
+    useEffect(() => {
+        return () => {
+            if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+            if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+        };
+    }, []);
+
+    function openSuccessPopup(message) {
+        const m = message == null ? null : String(message);
+        if (!m) return;
+        setSuccessMessage(m);
+        setSuccessOpen(true);
+        if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+        successAutoCloseRef.current = window.setTimeout(() => setSuccessOpen(false), AUTO_CLOSE_MS);
+    }
+
+    function openErrorPopup(message) {
+        const m = message == null ? null : String(message);
+        if (!m) return;
+        setErrorMessage(m);
+        setErrorOpen(true);
+        if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+        errorAutoCloseRef.current = window.setTimeout(() => setErrorOpen(false), AUTO_CLOSE_MS);
+    }
 
     const [activeGateway, setActiveGateway] = useState('np');
 
@@ -60,7 +92,9 @@ export default function PublisherWalletDepositPage() {
                 setPayCurrency(def);
             }
         } catch (e) {
-            setErr(e.response?.data?.message ?? e.message ?? 'Could not load deposit info');
+            const m = e.response?.data?.message ?? e.message ?? 'Could not load deposit info';
+            setErr(m);
+            openErrorPopup(m);
         } finally {
             setLoading(false);
         }
@@ -134,7 +168,9 @@ export default function PublisherWalletDepositPage() {
             setNpAmount('');
         } catch (e) {
             const m = e.response?.data?.message ?? e.response?.data?.errors ?? e.response?.data?.details;
-            setNpErr(typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Request failed'));
+            const flat = typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Request failed');
+            setNpErr(flat);
+            openErrorPopup(flat);
         } finally {
             setNpBusy(false);
         }
@@ -151,6 +187,7 @@ export default function PublisherWalletDepositPage() {
                 tx_hash: directTx.trim(),
             });
             setMsg('Deposit credited to your main wallet.');
+            openSuccessPopup('Deposit credited to your main wallet.');
             setDirectAmount('');
             setDirectTx('');
             await load();
@@ -162,7 +199,9 @@ export default function PublisherWalletDepositPage() {
                           .flat()
                           .join(' ')
                     : null;
-            setDirectErr(flat || e.response?.data?.message || e.message || 'Could not record deposit');
+            const m = flat || e.response?.data?.message || e.message || 'Could not record deposit';
+            setDirectErr(m);
+            openErrorPopup(m);
         } finally {
             setDirectBusy(false);
         }
@@ -176,6 +215,7 @@ export default function PublisherWalletDepositPage() {
             const local = data.local ?? {};
             if (local.credited) {
                 setMsg('Deposit credited to your main wallet.');
+                openSuccessPopup('Deposit credited to your main wallet.');
                 setNpPayment(null);
                 await load();
                 return;
@@ -188,7 +228,9 @@ export default function PublisherWalletDepositPage() {
                 pay_currency: local.pay_currency ?? prev?.pay_currency,
             }));
         } catch (e) {
-            setNpErr(e.response?.data?.message ?? e.message ?? 'Status check failed');
+            const m = e.response?.data?.message ?? e.message ?? 'Status check failed';
+            setNpErr(m);
+            openErrorPopup(m);
         }
     }
 
@@ -205,6 +247,7 @@ export default function PublisherWalletDepositPage() {
                 const local = data.local ?? {};
                 if (local.credited) {
                     setMsg('Deposit credited to your main wallet.');
+                    openSuccessPopup('Deposit credited to your main wallet.');
                     setNpPayment(null);
                     await load();
                     return;
@@ -218,7 +261,9 @@ export default function PublisherWalletDepositPage() {
                 }));
             } catch (e) {
                 if (!cancelled) {
-                    setNpErr(e.response?.data?.message ?? e.message ?? 'Status check failed');
+                    const m = e.response?.data?.message ?? e.message ?? 'Status check failed';
+                    setNpErr(m);
+                    openErrorPopup(m);
                 }
             }
         }
@@ -428,6 +473,65 @@ export default function PublisherWalletDepositPage() {
                         Minimum when enabled: ${info.min_deposit_usd}.
                     </p>
                 </PubCard>
+            ) : null}
+
+            {successOpen ? (
+                <div className="fixed inset-0 z-[240] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/60"
+                        aria-label="Close"
+                        onClick={() => {
+                            setSuccessOpen(false);
+                            if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+                        }}
+                    />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-emerald-400/25 bg-[#0b1220] p-5 text-center shadow-xl backdrop-blur-xl">
+                        <p className="text-3xl" aria-hidden>
+                            ✅
+                        </p>
+                        <h3 className="mt-2 text-base font-bold text-white">Deposit successful</h3>
+                        <p className="mt-1 text-xs text-emerald-300">{successMessage || 'Funds added to your wallet.'}</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSuccessOpen(false);
+                                if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+                            }}
+                            className="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            ) : null}
+
+            {errorOpen ? (
+                <div className="fixed inset-0 z-[250] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/60"
+                        aria-label="Close"
+                        onClick={() => {
+                            setErrorOpen(false);
+                            if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+                        }}
+                    />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-amber-400/25 bg-[#0b1220] p-5 text-center shadow-xl backdrop-blur-xl">
+                        <p className="text-3xl" aria-hidden>
+                            ⚠️
+                        </p>
+                        <h3 className="mt-2 text-base font-bold text-white">Action failed</h3>
+                        <p className="mt-2 text-xs text-red-200">{errorMessage || 'Please try again.'}</p>
+                        <button
+                            type="button"
+                            onClick={() => setErrorOpen(false)}
+                            className="mt-4 w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
             ) : null}
 
         </PubPageFrame>

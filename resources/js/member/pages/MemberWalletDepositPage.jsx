@@ -98,7 +98,19 @@ export default function MemberWalletDepositPage() {
     const [countdownSec, setCountdownSec] = useState(0);
     const [successOpen, setSuccessOpen] = useState(false);
     const [successAmount, setSuccessAmount] = useState(null);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState(null);
     const creditedOnceRef = useRef(false);
+    const successAutoCloseRef = useRef(null);
+    const errorAutoCloseRef = useRef(null);
+    const AUTO_CLOSE_MS = 180000; // 3 minutes
+
+    useEffect(() => {
+        return () => {
+            if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+            if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+        };
+    }, []);
 
     const load = useCallback(async () => {
         try {
@@ -147,11 +159,22 @@ export default function MemberWalletDepositPage() {
         const amount = local.amount_usd ?? npPayment?.amount_usd ?? null;
         setSuccessAmount(amount);
         setSuccessOpen(true);
+        if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+        successAutoCloseRef.current = window.setTimeout(() => setSuccessOpen(false), AUTO_CLOSE_MS);
         setMsg('Deposit credited to your main wallet.');
         setNpPayment(null);
         setCountdownSec(0);
         await load();
     }, [load, npPayment?.amount_usd]);
+
+    function openErrorPopup(message) {
+        const m = message == null ? null : String(message);
+        if (!m) return;
+        setErrorMessage(m);
+        setErrorOpen(true);
+        if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+        errorAutoCloseRef.current = window.setTimeout(() => setErrorOpen(false), AUTO_CLOSE_MS);
+    }
 
     async function copyNpAddress() {
         if (!npPayment?.pay_address) return;
@@ -181,7 +204,9 @@ export default function MemberWalletDepositPage() {
             setNpAmount('');
         } catch (e) {
             const m = e.response?.data?.message ?? e.response?.data?.errors ?? e.response?.data?.details;
-            setNpErr(typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Request failed'));
+            const flat = typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Request failed');
+            setNpErr(flat);
+            openErrorPopup(flat);
         } finally {
             setNpBusy(false);
         }
@@ -206,7 +231,9 @@ export default function MemberWalletDepositPage() {
                 pay_currency: local.pay_currency ?? prev?.pay_currency,
             }));
         } catch (e) {
-            setNpErr(e.response?.data?.message ?? e.message ?? 'Status check failed');
+            const flat = e.response?.data?.message ?? e.message ?? 'Status check failed';
+            setNpErr(flat);
+            openErrorPopup(flat);
         }
     }
 
@@ -479,7 +506,15 @@ export default function MemberWalletDepositPage() {
 
             {successOpen ? (
                 <div className="fixed inset-0 z-[220] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="deposit-success-title">
-                    <button type="button" className="absolute inset-0 bg-black/60" aria-label="Close" onClick={() => setSuccessOpen(false)} />
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/60"
+                        aria-label="Close"
+                        onClick={() => {
+                            setSuccessOpen(false);
+                            if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+                        }}
+                    />
                     <div className="relative z-10 w-full max-w-sm rounded-2xl border border-emerald-400/25 bg-[#0b1220] p-5 text-center shadow-xl">
                         <p className="text-3xl" aria-hidden>✅</p>
                         <h3 id="deposit-success-title" className="mt-2 text-base font-bold text-white">Deposit successful</h3>
@@ -488,8 +523,41 @@ export default function MemberWalletDepositPage() {
                         </p>
                         <button
                             type="button"
-                            onClick={() => setSuccessOpen(false)}
+                            onClick={() => {
+                                setSuccessOpen(false);
+                                if (successAutoCloseRef.current) window.clearTimeout(successAutoCloseRef.current);
+                            }}
                             className="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            ) : null}
+
+            {errorOpen ? (
+                <div className="fixed inset-0 z-[230] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="deposit-error-title">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/60"
+                        aria-label="Close"
+                        onClick={() => {
+                            setErrorOpen(false);
+                            if (errorAutoCloseRef.current) window.clearTimeout(errorAutoCloseRef.current);
+                        }}
+                    />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-amber-400/25 bg-[#0b1220] p-5 text-center shadow-xl">
+                        <p className="text-3xl" aria-hidden>
+                            ⚠️
+                        </p>
+                        <h3 id="deposit-error-title" className="mt-2 text-base font-bold text-white">
+                            Action failed
+                        </h3>
+                        <p className="mt-2 text-xs text-red-200">{errorMessage || 'Please try again.'}</p>
+                        <button
+                            type="button"
+                            onClick={() => setErrorOpen(false)}
+                            className="mt-4 w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white"
                         >
                             OK
                         </button>

@@ -290,6 +290,7 @@ class MemberTeamService
         $node = [
             'id' => $u->id,
             'name' => $u->name,
+            'login_uid' => $u->login_uid,
             'referral_code' => $u->referral_code,
             'sub_panel_count' => $sub,
             'super_sub_panel_count' => $super,

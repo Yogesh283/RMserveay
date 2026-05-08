@@ -2,11 +2,11 @@ import { useTranslation } from 'react-i18next';
 
 const LANGUAGES = [
     { code: 'en', label: 'English' },
-    { code: 'hi', label: 'हिन्दी' },
-    { code: 'es', label: 'Español' },
-    { code: 'zh', label: '中文' },
-    { code: 'fr', label: 'Français' },
-    { code: 'de', label: 'Deutsch' },
+    { code: 'hi', label: 'Hindi' },
+    { code: 'es', label: 'Spanish' },
+    { code: 'zh', label: 'Chinese' },
+    { code: 'fr', label: 'French' },
+    { code: 'de', label: 'German' },
 ];
 
 function IconGlobeSmall() {
