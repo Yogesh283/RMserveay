@@ -19,6 +19,10 @@ class UpdateMemberProfileRequest extends FormRequest
      */
     public function rules(): array
     {
+        $nextEmail = strtolower(trim((string) $this->input('email', '')));
+        $currentEmail = strtolower((string) ($this->user()?->email ?? ''));
+        $emailChanged = $nextEmail !== '' && $nextEmail !== $currentEmail;
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user()?->id)],
@@ -48,7 +52,8 @@ class UpdateMemberProfileRequest extends FormRequest
             'survey_profile.marital_status' => ['nullable', 'string', Rule::in(['married', 'unmarried'])],
             'survey_profile.vehicle_owner' => ['nullable', 'string', Rule::in(['none', 'bike', 'car', 'both'])],
             'survey_profile.online_shopping_user' => ['nullable', 'boolean'],
-            'email_otp' => ['nullable', 'string', 'digits:6'],
+            'email_otp' => [Rule::requiredIf($emailChanged), 'nullable', 'string', 'digits:6'],
+            'password_otp' => ['nullable', 'string', 'digits:6', 'required_with:password'],
             'current_password' => ['nullable', 'string'],
             'password' => ['nullable', 'confirmed', Password::defaults()],
         ];

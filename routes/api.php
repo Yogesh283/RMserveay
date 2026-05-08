@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::patch('/user', [MemberProfileController::class, 'update']);
     Route::post('/member/profile/email-change-otp', [MemberProfileController::class, 'sendEmailChangeOtp'])->middleware('throttle:10,1');
+    Route::post('/member/profile/password-change-otp', [MemberProfileController::class, 'sendPasswordChangeOtp'])->middleware('throttle:10,1');
 
     Route::get('/member/dashboard/summary', [MemberDashboardController::class, 'summary']);
 
@@ -89,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/p2p-to-main', [MemberWalletController::class, 'p2pToMain'])->middleware('throttle:30,1');
         Route::get('/p2p-recipient-lookup', [MemberWalletController::class, 'p2pRecipientLookup'])->middleware('throttle:60,1');
         Route::post('/p2p-transfer', [MemberWalletController::class, 'p2pTransfer'])->middleware('throttle:30,1');
+        Route::post('/withdraw/otp', [MemberWalletController::class, 'sendWithdrawOtp'])->middleware('throttle:10,1');
         Route::post('/withdraw', [MemberWalletController::class, 'withdraw'])->middleware('throttle:15,1');
     });
 

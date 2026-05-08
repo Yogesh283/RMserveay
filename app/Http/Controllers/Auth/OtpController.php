@@ -177,9 +177,19 @@ class OtpController extends Controller
         return 'otp:password_reset:user:'.$userId;
     }
 
+    public static function cacheKeyWithdrawUser(int $userId): string
+    {
+        return 'otp:withdraw:user:'.$userId;
+    }
+
     public static function cacheKeyEmailChangeUser(int $userId, string $newEmail): string
     {
         return 'otp:email_change:user:'.$userId.':'.hash('sha256', strtolower(trim($newEmail)));
+    }
+
+    public static function cacheKeyPasswordChangeUser(int $userId): string
+    {
+        return 'otp:password_change:user:'.$userId;
     }
 
     public static function verify(string $purpose, string $email, string $submittedOtp): bool
@@ -202,9 +212,19 @@ class OtpController extends Controller
         return self::verifyWithKey(self::cacheKeyPasswordResetUser($userId), $submittedOtp);
     }
 
+    public static function verifyWithdrawUser(int $userId, string $submittedOtp): bool
+    {
+        return self::verifyWithKey(self::cacheKeyWithdrawUser($userId), $submittedOtp);
+    }
+
     public static function verifyEmailChangeUser(int $userId, string $newEmail, string $submittedOtp): bool
     {
         return self::verifyWithKey(self::cacheKeyEmailChangeUser($userId, $newEmail), $submittedOtp);
+    }
+
+    public static function verifyPasswordChangeUser(int $userId, string $submittedOtp): bool
+    {
+        return self::verifyWithKey(self::cacheKeyPasswordChangeUser($userId), $submittedOtp);
     }
 
     private static function verifyWithKey(string $key, string $submittedOtp): bool

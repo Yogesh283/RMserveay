@@ -2,20 +2,27 @@
 
 namespace App\Http\Controllers\Member;
 
+use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\DepositNotification;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\WalletBucketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class MemberWalletController extends Controller
 {
+    private const WITHDRAW_OTP_TTL_MINUTES = 10;
+
     public function __construct(
         protected WalletBucketService $walletBuckets,
     ) {}
@@ -412,12 +419,41 @@ class MemberWalletController extends Controller
     }
 
     /** Direct withdrawal debits main wallet only; 15% fee — net sent on-chain is gross − fee. */
+    public function sendWithdrawOtp(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $rateKey = 'otp-send:withdraw:'.$user->id.'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            throw ValidationException::withMessages([
+                'otp' => ['Too many OTP requests. Try again in a few minutes.'],
+            ]);
+        }
+        RateLimiter::hit($rateKey, 120);
+
+        $otp = (string) random_int(100000, 999999);
+        $cacheKey = OtpController::cacheKeyWithdrawUser((int) $user->id);
+        Cache::put($cacheKey, [
+            'code' => $otp,
+            'expires_at' => now()->addMinutes(self::WITHDRAW_OTP_TTL_MINUTES)->timestamp,
+        ], now()->addMinutes(self::WITHDRAW_OTP_TTL_MINUTES));
+
+        Mail::to((string) $user->email)->send(new OtpMail($otp, 'Withdrawal verification'));
+
+        return response()->json([
+            'message' => 'OTP sent to your email.',
+        ]);
+    }
+
+    /** Direct withdrawal debits main wallet only; 15% fee — net sent on-chain is gross − fee. */
     public function withdraw(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'bep20_address' => ['required', 'string', 'max:128', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'save_address' => ['sometimes', 'boolean'],
+            'otp' => ['required', 'string', 'digits:6'],
         ]);
 
         $min = (string) config('wallet_display.min_withdraw_usd');
@@ -433,6 +469,12 @@ class MemberWalletController extends Controller
         return DB::transaction(function () use ($request, $validated, $gross, $fee, $net, $feeRate) {
             /** @var User $user */
             $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+
+            if (! OtpController::verifyWithdrawUser((int) $user->id, (string) $validated['otp'])) {
+                throw ValidationException::withMessages([
+                    'otp' => ['Invalid or expired OTP. Please request a new OTP.'],
+                ]);
+            }
 
             if (bccomp((string) $user->wallet_balance, $gross, 2) < 0) {
                 abort(422, 'Insufficient main wallet balance. Move funds from P2P to main first if needed.');

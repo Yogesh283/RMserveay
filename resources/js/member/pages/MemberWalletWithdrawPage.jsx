@@ -12,8 +12,11 @@ export default function MemberWalletWithdrawPage() {
     const [overview, setOverview] = useState(null);
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
+    const [otp, setOtp] = useState('');
     const [saveAddress, setSaveAddress] = useState(true);
     const [busy, setBusy] = useState(false);
+    const [sendingOtp, setSendingOtp] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
     const [msg, setMsg] = useState(null);
     const [err, setErr] = useState(null);
 
@@ -57,6 +60,7 @@ export default function MemberWalletWithdrawPage() {
                 amount_usd: Number.parseFloat(amount),
                 bep20_address: address.trim(),
                 save_address: saveAddress,
+                otp: otp.trim(),
             });
             setMsg(data.message ?? 'Submitted.');
             setOverview((o) =>
@@ -69,12 +73,31 @@ export default function MemberWalletWithdrawPage() {
                     : o,
             );
             setAmount('');
+            setOtp('');
+            setOtpSent(false);
             await load();
         } catch (e) {
             const m = e.response?.data?.message ?? e.response?.data?.errors;
             setErr(typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Request failed'));
         } finally {
             setBusy(false);
+        }
+    }
+
+    async function sendOtp() {
+        setErr(null);
+        setMsg(null);
+        setSendingOtp(true);
+        try {
+            await prepareSanctum();
+            const { data } = await window.axios.post('api/member/wallet/withdraw/otp');
+            setOtpSent(true);
+            setMsg(data?.message ?? 'OTP sent to your email.');
+        } catch (e) {
+            const m = e.response?.data?.message ?? e.response?.data?.errors;
+            setErr(typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Could not send OTP'));
+        } finally {
+            setSendingOtp(false);
         }
     }
 
@@ -126,6 +149,31 @@ export default function MemberWalletWithdrawPage() {
                         <input type="checkbox" checked={saveAddress} onChange={(ev) => setSaveAddress(ev.target.checked)} className="rounded border-white/20 bg-slate-950" />
                         Save address for next time
                     </label>
+
+                    <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <label className={walletFlowLabel}>Withdrawal OTP</label>
+                            <button
+                                type="button"
+                                onClick={sendOtp}
+                                disabled={sendingOtp}
+                                className="rounded-lg border border-violet-300/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-200 transition hover:border-violet-300/55 disabled:opacity-50"
+                            >
+                                {sendingOtp ? 'Sending…' : otpSent ? 'Resend OTP' : 'Send OTP'}
+                            </button>
+                        </div>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            required
+                            value={otp}
+                            onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className={`mt-1 ${walletFlowInput} tracking-[0.35em] text-center font-semibold`}
+                            placeholder="000000"
+                        />
+                        <p className="mt-1 text-[11px] text-slate-500">Enter the 6-digit OTP sent to your account email before submitting withdrawal.</p>
+                    </div>
 
                     <button type="submit" disabled={busy} className={`${walletFlowPrimaryBtn} disabled:opacity-50`}>
                         {busy ? 'Submitting…' : 'Submit withdrawal'}

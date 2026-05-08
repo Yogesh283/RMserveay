@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { RmsButton, RmsCard } from '../components/rms';
 
-const labelCls = 'block text-[10px] font-semibold uppercase tracking-wide text-[#A0AEC0]';
+const labelCls = 'block text-[10px] font-semibold uppercase tracking-wide text-white';
 const inputCls =
-    'mt-1 w-full rounded-lg border border-white/[0.1] bg-[#0b1020] px-2.5 py-1.5 text-[13px] text-white placeholder:text-slate-600 focus:border-[#8E6BFF]/40 focus:outline-none focus:ring-1 focus:ring-[#8E6BFF]/30 [&>option]:bg-[#0b1020] [&>option]:text-white';
+    'mt-1 w-full rounded-lg border border-white/[0.1] bg-[#0b1020] px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/60 focus:border-[#8E6BFF]/40 focus:outline-none focus:ring-1 focus:ring-[#8E6BFF]/30 [&>option]:bg-[#0b1020] [&>option]:text-white';
 
 const interestOptions = ['technology', 'gaming', 'shopping', 'finance', 'crypto', 'sports', 'movies', 'travel'];
 
@@ -121,7 +121,7 @@ export default function MemberSurveyProfileFormPage() {
             <header className="rounded-2xl border border-violet-300/15 bg-[#0b1020]/60 px-3 py-2.5 backdrop-blur-xl">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C4B5FD]">RM Survey</p>
                 <h1 className="mt-1 text-xl font-bold text-white">Short User Profile Form</h1>
-                <p className="mt-1 text-xs text-[#A0AEC0]">Fill this once to improve survey targeting and rewards relevance.</p>
+                <p className="mt-1 text-xs text-white">Fill this once to improve survey targeting and rewards relevance.</p>
             </header>
 
             {err ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{err}</p> : null}
@@ -169,7 +169,7 @@ export default function MemberSurveyProfileFormPage() {
                         <p className={labelCls}>Interests (Multi Select)</p>
                         <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                             {interestOptions.map((x) => (
-                                <button key={x} type="button" onClick={() => toggleInterest(x)} className={`rounded-lg border px-2 py-1 text-[11px] ${form.interests.includes(x) ? 'border-violet-300/55 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/[0.04] text-[#A0AEC0]'}`}>
+                                <button key={x} type="button" onClick={() => toggleInterest(x)} className={`rounded-lg border px-2 py-1 text-[11px] ${form.interests.includes(x) ? 'border-violet-300/55 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/[0.04] text-white'}`}>
                                     {x}
                                 </button>
                             ))}
@@ -196,7 +196,7 @@ export default function MemberSurveyProfileFormPage() {
 
                 <div className="flex flex-wrap items-center gap-1.5">
                     <RmsButton type="submit" variant="neon" disabled={!canSave}>{saving ? 'Saving…' : 'Save form'}</RmsButton>
-                    <Link to="/member/profile" className="rounded-lg border border-white/15 px-3 py-2 text-xs text-[#CBD5E1] hover:text-white">Back to profile</Link>
+                    <Link to="/member/profile" className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:text-white">Back to profile</Link>
                 </div>
             </form>
         </div>
@@ -217,8 +217,8 @@ function YesNo({ label, checked, onChange }) {
         <div>
             <p className={labelCls}>{label}</p>
             <div className="mt-1 flex gap-1.5">
-                <button type="button" onClick={() => onChange(true)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${checked ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-200' : 'border-white/10 bg-white/[0.04] text-[#A0AEC0]'}`}>Yes</button>
-                <button type="button" onClick={() => onChange(false)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${!checked ? 'border-amber-300/60 bg-amber-500/20 text-amber-200' : 'border-white/10 bg-white/[0.04] text-[#A0AEC0]'}`}>No</button>
+                <button type="button" onClick={() => onChange(true)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${checked ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-200' : 'border-white/10 bg-white/[0.04] text-white'}`}>Yes</button>
+                <button type="button" onClick={() => onChange(false)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${!checked ? 'border-amber-300/60 bg-amber-500/20 text-amber-200' : 'border-white/10 bg-white/[0.04] text-white'}`}>No</button>
             </div>
         </div>
     );

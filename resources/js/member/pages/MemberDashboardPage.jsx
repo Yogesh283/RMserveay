@@ -77,9 +77,23 @@ export default function MemberDashboardPage() {
     const q = summary?.quick_stats;
 
     const directReferralsCount = teamOverview?.direct?.count ?? 0;
+    const activePanelsCount = Number(
+        q?.active_panels_count ??
+            ((q?.sub_panel_count ?? user?.sub_panel_count ?? 0) + (q?.super_sub_panel_count ?? user?.super_sub_panel_count ?? 0)),
+    );
     const surveysCompletedCount = q?.completed_surveys_count ?? 0;
     const todayEarningsUsd = levelIncome?.earned_today_usd ?? 0;
     const totalEarningsUsd = e?.total_from_programme ?? 0;
+    const hasVerification = Boolean(user?.email_verified_at || user?.phone_verified_at);
+    const hasSubmission = Boolean(user?.profile_completed_at || user?.profile || user?.survey_profile);
+    const completedStepCount = [true, hasVerification, hasSubmission, activePanelsCount > 0].filter(Boolean).length;
+    const activationProgressPct = Math.round((completedStepCount / 4) * 100);
+    const activationSteps = [
+        { key: 'start', label: 'Start', done: true },
+        { key: 'verify', label: 'Verify', done: hasVerification },
+        { key: 'submit', label: 'Submit', done: hasSubmission },
+        { key: 'complete', label: 'Complete', done: activePanelsCount > 0 },
+    ];
 
     /** Mirrored from `wallet` / `users` (main = spend/withdraw; P2P = internal pool). */
     const mainWalletUsd = overview?.wallet_balance ?? summary?.wallet_main_usd ?? user?.wallet_balance;
@@ -141,9 +155,13 @@ export default function MemberDashboardPage() {
                             <div className="min-w-0">
                                 <p className="text-[10px] text-slate-300">{t('member.dashboard.welcomeBack')}</p>
                                 <p className="truncate text-sm font-semibold leading-tight text-white">{user?.name || 'yogesh'}</p>
-                                <div className="mt-1 flex items-center gap-1">
-                                    <span className="rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-300">ID: {user?.login_uid || '—'}</span>
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-300/25 bg-violet-500/15 px-1.5 py-0.5 text-[9px] text-violet-100">✓ Verified</span>
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                    <span className="inline-flex min-h-[18px] items-center rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-300">
+                                        ID: {user?.login_uid || '—'}
+                                    </span>
+                                    <span className="inline-flex min-h-[18px] items-center gap-1 rounded-full border border-cyan-300/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-100">
+                                        Active Panels: {activePanelsCount}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -159,7 +177,7 @@ export default function MemberDashboardPage() {
                         <div className="flex items-center gap-2.5">
                             <div className="relative h-9 w-9 shrink-0 rounded-full border border-violet-300/40 bg-[#0b1020]">
                                 <div className="absolute inset-[4px] rounded-full border border-violet-300/45" />
-                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-violet-200">0%</div>
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-violet-200">{activationProgressPct}%</div>
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-white">Complete your ID Activation</p>
@@ -170,10 +188,10 @@ export default function MemberDashboardPage() {
                             </Link>
                         </div>
                         <div className="mt-2 grid grid-cols-4 gap-1 text-center">
-                            {['Start', 'Verify', 'Submit', 'Complete'].map((step, idx) => (
-                                <div key={step} className="relative">
-                                    <span className={`mx-auto mb-1 block h-1.5 w-1.5 rounded-full ${idx === 0 ? 'bg-violet-400 shadow-[0_0_8px_rgba(168,85,247,0.7)]' : 'bg-white/20'}`} />
-                                    <p className="text-[9px] text-slate-400">{step}</p>
+                            {activationSteps.map((step) => (
+                                <div key={step.key} className="relative">
+                                    <span className={`mx-auto mb-1 block h-1.5 w-1.5 rounded-full ${step.done ? 'bg-violet-400 shadow-[0_0_8px_rgba(168,85,247,0.7)]' : 'bg-white/20'}`} />
+                                    <p className={`text-[9px] ${step.done ? 'text-violet-200' : 'text-slate-400'}`}>{step.label}</p>
                                 </div>
                             ))}
                         </div>
@@ -342,6 +360,23 @@ export default function MemberDashboardPage() {
                         </div>
                     </RmsCard>
 
+                    {/* Active Panels */}
+                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-[#38BDF8]/25 !bg-[#0f162b]/90" padding={false}>
+                        <div className="flex items-start gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#38BDF8]/35 bg-gradient-to-br from-[#2563EB]/20 to-[#06B6D4]/10 shadow-[0_0_26px_rgba(56,189,248,0.2)]">
+                                <svg className="h-5 w-5 text-cyan-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 18.5v-13z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 8h8M8 12h8M8 16h5" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Active Panels</p>
+                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{activePanelsCount}</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Sub + super panels active</p>
+                            </div>
+                        </div>
+                    </RmsCard>
+
                     {/* Today’s Earnings */}
                     <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-emerald-400/20 !bg-[#0f162b]/90" padding={false}>
                         <div className="flex items-start gap-2">
@@ -359,21 +394,6 @@ export default function MemberDashboardPage() {
                         </div>
                     </RmsCard>
 
-                    {/* Total Earnings */}
-                    <RmsCard variant="inset" className="!p-3 !rounded-[22px] !border-[#F59E0B]/25 !bg-[#0f162b]/90" padding={false}>
-                        <div className="flex items-start gap-2">
-                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#F59E0B]/35 bg-gradient-to-br from-[#F59E0B]/20 to-[#7C3AED]/10 shadow-[0_0_26px_rgba(245,158,11,0.20)]">
-                                <svg className="h-5 w-5 text-amber-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 2l3 7h7l-5.5 4.2L18 22l-6-3.8L6 22l1.5-8.8L2 9h7z" />
-                                </svg>
-                            </span>
-                            <div className="min-w-0">
-                                <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Total Earnings</p>
-                                <p className="mt-1 text-sm font-bold tabular-nums text-white">{fmtUsd(totalEarningsUsd)}</p>
-                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Lifetime programme income</p>
-                            </div>
-                        </div>
-                    </RmsCard>
                 </div>
             </div>
 

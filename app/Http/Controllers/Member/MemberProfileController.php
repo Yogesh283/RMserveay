@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 class MemberProfileController extends Controller
 {
     private const EMAIL_OTP_TTL_MINUTES = 10;
+    private const PASSWORD_OTP_TTL_MINUTES = 10;
 
     public function sendEmailChangeOtp(Request $request): JsonResponse
     {
@@ -55,6 +56,32 @@ class MemberProfileController extends Controller
         ]);
     }
 
+    public function sendPasswordChangeOtp(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $rateKey = 'otp-send:password-change:'.$user->id.'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            throw ValidationException::withMessages([
+                'password_otp' => ['Too many OTP requests. Try again in a few minutes.'],
+            ]);
+        }
+        RateLimiter::hit($rateKey, 120);
+
+        $otp = (string) random_int(100000, 999999);
+        $cacheKey = OtpController::cacheKeyPasswordChangeUser((int) $user->id);
+        Cache::put($cacheKey, [
+            'code' => $otp,
+            'expires_at' => now()->addMinutes(self::PASSWORD_OTP_TTL_MINUTES)->timestamp,
+        ], now()->addMinutes(self::PASSWORD_OTP_TTL_MINUTES));
+
+        Mail::to((string) $user->email)->send(new OtpMail($otp, 'Password change'));
+
+        return response()->json([
+            'message' => 'OTP sent to your registered email.',
+        ]);
+    }
+
     public function update(UpdateMemberProfileRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -68,6 +95,14 @@ class MemberProfileController extends Controller
                     'current_password' => [__('The provided password does not match your current password.')],
                 ]);
             }
+
+            $passwordOtp = (string) ($validated['password_otp'] ?? '');
+            if ($passwordOtp === '' || ! OtpController::verifyPasswordChangeUser((int) $user->id, $passwordOtp)) {
+                throw ValidationException::withMessages([
+                    'password_otp' => ['Invalid or expired OTP. Please request a new OTP.'],
+                ]);
+            }
+
             $user->password = $validated['password'];
         }
 

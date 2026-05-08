@@ -22,6 +22,9 @@ export default function MemberProfilePage() {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+    const [passwordOtp, setPasswordOtp] = useState('');
+    const [passwordOtpSent, setPasswordOtpSent] = useState(false);
+    const [sendingPasswordOtp, setSendingPasswordOtp] = useState(false);
     const [emailOtp, setEmailOtp] = useState('');
     const [emailOtpSentFor, setEmailOtpSentFor] = useState('');
     const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
@@ -88,6 +91,7 @@ export default function MemberProfilePage() {
                 payload.password = newPassword;
                 payload.password_confirmation = newPasswordConfirmation;
                 payload.current_password = currentPassword;
+                payload.password_otp = passwordOtp.trim();
             }
             const { data } = await window.axios.patch('api/user', payload);
             if (data?.user) {
@@ -102,6 +106,8 @@ export default function MemberProfilePage() {
             setCurrentPassword('');
             setNewPassword('');
             setNewPasswordConfirmation('');
+            setPasswordOtp('');
+            setPasswordOtpSent(false);
             setSavedMsg('Saved.');
             window.setTimeout(() => setSavedMsg(null), 3000);
         } catch (err) {
@@ -142,6 +148,31 @@ export default function MemberProfilePage() {
             setError(!err.response ? describeAxiosNetworkError(err) : data?.message ?? err.message ?? 'Could not send OTP.');
         } finally {
             setSendingEmailOtp(false);
+        }
+    }
+
+    async function sendPasswordOtp() {
+        setError(null);
+        setFieldErrors((prev) => ({ ...prev, password_otp: undefined }));
+        if (!newPassword?.trim()) {
+            setError('Enter new password first.');
+            return;
+        }
+        setSendingPasswordOtp(true);
+        try {
+            await prepareSanctum();
+            const { data } = await window.axios.post('api/member/profile/password-change-otp');
+            setPasswordOtpSent(true);
+            setSavedMsg(data?.message ?? 'OTP sent to your registered email.');
+            window.setTimeout(() => setSavedMsg(null), 3000);
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.errors) {
+                setFieldErrors((prev) => ({ ...prev, ...data.errors }));
+            }
+            setError(!err.response ? describeAxiosNetworkError(err) : data?.message ?? err.message ?? 'Could not send OTP.');
+        } finally {
+            setSendingPasswordOtp(false);
         }
     }
 
@@ -371,6 +402,38 @@ export default function MemberProfilePage() {
                                 autoComplete="new-password"
                                 error={fieldErrors.password_confirmation?.[0]}
                             />
+                            {newPassword?.trim() ? (
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                        <RmsButton
+                                            type="button"
+                                            variant="ghost"
+                                            className="!w-auto !px-2.5 !py-1.5 text-[11px] sm:!px-3 sm:!py-2 sm:text-xs"
+                                            onClick={sendPasswordOtp}
+                                            disabled={sendingPasswordOtp}
+                                        >
+                                            {sendingPasswordOtp ? 'Sending OTP…' : passwordOtpSent ? 'Resend Password OTP' : 'Send Password OTP'}
+                                        </RmsButton>
+                                        <p className="text-[11px] text-[#94A3B8]">Required for password update.</p>
+                                    </div>
+                                    <label className={`${labelCls} mt-2`} htmlFor="pf-password-otp">
+                                        Password OTP
+                                    </label>
+                                    <input
+                                        id="pf-password-otp"
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        maxLength={6}
+                                        value={passwordOtp}
+                                        onChange={(ev) => setPasswordOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        className={inputCls}
+                                        placeholder="6-digit OTP"
+                                        required={Boolean(newPassword?.trim())}
+                                    />
+                                    {fieldErrors.password_otp?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.password_otp[0]}</p> : null}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
 

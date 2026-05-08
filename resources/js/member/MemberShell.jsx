@@ -296,6 +296,7 @@ export default function MemberShell() {
     const [user, setUser] = useState(undefined);
     const [menuOpen, setMenuOpen] = useState(false);
     const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+    const [referralPopupOpen, setReferralPopupOpen] = useState(false);
     const [moreActionMsg, setMoreActionMsg] = useState('');
     const menuRef = useRef(null);
 
@@ -356,31 +357,43 @@ export default function MemberShell() {
         if (!base) return '';
         return `${base}/register?ref=${encodeURIComponent(code)}`;
     }, [user?.referral_code]);
+    const referralInviteUrls = useMemo(() => {
+        const code = user?.referral_code?.trim();
+        if (!code || typeof window === 'undefined') {
+            return { left: '', right: '' };
+        }
+        const origin = window.location.origin;
+        const base = { ref: code, account: 'normal', flow: 'register' };
+        return {
+            left: `${origin}/?${new URLSearchParams({ ...base, side: 'left' }).toString()}#register`,
+            right: `${origin}/?${new URLSearchParams({ ...base, side: 'right' }).toString()}#register`,
+        };
+    }, [user?.referral_code]);
 
     function showMoreActionMsg(message) {
         setMoreActionMsg(message);
         window.setTimeout(() => setMoreActionMsg(''), 1800);
     }
 
-    async function copyReferralLink() {
-        if (!referralUrl) return;
+    async function copyReferralLink(url, label = 'Referral link') {
+        if (!url) return;
         try {
-            await navigator.clipboard.writeText(referralUrl);
-            showMoreActionMsg('Referral link copied');
+            await navigator.clipboard.writeText(url);
+            showMoreActionMsg(`${label} copied`);
         } catch {
             showMoreActionMsg('Copy failed');
         }
     }
 
-    async function shareReferralLink() {
-        if (!referralUrl) return;
+    async function shareReferralLink(url, label = 'Referral link') {
+        if (!url) return;
         try {
             if (navigator.share) {
-                await navigator.share({ title: 'RM Survey', text: 'Join RM Survey', url: referralUrl });
-                showMoreActionMsg('Referral link shared');
+                await navigator.share({ title: 'RM Survey', text: 'Join RM Survey', url });
+                showMoreActionMsg(`${label} shared`);
                 return;
             }
-            await copyReferralLink();
+            await copyReferralLink(url, label);
         } catch {
             /* share cancelled */
         }
@@ -624,26 +637,14 @@ export default function MemberShell() {
                             <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account & earnings</p>
                         </div>
                         {referralUrl ? (
-                            <div className="mx-2 mb-2 rounded-lg border border-violet-300/20 bg-[#0b1020]/75 p-2 backdrop-blur-xl">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-200/85">Referral link</p>
-                                <p className="mt-1 truncate rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[10px] text-[#A0AEC0]">{referralUrl}</p>
-                                <div className="mt-2 grid grid-cols-2 gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={copyReferralLink}
-                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
-                                    >
-                                        Copy
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={shareReferralLink}
-                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
-                                    >
-                                        Share
-                                    </button>
-                                </div>
-                                {moreActionMsg ? <p className="mt-1 text-[10px] text-emerald-300">{moreActionMsg}</p> : null}
+                            <div className="mx-2 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setReferralPopupOpen(true)}
+                                    className="w-full rounded-lg border border-violet-300/25 bg-violet-500/10 px-3 py-2 text-left text-[11px] font-semibold text-violet-100 backdrop-blur-xl transition hover:border-violet-300/45"
+                                >
+                                    Open Referral Links
+                                </button>
                             </div>
                         ) : null}
                         <ul className="grid auto-rows-fr grid-cols-2 gap-1.5 px-2 pb-2.5">
@@ -701,6 +702,51 @@ export default function MemberShell() {
                             ))}
                         </ul>
                         <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" />
+                    </div>
+                </div>
+            ) : null}
+
+            {referralPopupOpen ? (
+                <div className="fixed inset-0 z-[120] lg:hidden" role="dialog" aria-modal="true" aria-label="Referral links">
+                    <button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setReferralPopupOpen(false)} aria-label={t('common.closeMenu')} />
+                    <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 rounded-2xl border border-violet-300/30 bg-[#0b1020]/95 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.62)] backdrop-blur-xl">
+                        <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-semibold text-white">Referral Links</p>
+                            <button
+                                type="button"
+                                onClick={() => setReferralPopupOpen(false)}
+                                className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-[#CBD5E1] transition hover:text-white"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        {[
+                            { key: 'left', label: 'Left Link', url: referralInviteUrls.left },
+                            { key: 'right', label: 'Right Link', url: referralInviteUrls.right },
+                        ].map((item) => (
+                            <div key={item.key} className="mb-2 rounded-lg border border-white/10 bg-black/20 p-2 last:mb-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-200/85">{item.label}</p>
+                                <p className="mt-1 truncate rounded-md border border-white/10 bg-black/25 px-2 py-1 text-[10px] text-[#A0AEC0]">{item.url}</p>
+                                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => copyReferralLink(item.url, item.label)}
+                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                    >
+                                        Copy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => shareReferralLink(item.url, item.label)}
+                                        className="rounded-md border border-violet-300/25 bg-violet-500/10 px-2 py-1.5 text-[10px] font-semibold text-violet-100 transition hover:border-violet-300/45"
+                                    >
+                                        Share
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {moreActionMsg ? <p className="mt-2 text-[10px] text-emerald-300">{moreActionMsg}</p> : null}
                     </div>
                 </div>
             ) : null}

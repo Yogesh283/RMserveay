@@ -69,6 +69,72 @@ function IconProject() {
 }
 
 const serviceIconList = [IconResearch, IconConsult, IconChart, IconProject];
+const heroFeatureItems = [
+    {
+        title: 'Global Reach',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9zm0 0c-2.3 2.3-3.6 5.4-3.6 9S9.7 18.7 12 21m0-18c2.3 2.3 3.6 5.4 3.6 9S14.3 18.7 12 21M3 12h18" />
+            </svg>
+        ),
+    },
+    {
+        title: 'Secure & Trusted',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 3.2v5.7c0 4.6-3 7.6-7 9.1-4-1.5-7-4.5-7-9.1V6.2L12 3zm0 6v4m0 3h.01" />
+            </svg>
+        ),
+    },
+    {
+        title: 'Actionable Insights',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h16M7 16v-5m5 5V8m5 8V5" />
+            </svg>
+        ),
+    },
+    {
+        title: 'Fair & Fast Payouts',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 3L5 14h6l-1 7 9-12h-6l1-6z" />
+            </svg>
+        ),
+    },
+];
+
+function HeroButtonIconUsers() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.36-1.86M17 20H7m10 0v-2a6 6 0 00-10 0v2m0 0H2v-2a3 3 0 015.36-1.86M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 2a2.25 2.25 0 11-4.5 0A2.25 2.25 0 0121 9zM7.5 9A2.25 2.25 0 113 9a2.25 2.25 0 014.5 0z" />
+        </svg>
+    );
+}
+
+function HeroButtonIconBuilding() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M9 14h.01M9 18h.01M15 10h.01M15 14h.01M15 18h.01" />
+        </svg>
+    );
+}
+
+function HeroButtonIconLock() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V8a4 4 0 118 0v3m-9 0h10a1 1 0 011 1v7a1 1 0 01-1 1H7a1 1 0 01-1-1v-7a1 1 0 011-1z" />
+        </svg>
+    );
+}
+
+function HeroButtonArrow() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+    );
+}
 
 export default function HomePage() {
     const { t } = useTranslation();
@@ -179,25 +245,66 @@ export default function HomePage() {
                                 >
                                     {t('home.heroSub')}
                                 </p>
-                                <div className="home-animate-in home-animate-delay-3 mx-auto mt-4 flex max-w-lg flex-col gap-2 sm:mx-auto sm:mt-5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-2.5 lg:mx-0 lg:justify-start">
-                                    <Link
-                                        to={registerNormalTo}
-                                        className={`inline-flex min-h-[40px] w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold sm:w-auto sm:min-w-[140px] sm:px-5 sm:py-2.5 sm:text-[15px] ${btnPrimary} shadow-[0_0_22px_rgba(124,58,237,0.28)]`}
-                                    >
-                                        {t('home.normalUser')}
-                                    </Link>
-                                    <Link
-                                        to={registerPublisherTo}
-                                        className={`inline-flex min-h-[40px] w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold sm:w-auto sm:min-w-[140px] sm:px-5 sm:py-2.5 sm:text-[15px] ${btnPrimary} shadow-[0_0_22px_rgba(59,130,246,0.28)]`}
-                                    >
-                                        {t('home.publisher')}
-                                    </Link>
-                                    <Link
-                                        to="/login"
-                                        className={`inline-flex min-h-[40px] w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold sm:w-auto sm:min-w-[140px] sm:px-5 sm:py-2.5 sm:text-[15px] ${btnGhost}`}
-                                    >
-                                        {t('home.logIn')}
-                                    </Link>
+                                <div className="home-animate-in home-animate-delay-3 mx-auto mt-4 w-full max-w-lg space-y-3 sm:mx-auto sm:mt-5 lg:mx-0">
+                                    <div className="relative overflow-hidden rounded-2xl border border-[#A78BFA]/35 bg-gradient-to-br from-[#060B1A]/90 via-[#070E20]/86 to-[#04070F]/92 p-2.5 shadow-[0_0_0_1px_rgba(167,139,250,0.12),0_12px_34px_rgba(2,6,23,0.72),0_0_32px_rgba(124,58,237,0.24)] backdrop-blur-xl">
+                                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(124,58,237,0.22),transparent_42%),radial-gradient(circle_at_88%_100%,rgba(59,130,246,0.16),transparent_38%)]" />
+                                        <div className="relative grid grid-cols-4 gap-0.5">
+                                            {heroFeatureItems.map((item, idx) => (
+                                                <div key={item.title} className="relative px-1.5 py-1 text-center">
+                                                    {idx < heroFeatureItems.length - 1 ? <span className="pointer-events-none absolute inset-y-1 right-0 w-px bg-gradient-to-b from-transparent via-[#A78BFA]/40 to-transparent" /> : null}
+                                                    <span className="mx-auto inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#A78BFA]/35 bg-[#111827]/55 text-[#BFDBFE] shadow-[0_0_14px_rgba(96,165,250,0.32)]">
+                                                        {item.icon}
+                                                    </span>
+                                                    <p className="mt-1 text-[10px] font-medium leading-tight text-white">{item.title}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2.5">
+                                        <Link
+                                            to={registerNormalTo}
+                                            className="group inline-flex min-h-[52px] w-full items-center justify-between rounded-[18px] bg-gradient-to-r from-[#7C3AED] via-[#5B6BFF] to-[#38BDF8] px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(124,58,237,0.36),0_14px_36px_rgba(37,99,235,0.3)] ring-1 ring-[#C4B5FD]/35 transition-all duration-300 hover:brightness-110"
+                                        >
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 shadow-[0_0_16px_rgba(96,165,250,0.35)]">
+                                                    <HeroButtonIconUsers />
+                                                </span>
+                                                <span>Panelist User Register</span>
+                                            </span>
+                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 transition-transform group-hover:translate-x-0.5">
+                                                <HeroButtonArrow />
+                                            </span>
+                                        </Link>
+                                        <Link
+                                            to={registerPublisherTo}
+                                            className="group inline-flex min-h-[52px] w-full items-center justify-between rounded-[18px] bg-gradient-to-r from-[#7C3AED] via-[#5B6BFF] to-[#38BDF8] px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(124,58,237,0.34),0_14px_36px_rgba(37,99,235,0.28)] ring-1 ring-[#C4B5FD]/35 transition-all duration-300 hover:brightness-110"
+                                        >
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 shadow-[0_0_16px_rgba(147,197,253,0.3)]">
+                                                    <HeroButtonIconBuilding />
+                                                </span>
+                                                <span>Publisher User Register</span>
+                                            </span>
+                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 transition-transform group-hover:translate-x-0.5">
+                                                <HeroButtonArrow />
+                                            </span>
+                                        </Link>
+                                        <Link
+                                            to="/login"
+                                            className="group inline-flex min-h-[52px] w-full items-center justify-between rounded-[18px] border border-[#A78BFA]/30 bg-[linear-gradient(140deg,rgba(15,23,42,0.72),rgba(15,23,42,0.42))] px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(59,130,246,0.2),0_10px_30px_rgba(2,6,23,0.52)] backdrop-blur-xl ring-1 ring-[#60A5FA]/15 transition-all duration-300 hover:border-[#C4B5FD]/45 hover:bg-[linear-gradient(140deg,rgba(15,23,42,0.8),rgba(15,23,42,0.52))]"
+                                        >
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] shadow-[0_0_14px_rgba(124,58,237,0.22)]">
+                                                    <HeroButtonIconLock />
+                                                </span>
+                                                <span>Log in</span>
+                                            </span>
+                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-[#C4B5FD] transition-transform group-hover:translate-x-0.5">
+                                                <HeroButtonArrow />
+                                            </span>
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                             <div className="home-animate-in home-animate-delay-2 relative mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none">

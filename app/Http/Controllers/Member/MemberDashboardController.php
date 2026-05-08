@@ -127,6 +127,9 @@ class MemberDashboardController extends Controller
                 'next_plan_name' => $nextPlan['name'] ?? null,
                 'available_surveys_count' => $availableSurveysCount,
                 'completed_surveys_count' => $completedSurveysCount,
+                'sub_panel_count' => (int) $user->sub_panel_count,
+                'super_sub_panel_count' => (int) $user->super_sub_panel_count,
+                'active_panels_count' => (int) $user->sub_panel_count + (int) $user->super_sub_panel_count,
             ],
         ]);
     }
