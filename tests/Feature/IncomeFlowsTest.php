@@ -13,6 +13,44 @@ class IncomeFlowsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_direct_income_flows_when_referral_buys_any_panel_even_if_sponsor_has_no_panel_slot(): void
+    {
+        $sponsor = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 0,
+            'super_sub_panel_count' => 0,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $downline = User::factory()->create([
+            'user_type' => 'normal',
+            'sponsor_id' => $sponsor->id,
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'wallet_balance' => '50.00',
+        ]);
+
+        app(SelfSurveyIncomeService::class)->debitFee(
+            $downline,
+            (string) config('self_survey.sub_panel_entry_fee'),
+            WalletTransaction::TYPE_SUB_PANEL_FEE,
+        );
+
+        $directTx = WalletTransaction::query()
+            ->where('user_id', $sponsor->id)
+            ->where('type', WalletTransaction::TYPE_DIRECT_COMMISSION)
+            ->first();
+
+        $this->assertNotNull(
+            $directTx,
+            'Sponsor should receive direct income on referral panel buy without owning a panel slot themselves.'
+        );
+        $expected = bcmul((string) config('self_survey.sub_panel_entry_fee'), (string) config('direct_income.rate'), 2);
+        $this->assertSame($expected, (string) $directTx->amount);
+    }
+
     public function test_direct_income_is_credited_to_eligible_sponsor_from_survey_credit(): void
     {
         $sponsor = User::factory()->create([

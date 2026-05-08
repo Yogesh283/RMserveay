@@ -73,15 +73,13 @@ export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    /** Member signup — keeps `ref` / `side` from the current home URL when inviting from the same tab. */
+    /** Panelist signup — keeps `ref` / `side` from the current home URL when inviting from the same tab. */
     const registerMemberTo = useMemo(() => {
         const cur = location.pathname === '/' ? new URLSearchParams(location.search) : new URLSearchParams();
         const next = new URLSearchParams();
         copyReferralParams(cur, next);
-        next.set('account', 'normal');
-        next.set('flow', 'register');
         const qs = next.toString();
-        return { pathname: '/', search: qs ? `?${qs}` : '', hash: 'register' };
+        return { pathname: '/register/panelist', search: qs ? `?${qs}` : '' };
     }, [location.pathname, location.search]);
 
     const appName = useMemo(() => {

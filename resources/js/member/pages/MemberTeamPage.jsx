@@ -654,10 +654,9 @@ export default function MemberTeamPage() {
             return { left: '', right: '' };
         }
         const origin = window.location.origin;
-        const base = { ref: code, account: 'normal', flow: 'register' };
         return {
-            left: `${origin}/?${new URLSearchParams({ ...base, side: 'left' }).toString()}#register`,
-            right: `${origin}/?${new URLSearchParams({ ...base, side: 'right' }).toString()}#register`,
+            left: `${origin}/register/panelist?${new URLSearchParams({ ref: code, side: 'left' }).toString()}`,
+            right: `${origin}/register/panelist?${new URLSearchParams({ ref: code, side: 'right' }).toString()}`,
         };
     }, [data?.self?.referral_code]);
 

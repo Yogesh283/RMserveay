@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router-dom';
-import HomeRegisterForms from '../components/HomeRegisterForms';
-import { copyReferralParams } from '../lib/registerReferral';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { copyReferralParams, readReferralParams } from '../lib/registerReferral';
 import RmSurveyBackdrop, { rgbaHex } from '../components/RmSurveyBackdrop';
 import { RM } from '../survey-mobile/theme';
 
@@ -139,24 +138,42 @@ function HeroButtonArrow() {
 export default function HomePage() {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const location = useLocation();
     const mobileBanners = ['/images/Start%20Earn.png', '/images/Start%20Panel.png', '/images/Start%20Pub.png', '/images/Panel.png'];
     const [mobileSlide, setMobileSlide] = useState(0);
 
-    /** Normal member signup — preserves invite `ref` / `side` from the URL. */
+    /** Panelist signup — keeps invite `ref` / `side` from the URL. */
     const registerNormalTo = useMemo(() => {
         const next = new URLSearchParams();
         copyReferralParams(searchParams, next);
-        next.set('account', 'normal');
-        next.set('flow', 'register');
-        return { pathname: '/', search: `?${next.toString()}`, hash: 'register' };
+        const qs = next.toString();
+        return { pathname: '/register/panelist', search: qs ? `?${qs}` : '' };
     }, [searchParams]);
 
-    const registerPublisherTo = useMemo(() => {
-        const next = new URLSearchParams();
-        next.set('account', 'publisher');
-        next.set('flow', 'register');
-        return { pathname: '/', search: `?${next.toString()}`, hash: 'register' };
-    }, []);
+    const registerPublisherTo = useMemo(() => ({ pathname: '/register/publisher' }), []);
+
+    /** Migrate any legacy register URL (`?ref=…`, `?account=…&flow=register#register`, `#register`) to the new dedicated pages. */
+    useEffect(() => {
+        const refQ = readReferralParams(searchParams);
+        const accountRaw = searchParams.get('account') ?? searchParams.get('register');
+        const account = accountRaw === 'normal' || accountRaw === 'publisher' ? accountRaw : null;
+        const wantsRegister =
+            location.hash === '#register' ||
+            location.hash === 'register' ||
+            searchParams.get('flow') === 'register' ||
+            refQ.ref.length > 0;
+        if (!wantsRegister) {
+            return;
+        }
+        const target = account === 'publisher' ? '/register/publisher' : '/register/panelist';
+        const params = new URLSearchParams();
+        if (target === '/register/panelist') {
+            copyReferralParams(searchParams, params);
+        }
+        const qs = params.toString();
+        navigate({ pathname: target, search: qs ? `?${qs}` : '' }, { replace: true });
+    }, [searchParams, location.hash, navigate]);
 
     const serviceItems = t('home.services', { returnObjects: true });
     const statsBullets = t('home.statsBullets', { returnObjects: true });
@@ -481,8 +498,6 @@ export default function HomePage() {
                         <p className={`text-xs leading-relaxed sm:text-sm ${muted}`}>{t('home.localesLine')}</p>
                     </div>
                 </section>
-
-                <HomeRegisterForms />
             </div>
         </div>
     );

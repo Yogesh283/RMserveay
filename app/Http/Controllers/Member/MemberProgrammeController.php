@@ -56,6 +56,8 @@ class MemberProgrammeController extends Controller
                 'active_panelist' => $user->qualifiesActivePanelistIncome(),
                 'activation_fee_usd_paid' => $user->activation_fee_paid_at !== null,
                 'minimum_panel_fee_usd_paid' => $user->minimum_panel_fee_paid_at !== null,
+            ],
+            'info' => [
                 'has_panel_slot' => ((int) $user->sub_panel_count + (int) $user->super_sub_panel_count) >= 1,
             ],
         ]);

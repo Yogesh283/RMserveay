@@ -361,15 +361,13 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Direct income (10%): active panelist + $1 activation (via active path) + at least one sub or super sub panel slot.
+     * Direct income (10%): sponsor only needs to be an active panelist
+     * (activation fee + minimum panel fee paid). Once the downline activates
+     * and buys any panel/fee, the 10% flows immediately.
      */
     public function qualifiesForDirectIncome(): bool
     {
-        if (! $this->qualifiesActivePanelistIncome()) {
-            return false;
-        }
-
-        return ((int) $this->sub_panel_count + (int) $this->super_sub_panel_count) >= 1;
+        return $this->qualifiesActivePanelistIncome();
     }
 
     /** Earner must complete full sub-panel slots (default 9/9) to receive sub-panel matching income. */

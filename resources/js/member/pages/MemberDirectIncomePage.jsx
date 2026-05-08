@@ -74,10 +74,12 @@ export default function MemberDirectIncomePage() {
                                 {data.requirements.minimum_panel_fee_usd_paid ? 'Yes' : 'No'}
                             </span>
                         </li>
-                        <li className="flex flex-wrap items-center justify-between gap-2">
-                            <span>At least 1 panel slot (sub or super panel purchased)</span>
-                            <span className={data.requirements.has_panel_slot ? 'text-emerald-500' : 'text-amber-600'}>{data.requirements.has_panel_slot ? 'Yes' : 'No'}</span>
-                        </li>
+                        {data.info?.has_panel_slot !== undefined ? (
+                            <li className="flex flex-wrap items-center justify-between gap-2 opacity-80">
+                                <span>Panel slot purchased <span className="text-[10px] text-slate-400">(informational — not required)</span></span>
+                                <span className={data.info.has_panel_slot ? 'text-emerald-500' : 'text-slate-400'}>{data.info.has_panel_slot ? 'Yes' : 'No'}</span>
+                            </li>
+                        ) : null}
                     </ul>
                 </section>
             )}
@@ -101,7 +103,8 @@ export default function MemberDirectIncomePage() {
                         'Requirements to earn this income:',
                         'You must be an active panelist (activation + minimum panel fee completed)',
                         '$1 activation fee paid',
-                        'At least one panel slot active — meaning at least one sub or super panel purchased',
+                        'Minimum $10 panel fee paid',
+                        'As soon as a referral activates and buys any panel, the 10% commission is credited.',
                     ]}
                 />
             </section>

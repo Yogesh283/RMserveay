@@ -1,31 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import AppLogo from './AppLogo';
-import PasswordField from './PasswordField';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import PasswordField from './PasswordField';
 import { describeAxiosNetworkError } from '../lib/axiosErrorMessage';
 import { prepareSanctum } from '../lib/auth';
 import { redirectAfterAuth } from '../lib/authRedirect';
-import { readReferralParams } from '../lib/registerReferral';
 
-const surface =
-    'rounded-[16px] border border-white/[0.08] bg-[rgba(15,23,42,0.5)] p-4 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.35)] sm:rounded-[20px] sm:p-6 md:p-7';
-const labelCls =
-    'block text-xs font-medium uppercase tracking-wide text-white sm:text-sm';
+const labelCls = 'block text-xs font-medium uppercase tracking-wide text-white sm:text-sm';
 const inputCls =
     'mt-1.5 w-full rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 py-2.5 text-[13px] text-white placeholder:text-slate-600 focus:border-[#7C3AED]/50 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/35 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm';
-
-const btnPickNormal =
-    'inline-flex min-h-[38px] min-w-0 flex-1 items-center justify-center rounded-lg border border-[#3B82F6]/45 bg-[rgba(59,130,246,0.18)] px-3 py-2 text-xs font-semibold text-white shadow-sm ring-1 ring-white/[0.06] transition hover:bg-[rgba(59,130,246,0.32)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50 active:brightness-95 sm:min-h-[40px] sm:min-w-[140px] sm:flex-none sm:rounded-xl sm:px-4 sm:text-sm';
-const btnPickPublisher =
-    'inline-flex min-h-[38px] min-w-0 flex-1 items-center justify-center rounded-lg border border-[#F59E0B]/45 bg-[rgba(245,158,11,0.14)] px-3 py-2 text-xs font-semibold text-white shadow-sm ring-1 ring-white/[0.06] transition hover:bg-[rgba(245,158,11,0.26)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F59E0B]/50 active:brightness-95 sm:min-h-[40px] sm:min-w-[140px] sm:flex-none sm:rounded-xl sm:px-4 sm:text-sm';
-
-const actionBtnLogin =
-    'flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#7C3AED]/40 bg-gradient-to-r from-[#7C3AED]/30 to-[#3B82F6]/25 py-3 text-center text-sm font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.25)] ring-1 ring-amber-400/15 transition hover:brightness-110 sm:rounded-[18px] sm:py-4 sm:text-base';
-
-const actionBtnRegister =
-    'flex w-full items-center justify-center gap-2 rounded-[14px] border border-white/[0.14] bg-white/[0.06] py-3 text-center text-sm font-semibold text-white transition hover:bg-white/[0.1] sm:rounded-[18px] sm:py-4 sm:text-base';
 
 async function copyToClipboard(text) {
     if (!text) {
@@ -38,7 +22,7 @@ async function copyToClipboard(text) {
     }
 }
 
-function RegistrationCredentialsModal({ loginUid, password, onContinue }) {
+export function RegistrationCredentialsModal({ loginUid, password, onContinue }) {
     useEffect(() => {
         const t = window.setTimeout(() => onContinue(), 5000);
         return () => window.clearTimeout(t);
@@ -106,10 +90,18 @@ function RegistrationCredentialsModal({ loginUid, password, onContinue }) {
     );
 }
 
-const segInactive =
-    'rounded-xl py-2.5 text-center text-xs font-semibold text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200 sm:text-sm';
-
-function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', urlSide = '', onRoleChange }) {
+/**
+ * Standalone register form. Used by the dedicated panelist/publisher pages.
+ * `accent` controls the submit-button gradient + ring colors so each page can stay on-theme.
+ */
+export default function RegisterCard({
+    userType = 'normal',
+    otpBypass = false,
+    urlRef = '',
+    urlSide = '',
+    accent = 'panelist',
+    surfaceClassName,
+}) {
     const navigate = useNavigate();
     const location = useLocation();
     const registerNonceRef = useRef(crypto.randomUUID());
@@ -151,12 +143,8 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
         }
     }, [urlRef, userType]);
 
-    const placementLabel = useMemo(() => {
-        if (urlSide !== 'left' && urlSide !== 'right') {
-            return null;
-        }
-        return urlSide === 'left' ? 'Left leg' : 'Right leg';
-    }, [urlSide]);
+    const placementLabel =
+        placementLockedFromLink ? (urlSide === 'left' ? 'Left leg' : 'Right leg') : null;
 
     useEffect(() => {
         const raw = loginUid.trim();
@@ -311,37 +299,24 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
         }
     }
 
+    const submitGradient =
+        accent === 'publisher'
+            ? 'bg-gradient-to-r from-[#F59E0B] via-[#F97316] to-[#EF4444] ring-1 ring-[#FBBF24]/35 shadow-[0_0_28px_rgba(245,158,11,0.4)]'
+            : 'bg-gradient-to-r from-[#7C3AED] via-[#5B6BFF] to-[#22D3EE] ring-1 ring-[#A78BFA]/35 shadow-[0_0_28px_rgba(124,58,237,0.4)]';
+
+    const otpButtonClass =
+        accent === 'publisher'
+            ? 'shrink-0 rounded-xl border border-[#F59E0B]/40 bg-[rgba(245,158,11,0.15)] px-3 py-2 text-[10px] font-semibold text-amber-100 transition hover:bg-[rgba(245,158,11,0.28)] disabled:opacity-50 sm:rounded-[14px] sm:px-4 sm:py-3 sm:text-xs'
+            : 'shrink-0 rounded-xl border border-[#7C3AED]/40 bg-[rgba(124,58,237,0.15)] px-3 py-2 text-[10px] font-semibold text-[#C4B5FD] transition hover:bg-[rgba(124,58,237,0.25)] disabled:opacity-50 sm:rounded-[14px] sm:px-4 sm:py-3 sm:text-xs';
+
     return (
-        <div className={surface}>
-            {typeof onRoleChange === 'function' ? (
-                <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-2xl border border-white/[0.1] bg-black/30 p-1 ring-1 ring-white/[0.04]">
-                    <button
-                        type="button"
-                        onClick={() => onRoleChange('normal')}
-                        className={userType === 'normal' ? `${btnPickNormal} !flex min-h-[44px] flex-1 items-center justify-center` : segInactive}
-                    >
-                        Panelist user
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onRoleChange('publisher')}
-                        className={userType === 'publisher' ? `${btnPickPublisher} !flex min-h-[44px] flex-1 items-center justify-center` : segInactive}
-                    >
-                        Publisher
-                    </button>
-                </div>
-            ) : null}
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#93C5FD] sm:text-[11px]">{eyebrow}</p>
-            <h3 className="mt-0.5 text-lg font-bold leading-tight text-white sm:mt-1 sm:text-xl">{title}</h3>
-            {note ? (
-                <p className="mt-1.5 text-xs leading-snug text-slate-400 sm:mt-2 sm:text-sm sm:leading-relaxed">{note}</p>
-            ) : null}
+        <div className={surfaceClassName ?? 'rounded-[20px] border border-white/[0.08] bg-[rgba(15,23,42,0.6)] p-4 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.45)] sm:p-6 md:p-7'}>
             {otpBypass ? (
-                <p className="mt-2 rounded-lg border border-amber-500/25 bg-amber-950/30 px-2.5 py-1.5 text-[11px] text-amber-100 sm:text-xs">
+                <p className="mb-3 rounded-lg border border-amber-500/25 bg-amber-950/30 px-2.5 py-1.5 text-[11px] text-amber-100 sm:text-xs">
                     OTP bypass is on (dev only) — email code not required.
                 </p>
             ) : null}
-            <form className="mt-4 space-y-3 sm:mt-6 sm:space-y-4" onSubmit={onSubmit} noValidate>
+            <form className="space-y-3 sm:space-y-4" onSubmit={onSubmit} noValidate>
                 {error && (
                     <p className="rounded-lg border border-red-500/35 bg-red-950/35 px-2.5 py-1.5 text-xs text-red-200 sm:rounded-[12px] sm:px-3 sm:py-2 sm:text-sm">
                         {error}
@@ -421,12 +396,7 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
                                 className={`${inputCls} flex-1`}
                                 placeholder="you@example.com"
                             />
-                            <button
-                                type="button"
-                                onClick={sendOtp}
-                                disabled={otpSending}
-                                className="shrink-0 rounded-xl border border-[#7C3AED]/40 bg-[rgba(124,58,237,0.15)] px-3 py-2 text-[10px] font-semibold text-[#C4B5FD] transition hover:bg-[rgba(124,58,237,0.25)] disabled:opacity-50 sm:rounded-[14px] sm:px-4 sm:py-3 sm:text-xs"
-                            >
+                            <button type="button" onClick={sendOtp} disabled={otpSending} className={otpButtonClass}>
                                 {otpSending ? 'Sending…' : 'Send OTP'}
                             </button>
                         </div>
@@ -501,7 +471,7 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
                                                 <span className="font-mono text-[#FDE68A]">{sponsorReferralCode.trim()}</span>
                                             </p>
                                             <p className="mt-1 text-[10px] text-slate-600">
-                                                Set by your invite link (left or right); cannot be changed here.
+                                                Set by your invite link (left or right); the system auto-fills the next empty slot in that leg.
                                             </p>
                                         </>
                                     ) : null}
@@ -539,13 +509,7 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
                     required
                     inputClassName={inputCls}
                     autoComplete="new-password"
-                    error={
-                        fieldErrors.password
-                            ? Array.isArray(fieldErrors.password)
-                                ? fieldErrors.password[0]
-                                : fieldErrors.password
-                            : undefined
-                    }
+                    error={fieldErrors.password ? (Array.isArray(fieldErrors.password) ? fieldErrors.password[0] : fieldErrors.password) : undefined}
                 />
                 <PasswordField
                     id={`pw2-${userType}`}
@@ -561,9 +525,9 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
                 <button
                     type="submit"
                     disabled={loading || uidStatus !== 'available'}
-                    className="w-full rounded-[14px] bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2.5 text-[13px] font-semibold text-white ring-1 ring-[#F59E0B]/20 shadow-[0_0_28px_rgba(124,58,237,0.35)] transition hover:brightness-110 disabled:opacity-60 sm:rounded-[16px] sm:py-3.5 sm:text-sm"
+                    className={`w-full rounded-[14px] py-2.5 text-[13px] font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:rounded-[16px] sm:py-3.5 sm:text-sm ${submitGradient}`}
                 >
-                    {loading ? 'Creating account…' : 'Register'}
+                    {loading ? 'Creating account…' : 'Create account'}
                 </button>
             </form>
             {credentialsModal ? (
@@ -574,254 +538,5 @@ function RegisterCard({ title, eyebrow, userType, note, otpBypass, urlRef = '', 
                 />
             ) : null}
         </div>
-    );
-}
-
-function buildLoginHref(account) {
-    const q = new URLSearchParams();
-    q.set('user_type', account);
-    return `/login?${q.toString()}`;
-}
-
-export default function HomeRegisterForms() {
-    const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [otpBypass, setOtpBypass] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                await prepareSanctum();
-                const { data } = await window.axios.get('api/auth/config');
-                if (!cancelled && data?.otp_bypass) {
-                    setOtpBypass(true);
-                }
-            } catch {
-                /* ignore */
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    const referralQ = useMemo(() => readReferralParams(searchParams), [searchParams]);
-    const refParam = referralQ.ref;
-    const urlRef = referralQ.ref;
-    const urlSide = referralQ.side;
-
-    const accountRaw = searchParams.get('account') ?? searchParams.get('register');
-    const accountParam = accountRaw === 'normal' || accountRaw === 'publisher' ? accountRaw : null;
-    const hashRegister =
-        location.hash === '#register' ||
-        location.hash === 'register' ||
-        (typeof window !== 'undefined' && window.location.hash === '#register');
-    /** Show register when #register, ?account=, or ?ref= / ?referral= (invite link). */
-    const registerSectionOpen = hashRegister || accountParam != null || refParam.length > 0;
-    /** Referral links always use normal (member) registration. */
-    const account = refParam ? 'normal' : accountParam ?? (hashRegister ? 'normal' : null);
-    const showRegisterForm = searchParams.get('flow') === 'register';
-
-    /** Keep #register + query together — setSearchParams() drops the hash in many cases. */
-    function navigateRegister(nextParams) {
-        const str = nextParams.toString();
-        navigate(
-            {
-                pathname: location.pathname || '/',
-                search: str ? `?${str}` : '',
-                hash: 'register',
-            },
-            { replace: true },
-        );
-    }
-
-    /** Full-page open of /?account=…#register sometimes lands before RR parses search — sync from window once. */
-    useLayoutEffect(() => {
-        const wSearch = window.location.search;
-        if (!wSearch || wSearch.length <= 1) {
-            return;
-        }
-        const win = new URLSearchParams(wSearch.startsWith('?') ? wSearch.slice(1) : wSearch);
-        const rr = new URLSearchParams(searchParams);
-        if (win.get('account') && !rr.get('account')) {
-            const hash = window.location.hash.replace(/^#/, '') || 'register';
-            navigate(
-                {
-                    pathname: window.location.pathname || '/',
-                    search: wSearch,
-                    hash,
-                },
-                { replace: true },
-            );
-        }
-    }, []);
-
-    useLayoutEffect(() => {
-        const wantsRegister =
-            location.hash === '#register' ||
-            location.hash === 'register' ||
-            window.location.hash === '#register' ||
-            refParam.length > 0;
-        if (!wantsRegister) {
-            return;
-        }
-        requestAnimationFrame(() => {
-            document.getElementById('register')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    }, [location.hash, location.search, searchParams, refParam]);
-
-    /** `?ref=` / `?referral=` — open normal registration form, preserve leg when `side` is set. */
-    useEffect(() => {
-        if (!refParam) {
-            return;
-        }
-        if (searchParams.get('flow') === 'register') {
-            return;
-        }
-        const next = new URLSearchParams(searchParams);
-        next.set('account', 'normal');
-        next.set('flow', 'register');
-        navigateRegister(next);
-    }, [refParam, searchParams]);
-
-    useEffect(() => {
-        const r = searchParams.get('register');
-        const a = searchParams.get('account');
-        if (!r || a || (r !== 'normal' && r !== 'publisher')) {
-            return;
-        }
-        const next = new URLSearchParams(searchParams);
-        next.set('account', r);
-        next.set('flow', 'register');
-        next.delete('register');
-        navigateRegister(next);
-    }, [searchParams]);
-
-    /** `#register` without ?account= — sync URL so refresh/back keeps state. */
-    useEffect(() => {
-        if (!hashRegister || accountParam) {
-            return;
-        }
-        const next = new URLSearchParams(searchParams);
-        next.set('account', 'normal');
-        navigateRegister(next);
-    }, [hashRegister, accountParam, searchParams]);
-
-    /** `/?account=normal#register` (or publisher) — open the OTP registration form directly, not the login/register chooser. */
-    useEffect(() => {
-        const accRaw = searchParams.get('account') ?? searchParams.get('register');
-        if ((accRaw !== 'normal' && accRaw !== 'publisher') || searchParams.get('flow') === 'register') {
-            return;
-        }
-        const hashRegister =
-            location.hash === '#register' ||
-            location.hash === 'register' ||
-            (typeof window !== 'undefined' && window.location.hash === '#register');
-        if (!hashRegister) {
-            return;
-        }
-        const next = new URLSearchParams(searchParams);
-        next.set('account', accRaw);
-        next.set('flow', 'register');
-        next.delete('register');
-        navigate(
-            {
-                pathname: location.pathname || '/',
-                search: next.toString() ? `?${next.toString()}` : '',
-                hash: 'register',
-            },
-            { replace: true },
-        );
-    }, [searchParams, location.hash, location.pathname, navigate]);
-
-    function openRegisterForm() {
-        const next = new URLSearchParams(searchParams);
-        const fromUrl = next.get('account') ?? next.get('register');
-        const acc =
-            fromUrl === 'normal' || fromUrl === 'publisher' ? fromUrl : account ?? 'normal';
-        if (acc === 'normal' || acc === 'publisher') {
-            next.set('account', acc);
-        }
-        next.delete('register');
-        next.set('flow', 'register');
-        navigateRegister(next);
-    }
-
-    function backToAuthChoice() {
-        const next = new URLSearchParams(searchParams);
-        next.delete('flow');
-        navigateRegister(next);
-    }
-
-    const loginHref = account ? buildLoginHref(account) : '/login';
-
-    if (!registerSectionOpen) {
-        return null;
-    }
-
-    return (
-        <section className="border-b border-white/[0.06] bg-[#0B0F1A]/50 py-6 sm:py-10 lg:py-14" id="register">
-            <div className="mx-auto max-w-6xl px-3 sm:px-6">
-                <div className="mx-auto max-w-2xl text-center">
-                    <div className="flex justify-center">
-                        <AppLogo alt="RM Survey" className="mx-auto h-24 w-24 sm:h-32 sm:w-32" />
-                    </div>
-                    {!showRegisterForm ? (
-                        <>
-                            <h2 className="mt-3 text-xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-3xl lg:text-4xl">
-                                {account === 'publisher' ? 'Publisher' : 'Panelist user'} — login or register
-                            </h2>
-                            <p className="mt-1.5 text-sm text-slate-300 sm:mt-2 sm:text-lg">Pick how you want to continue</p>
-                        </>
-                    ) : (
-                        <>
-                            <h2 className="mt-3 text-xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-3xl lg:text-4xl">
-                                {account === 'publisher' ? 'Publisher registration' : 'Panelist user registration'}
-                            </h2>
-                            <p className="mt-1.5 text-sm text-slate-300 sm:mt-2 sm:text-lg">We’ll email you a one-time code to verify.</p>
-                        </>
-                    )}
-                </div>
-
-                {!showRegisterForm ? (
-                    <div className="mt-8 sm:mt-14">
-                        <div className="mx-auto max-w-lg space-y-3 sm:space-y-4">
-                            <Link to={loginHref} className={actionBtnLogin}>
-                                <span className="font-semibold sm:text-lg">Log in</span>
-                            </Link>
-                            <button type="button" className={actionBtnRegister} onClick={openRegisterForm}>
-                                <span className="font-semibold sm:text-lg">Register</span>
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="mt-8 sm:mt-12">
-                        {refParam ? null : (
-                            <div className="mb-4 flex flex-wrap justify-center sm:mb-8">
-                                <button
-                                    type="button"
-                                    onClick={backToAuthChoice}
-                                    className="rounded-full border border-white/[0.12] bg-white/[0.06] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/[0.1] sm:px-4 sm:py-2 sm:text-sm"
-                                >
-                                    ← Back
-                                </button>
-                            </div>
-                        )}
-                        <div className="mx-auto max-w-xl px-0 sm:px-0">
-                            <RegisterCard
-                                eyebrow={account === 'publisher' ? 'Publisher' : 'Member'}
-                                title={account === 'publisher' ? 'Publisher registration' : 'Panelist user registration'}
-                                userType={account}
-                                otpBypass={otpBypass}
-                                urlRef={urlRef}
-                                urlSide={urlSide}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-        </section>
     );
 }

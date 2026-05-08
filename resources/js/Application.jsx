@@ -8,6 +8,8 @@ import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 import FaqsPage from './pages/FaqsPage';
 import HomePage from './pages/HomePage';
+import RegisterPanelistPage from './pages/RegisterPanelistPage';
+import RegisterPublisherPage from './pages/RegisterPublisherPage';
 import WhyJoinPage from './pages/WhyJoinPage';
 import PublisherShell from './publisher/PublisherShell';
 import PublisherDashboardPage from './publisher/pages/PublisherDashboardPage';
@@ -100,7 +102,10 @@ export default function Application() {
                         <Route path="dashboard" element={<DashboardPage />} />
                         <Route path="login/forgot-password" element={<AuthForgotPasswordPage />} />
                         <Route path="login" element={<AuthLoginPage />} />
-                        <Route path="signup" element={<Navigate to={{ pathname: '/', hash: 'register' }} replace />} />
+                        <Route path="register/panelist" element={<RegisterPanelistPage />} />
+                        <Route path="register/publisher" element={<RegisterPublisherPage />} />
+                        <Route path="register" element={<Navigate to="/register/panelist" replace />} />
+                        <Route path="signup" element={<Navigate to="/register/panelist" replace />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Route>
                 </Routes>

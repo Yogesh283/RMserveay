@@ -79,8 +79,8 @@ export default function DashboardPage() {
                 <Link to="/login" className={`mt-6 ${btnPrimary} ${glowPurple}`}>
                     Log in
                 </Link>
-                <Link to="/#register" className={`mt-3 ${btnGhost}`}>
-                    Register on home
+                <Link to="/register/panelist" className={`mt-3 ${btnGhost}`}>
+                    Register
                 </Link>
             </div>
         </div>

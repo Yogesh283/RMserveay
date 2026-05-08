@@ -355,7 +355,7 @@ export default function MemberShell() {
         if (!code) return '';
         const base = (window?.location?.origin || '').replace(/\/$/, '');
         if (!base) return '';
-        return `${base}/register?ref=${encodeURIComponent(code)}`;
+        return `${base}/register/panelist?ref=${encodeURIComponent(code)}`;
     }, [user?.referral_code]);
     const referralInviteUrls = useMemo(() => {
         const code = user?.referral_code?.trim();
@@ -363,10 +363,9 @@ export default function MemberShell() {
             return { left: '', right: '' };
         }
         const origin = window.location.origin;
-        const base = { ref: code, account: 'normal', flow: 'register' };
         return {
-            left: `${origin}/?${new URLSearchParams({ ...base, side: 'left' }).toString()}#register`,
-            right: `${origin}/?${new URLSearchParams({ ...base, side: 'right' }).toString()}#register`,
+            left: `${origin}/register/panelist?${new URLSearchParams({ ref: code, side: 'left' }).toString()}`,
+            right: `${origin}/register/panelist?${new URLSearchParams({ ref: code, side: 'right' }).toString()}`,
         };
     }, [user?.referral_code]);
 
