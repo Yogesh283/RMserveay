@@ -22,5 +22,13 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('surveys:pay-respondent-payouts')->hourly();
+
+        $closingTz = (string) config('binary_closing.timezone', 'Asia/Kolkata');
+        $closingTime = (string) config('binary_closing.closing_time', '00:00');
+        $schedule->command('binary:daily-closing')
+            ->dailyAt($closingTime)
+            ->timezone($closingTz)
+            ->withoutOverlapping(60)
+            ->onOneServer();
     })
     ->create();
