@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\DB;
 class BinaryPlacementService
 {
     /**
-     * Find the first empty binary slot inside a sponsor's requested leg.
-     *
-     * Direct root slot is tried first; after that the leg is traversed breadth-first
-     * so new registrations keep filling the selected left/right team.
+     * Find the deepest "extreme left" / "extreme right" empty slot in the sponsor's
+     * requested leg. Each new registration is placed at the bottom of a single chain:
+     *   - side=left  → keep walking down `left_child_id` until an empty left slot is found.
+     *   - side=right → keep walking down `right_child_id` until an empty right slot is found.
+     * This produces an Extreme-Left / Extreme-Right auto-placement (long chain build).
      *
      * @return array{parent: User, side: 'left'|'right'}|null
      */
@@ -22,42 +23,24 @@ class BinaryPlacementService
             return null;
         }
 
-        $locked = User::whereKey($sponsor->id)->lockForUpdate()->firstOrFail();
+        $current = User::whereKey($sponsor->id)->lockForUpdate()->firstOrFail();
 
-        if ($side === 'left') {
-            if ($locked->left_child_id === null) {
-                return ['parent' => $locked, 'side' => 'left'];
-            }
-            $queue = [(int) $locked->left_child_id];
-        } else {
-            if ($locked->right_child_id === null) {
-                return ['parent' => $locked, 'side' => 'right'];
-            }
-            $queue = [(int) $locked->right_child_id];
-        }
+        $childField = $side === 'left' ? 'left_child_id' : 'right_child_id';
 
-        $visited = [];
-        while ($queue !== []) {
-            $id = array_shift($queue);
-            if (isset($visited[$id])) {
-                continue;
-            }
-            $visited[$id] = true;
-
-            $node = User::whereKey($id)->lockForUpdate()->first();
-            if ($node === null) {
-                continue;
+        /** Safety bound — binary trees can theoretically be unbounded depth, but cap defensively. */
+        $maxDepth = 100000;
+        for ($i = 0; $i < $maxDepth; $i++) {
+            if ($current->{$childField} === null) {
+                return ['parent' => $current, 'side' => $side];
             }
 
-            if ($node->left_child_id === null) {
-                return ['parent' => $node, 'side' => 'left'];
-            }
-            if ($node->right_child_id === null) {
-                return ['parent' => $node, 'side' => 'right'];
+            $next = User::whereKey($current->{$childField})->lockForUpdate()->first();
+            if ($next === null) {
+                /** Stale pointer — treat current slot as empty so registration can proceed. */
+                return ['parent' => $current, 'side' => $side];
             }
 
-            $queue[] = (int) $node->left_child_id;
-            $queue[] = (int) $node->right_child_id;
+            $current = $next;
         }
 
         return null;
