@@ -21,6 +21,8 @@ class WalletTransaction extends Model
 
     public const TYPE_PANEL_MATCHING = 'panel_matching';
 
+    public const TYPE_ACTIVE_PANEL_MATCHING = 'active_panel_matching';
+
     public const TYPE_SUB_PANEL_MATCHING = 'sub_panel_matching';
 
     public const TYPE_SUPER_SUB_PANEL_MATCHING = 'super_sub_panel_matching';

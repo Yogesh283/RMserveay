@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Models\WalletTransaction;
+use App\Services\ActivePanelMatchingService;
 use App\Services\PanelMatchingService;
 use App\Services\SelfSurveyIncomeService;
 use App\Services\SubPanelMatchingService;
@@ -20,6 +21,7 @@ class MemberProgrammeController extends Controller
         protected SubPanelMatchingService $subPanelMatching,
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected SurveyLevelIncomeService $surveyLevelIncome,
+        protected ActivePanelMatchingService $activePanelMatching,
     ) {}
 
     public function levelIncome(Request $request): JsonResponse
@@ -140,6 +142,10 @@ class MemberProgrammeController extends Controller
         $user->refresh();
         $user->minimum_panel_fee_paid_at = now();
         $user->save();
+
+        // Award an active-panel binary matching carry to the user's direct binary
+        // upline (closing job credits 10 USDT × 10% = 1 USDT per matched pair).
+        $this->activePanelMatching->processActivePanelActivation($user->fresh());
 
         return $this->show($request);
     }

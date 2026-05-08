@@ -226,26 +226,13 @@ git checkout <commit_hash>
 
 
 
-
-
-
-
-
-
-
-
-
-
-git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only origin main && composer install --no-interaction --prefer-dist --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan storage:link
-
-
-
-
-
 git fetch --all
 git checkout main
 git pull --ff-only origin main
 
+
+
+git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only origin main && composer install --no-interaction --prefer-dist --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan storage:link
 
 
 
@@ -254,6 +241,7 @@ git pull --ff-only origin main
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
+php artisan migrate
 
 
 

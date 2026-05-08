@@ -15,6 +15,8 @@ class BinaryDailyClosing extends Model
 
     public const SCOPE_SUPER = 'super';
 
+    public const SCOPE_ACTIVE_PANEL = 'active_panel';
+
     /** @var list<string> */
     protected $fillable = [
         'user_id',

@@ -90,7 +90,9 @@ class PanelMatchingService
                 }
 
                 if ($canSub) {
-                    $this->subPanelMatching->applyPairMilestone($earner);
+                    // Tier-based milestone counter is advanced by 1 pair; the
+                    // payout fires only when the highest milestone is reached.
+                    $this->subPanelMatching->applyMatchedPairs($earner, 1);
                 }
 
                 $earner->panel_match_carry_left = $left;

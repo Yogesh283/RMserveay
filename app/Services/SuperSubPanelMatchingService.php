@@ -74,7 +74,10 @@ class SuperSubPanelMatchingService
                 $left--;
                 $right--;
 
-                $this->applyPairMilestone($earner);
+                // Tier-based milestone counter is advanced by 1 pair; the
+                // actual payout only fires when the counter reaches the next
+                // milestone (handled inside applyMatchedPairs).
+                $this->applyMatchedPairs($earner, 1);
 
                 $earner->super_panel_match_carry_left = $left;
                 $earner->super_panel_match_carry_right = $right;
@@ -96,75 +99,86 @@ class SuperSubPanelMatchingService
     }
 
     /**
-     * One matched pair on the $100 super-sub carry (+2 cumulative matched panels today).
+     * Pay the highest super-milestone reached by TODAY'S matched pairs only
+     * (× income_multiplier, default 10×). Excess pairs above the milestone
+     * LAPSE — they do not roll forward to the next day. Mutates the user
+     * model in memory; the caller is responsible for saving.
+     *
+     * @return array{milestone:int, payout_usd:string, pairs_today:int, lapsed_pairs:int}
      */
-    public function applyPairMilestone(User $earner): void
+    public function applyMatchedPairs(User $earner, int $pairsToday): array
     {
-        if (! $earner->qualifiesForSuperSubPanelMatchingIncome()) {
-            return;
+        $today = max(0, (int) $pairsToday);
+        // Counter is reset every closing — milestones evaluated on a single
+        // day's matched pairs (excess lapses).
+        $earner->sspm_pair_carry_forward = 0;
+
+        $result = [
+            'milestone' => 0,
+            'payout_usd' => '0.00',
+            'pairs_today' => $today,
+            'lapsed_pairs' => $today,
+        ];
+
+        if ($today <= 0 || ! $earner->qualifiesForSuperSubPanelMatchingIncome()) {
+            return $result;
         }
 
-        if ($earner->sspm_match_day === null || ! now()->isSameDay($earner->sspm_match_day)) {
-            $earner->sspm_match_day = now()->startOfDay();
-            $earner->sspm_cumulative_panels = 0;
-            $earner->sspm_milestone_mask = 0;
+        $milestones = (array) config('super_sub_panel_matching.milestones', []);
+        rsort($milestones, SORT_NUMERIC);
+
+        $highest = 0;
+        foreach ($milestones as $m) {
+            $m = (int) $m;
+            if ($m > 0 && $today >= $m) {
+                $highest = $m;
+                break;
+            }
         }
 
-        $earner->sspm_cumulative_panels = min(65535, (int) $earner->sspm_cumulative_panels + 2);
-        $m = (int) $earner->sspm_cumulative_panels;
-
-        $milestones = config('super_sub_panel_matching.milestones');
-        if (! in_array($m, $milestones, true)) {
-            return;
+        if ($highest <= 0) {
+            // Pairs below smallest milestone: lapse them all.
+            return $result;
         }
 
-        $tierIndex = array_search($m, $milestones, true);
-        if (! is_int($tierIndex)) {
-            return;
+        $mult = (string) config('super_sub_panel_matching.income_multiplier', '10');
+        $payout = bcmul((string) $highest, $mult, 2);
+
+        $cap = (string) config('super_sub_panel_matching.daily_cap_usd', '2560.00');
+        $earnedToday = $this->earnedToday($earner->id);
+        $remaining = bcsub($cap, $earnedToday, 2);
+        if (bccomp($payout, $remaining, 2) > 0) {
+            $payout = bccomp($remaining, '0.00', 2) > 0 ? $remaining : '0.00';
         }
 
-        $mask = (int) $earner->sspm_milestone_mask;
-        $bit = 1 << $tierIndex;
-
-        if (($mask & $bit) !== 0) {
-            return;
+        if (bccomp($payout, '0.00', 2) <= 0) {
+            return $result;
         }
 
-        $mult = (string) config('super_sub_panel_matching.income_multiplier');
-        $pay = bcmul((string) $m, $mult, 2);
-
-        $cap = (string) config('super_sub_panel_matching.daily_cap_usd');
-        $earned = $this->earnedToday($earner->id);
-        $remaining = bcsub($cap, $earned, 2);
-        if (bccomp($remaining, '0.00', 2) <= 0) {
-            return;
-        }
-
-        $actual = bccomp($pay, $remaining, 2) <= 0 ? $pay : $remaining;
-
-        if (bccomp($actual, '0.00', 2) <= 0) {
-            return;
-        }
-
-        $newBalance = bcadd((string) $earner->wallet_balance, $actual, 2);
+        $lapsed = max(0, $today - $highest);
+        $newBalance = bcadd((string) $earner->wallet_balance, $payout, 2);
         $earner->wallet_balance = $newBalance;
-        $earner->sspm_milestone_mask = $mask | $bit;
 
         WalletTransaction::create([
             'user_id' => $earner->id,
             'type' => WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
-            'amount' => $actual,
+            'amount' => $payout,
             'balance_after' => $newBalance,
             'meta' => [
-                'cumulative_matched_panels' => $m,
-                'milestone_panels' => $m,
-                'tier_index' => $tierIndex,
-                'intended_usd' => $pay,
+                'milestone' => $highest,
+                'pairs_today' => $today,
+                'lapsed_pairs' => $lapsed,
                 'income_multiplier' => $mult,
-                'capped' => bccomp($actual, $pay, 2) !== 0,
-                'rate' => (string) config('super_sub_panel_matching.rate'),
+                'rate' => (string) config('super_sub_panel_matching.rate', '0.10'),
             ],
         ]);
+
+        return [
+            'milestone' => $highest,
+            'payout_usd' => $payout,
+            'pairs_today' => $today,
+            'lapsed_pairs' => $lapsed,
+        ];
     }
 
     /**

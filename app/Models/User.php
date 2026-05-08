@@ -49,14 +49,18 @@ class User extends Authenticatable implements FilamentUser
         'membership_tier',
         'panel_match_carry_left',
         'panel_match_carry_right',
+        'active_panel_match_carry_left',
+        'active_panel_match_carry_right',
         'spm_match_day',
         'spm_cumulative_panels',
         'spm_milestone_mask',
+        'spm_pair_carry_forward',
         'super_panel_match_carry_left',
         'super_panel_match_carry_right',
         'sspm_match_day',
         'sspm_cumulative_panels',
         'sspm_milestone_mask',
+        'sspm_pair_carry_forward',
         'profile_completed_at',
     ];
 
@@ -75,14 +79,18 @@ class User extends Authenticatable implements FilamentUser
         'super_sub_panel_count',
         'panel_match_carry_left',
         'panel_match_carry_right',
+        'active_panel_match_carry_left',
+        'active_panel_match_carry_right',
         'spm_match_day',
         'spm_cumulative_panels',
         'spm_milestone_mask',
+        'spm_pair_carry_forward',
         'super_panel_match_carry_left',
         'super_panel_match_carry_right',
         'sspm_match_day',
         'sspm_cumulative_panels',
         'sspm_milestone_mask',
+        'sspm_pair_carry_forward',
     ];
 
     /**
