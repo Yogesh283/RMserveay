@@ -42,6 +42,14 @@ class PanelMatchingService
 
             $earner->save();
 
+            // When the daily closing system is the source-of-truth for panel matching,
+            // we MUST NOT consume pairs in real-time — otherwise the midnight closing
+            // would only see one-sided leftovers. Carry just accumulates here and the
+            // `binary:daily-closing` cron does the matching + wallet credit at 12:00 AM IST.
+            if ($this->isDailyClosingActive()) {
+                return;
+            }
+
             $left = (int) $earner->panel_match_carry_left;
             $right = (int) $earner->panel_match_carry_right;
 
@@ -109,6 +117,19 @@ class PanelMatchingService
                 ]);
             }
         });
+    }
+
+    /**
+     * True when the binary daily-closing system owns the panel scope.
+     * In that case the real-time matching loop is bypassed (see processSubPanelPurchase).
+     */
+    public function isDailyClosingActive(): bool
+    {
+        if (! (bool) config('binary_closing.enabled', false)) {
+            return false;
+        }
+
+        return (bool) config('binary_closing.scopes.panel.enabled', false);
     }
 
     public function matchingPairsUsedToday(int $userId): int

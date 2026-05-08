@@ -28,6 +28,11 @@ use Throwable;
  */
 class BinaryDailyClosingService
 {
+    public function __construct(
+        protected SubPanelMatchingService $subPanelMatching,
+        protected SuperSubPanelMatchingService $superSubPanelMatching,
+    ) {}
+
     /**
      * Run the closing for every user that has any non-zero carry, across every enabled scope.
      *
@@ -234,6 +239,29 @@ class BinaryDailyClosingService
             $user->{$rightCol} = $rightOut;
             $user->save();
 
+            // Fire milestone payouts (sub-panel / super-sub-panel tabular income).
+            // One call per matched pair so the cumulative milestone counter advances
+            // exactly the same way it would have in real-time matching.
+            // applyPairMilestone() mutates the in-memory model + writes a wallet_tx,
+            // but expects the caller to persist — we save once at the end of the loop.
+            $milestonePaidUsd = '0.00';
+            if ($pairsMatched > 0) {
+                $milestoneBefore = $balanceAfter;
+                for ($i = 0; $i < $pairsMatched; $i++) {
+                    if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
+                        $this->subPanelMatching->applyPairMilestone($user);
+                    } elseif ($scope === BinaryDailyClosing::SCOPE_SUPER) {
+                        $this->superSubPanelMatching->applyPairMilestone($user);
+                    }
+                }
+                $user->save();
+                $balanceAfter = (string) $user->wallet_balance;
+                $milestonePaidUsd = bcsub($balanceAfter, $milestoneBefore, 2);
+                if (bccomp($milestonePaidUsd, '0.00', 2) < 0) {
+                    $milestonePaidUsd = '0.00';
+                }
+            }
+
             return BinaryDailyClosing::create([
                 'user_id' => $user->id,
                 'closing_date' => $date->toDateString(),
@@ -254,6 +282,7 @@ class BinaryDailyClosingService
                     'pairs_available' => $pairsAvailable,
                     'max_pairs_per_day' => $maxPairs,
                     'timezone' => $this->timezone(),
+                    'milestone_paid_usd' => $milestonePaidUsd,
                 ],
             ]);
         });

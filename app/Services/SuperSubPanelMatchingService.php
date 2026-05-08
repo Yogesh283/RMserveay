@@ -46,6 +46,12 @@ class SuperSubPanelMatchingService
 
             $earner->save();
 
+            // Daily-closing source-of-truth for super-sub-panel scope: skip the
+            // real-time pair-matching loop and let the midnight cron credit pairs.
+            if ($this->isDailyClosingActive()) {
+                return;
+            }
+
             $left = (int) $earner->super_panel_match_carry_left;
             $right = (int) $earner->super_panel_match_carry_right;
 
@@ -75,6 +81,18 @@ class SuperSubPanelMatchingService
                 $earner->save();
             }
         });
+    }
+
+    /**
+     * True when the binary daily-closing system owns the super-sub-panel scope.
+     */
+    public function isDailyClosingActive(): bool
+    {
+        if (! (bool) config('binary_closing.enabled', false)) {
+            return false;
+        }
+
+        return (bool) config('binary_closing.scopes.super.enabled', false);
     }
 
     /**

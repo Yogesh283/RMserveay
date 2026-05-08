@@ -139,6 +139,10 @@ class IncomeFlowsTest extends TestCase
 
     public function test_panel_matching_income_requires_full_sub_panel_completion_nine_of_nine(): void
     {
+        // This test exercises the legacy real-time matching path; the daily-closing
+        // takeover is verified separately in BinaryDailyClosingTest.
+        config(['binary_closing.scopes.panel.enabled' => false]);
+
         $earner = User::factory()->create([
             'user_type' => 'normal',
             'sub_panel_count' => 8,

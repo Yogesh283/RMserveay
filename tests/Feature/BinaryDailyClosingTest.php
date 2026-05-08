@@ -6,6 +6,7 @@ use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\BinaryDailyClosingService;
+use App\Services\PanelMatchingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -210,5 +211,80 @@ class BinaryDailyClosingTest extends TestCase
 
         $user->refresh();
         $this->assertSame('1.00', (string) $user->wallet_balance);
+    }
+
+    public function test_realtime_panel_matching_is_bypassed_when_daily_closing_owns_the_scope(): void
+    {
+        // Eligible upline (9/9 sub panels + active panelist) — would normally pay in real-time.
+        $earner = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 9,
+            'panel_match_carry_left' => 0,
+            'panel_match_carry_right' => 5,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $buyer = User::factory()->create([
+            'user_type' => 'normal',
+            'binary_parent_id' => $earner->id,
+            'binary_side' => 'left',
+        ]);
+
+        app(PanelMatchingService::class)->processSubPanelPurchase($buyer);
+
+        $earner->refresh();
+        $this->assertSame(1, (int) $earner->panel_match_carry_left, 'Carry incremented');
+        $this->assertSame(5, (int) $earner->panel_match_carry_right, 'Right untouched');
+        $this->assertSame('0.00', (string) $earner->wallet_balance, 'No real-time payout — closing owns it');
+
+        $this->assertDatabaseMissing('wallet_transactions', [
+            'user_id' => $earner->id,
+            'type' => WalletTransaction::TYPE_PANEL_MATCHING,
+        ]);
+
+        // Now run the daily closing — the carry must be matched and credited here.
+        app(BinaryDailyClosingService::class)
+            ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
+
+        $earner->refresh();
+        // 1 pair × $1 (per-pair) + $2 (sub-panel milestone tier 2) = $3.00
+        $this->assertSame('3.00', (string) $earner->wallet_balance);
+        $this->assertSame(0, (int) $earner->panel_match_carry_left);
+        $this->assertSame(4, (int) $earner->panel_match_carry_right, '5-1 carries forward');
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $earner->id,
+            'type' => WalletTransaction::TYPE_PANEL_MATCHING,
+            'amount' => '1.00',
+        ]);
+    }
+
+    public function test_closing_also_fires_sub_panel_milestone_income_per_matched_pair(): void
+    {
+        $earner = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 9,
+            'panel_match_carry_left' => 1,
+            'panel_match_carry_right' => 1,
+            'wallet_balance' => '0.00',
+        ]);
+
+        // 1 pair → +2 cumulative panels → milestone "2" pays $2 (per sub_panel_matching config defaults).
+        app(BinaryDailyClosingService::class)
+            ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
+
+        $earner->refresh();
+        // Expected: $1 (per-pair commission) + $2 (milestone) = $3.00
+        $this->assertSame('3.00', (string) $earner->wallet_balance);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $earner->id,
+            'type' => WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+            'amount' => '2.00',
+        ]);
     }
 }
