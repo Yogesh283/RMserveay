@@ -82,22 +82,36 @@ export default function MemberDashboardPage() {
             ((q?.sub_panel_count ?? user?.sub_panel_count ?? 0) + (q?.super_sub_panel_count ?? user?.super_sub_panel_count ?? 0)),
     );
     const surveysCompletedCount = q?.completed_surveys_count ?? 0;
-    const todayEarningsUsd = levelIncome?.earned_today_usd ?? 0;
+    const todayEarnings = summary?.today_earnings_usd ?? null;
+    /** Backwards-compat: if backend doesn't ship `today_earnings_usd` yet, fall back to level-only. */
+    const todayEarningsUsd = todayEarnings?.total ?? levelIncome?.earned_today_usd ?? 0;
     const totalEarningsUsd = e?.total_from_programme ?? 0;
-    const hasVerification = Boolean(user?.email_verified_at || user?.phone_verified_at);
-    const hasSubmission = Boolean(user?.profile_completed_at || user?.profile || user?.survey_profile);
-    const completedStepCount = [true, hasVerification, hasSubmission, activePanelsCount > 0].filter(Boolean).length;
-    const activationProgressPct = Math.round((completedStepCount / 4) * 100);
-    const activationSteps = [
-        { key: 'start', label: 'Start', done: true },
-        { key: 'verify', label: 'Verify', done: hasVerification },
-        { key: 'submit', label: 'Submit', done: hasSubmission },
-        { key: 'complete', label: 'Complete', done: activePanelsCount > 0 },
-    ];
-
     /** Mirrored from `wallet` / `users` (main = spend/withdraw; P2P = internal pool). */
     const mainWalletUsd = overview?.wallet_balance ?? summary?.wallet_main_usd ?? user?.wallet_balance;
     const p2pWalletUsd = overview?.p2p_wallet_balance ?? summary?.wallet_p2p_usd ?? user?.p2p_wallet_balance;
+
+    const panelStatus = summary?.panel_status ?? null;
+    const nextActionKey = panelStatus?.next_action_key ?? null;
+    /** Activation progress = how many of the 4 programme panels the member is currently running. */
+    const activationProgressPct = panelStatus
+        ? Math.round((panelStatus.running_count / Math.max(1, panelStatus.panels.length)) * 100)
+        : 0;
+
+    function panelAccent(panel) {
+        if (panel.key === 'activation') return 'violet';
+        if (panel.key === 'minimum_panel') return 'cyan';
+        if (panel.key === 'sub_panel') return 'sky';
+        return 'amber';
+    }
+
+    function panelStateLabel(panel) {
+        if (panel.key === 'activation' || panel.key === 'minimum_panel') {
+            return panel.running ? 'Paid' : 'Pending';
+        }
+        if (panel.completed) return 'Maxed';
+        if (panel.running) return 'Running';
+        return 'Not started';
+    }
 
     const earningCards = useMemo(() => {
         if (!summary || !e) return [];
@@ -180,20 +194,72 @@ export default function MemberDashboardPage() {
                                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-violet-200">{activationProgressPct}%</div>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-xs font-semibold text-white">Complete your ID Activation</p>
-                                <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-300">Unlock full rewards, referrals and matching income flow.</p>
+                                <p className="text-xs font-semibold text-white">
+                                    {panelStatus
+                                        ? panelStatus.running_count > 0
+                                            ? `${panelStatus.running_count} panel${panelStatus.running_count === 1 ? '' : 's'} running`
+                                            : 'Complete your ID Activation'
+                                        : 'Complete your ID Activation'}
+                                </p>
+                                <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-300">
+                                    {nextActionKey
+                                        ? `Next: ${(panelStatus.panels.find((p) => p.key === nextActionKey)?.label) ?? 'Activate'}`
+                                        : 'Unlock full rewards, referrals and matching income flow.'}
+                                </p>
                             </div>
-                            <Link to="/member/active-panels" className="shrink-0 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#F59E0B] px-2 py-1.5 text-[10px] font-semibold text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
-                                Activate →
+                            <Link
+                                to={
+                                    nextActionKey
+                                        ? panelStatus.panels.find((p) => p.key === nextActionKey)?.cta_to ?? '/member/active-panels'
+                                        : '/member/active-panels'
+                                }
+                                className="shrink-0 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#F59E0B] px-2 py-1.5 text-[10px] font-semibold text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]"
+                            >
+                                {nextActionKey ? 'Buy →' : 'Activate →'}
                             </Link>
                         </div>
-                        <div className="mt-2 grid grid-cols-4 gap-1 text-center">
-                            {activationSteps.map((step) => (
-                                <div key={step.key} className="relative">
-                                    <span className={`mx-auto mb-1 block h-1.5 w-1.5 rounded-full ${step.done ? 'bg-violet-400 shadow-[0_0_8px_rgba(168,85,247,0.7)]' : 'bg-white/20'}`} />
-                                    <p className={`text-[9px] ${step.done ? 'text-violet-200' : 'text-slate-400'}`}>{step.label}</p>
-                                </div>
-                            ))}
+                        <div className="mt-2 grid grid-cols-4 gap-1.5">
+                            {(panelStatus?.panels ?? []).map((p) => {
+                                const accent = panelAccent(p);
+                                const isNext = p.key === nextActionKey;
+                                const accentRing = {
+                                    violet: 'border-[#7C3AED]/55 bg-gradient-to-br from-[#7C3AED]/30 to-[#2563EB]/10 shadow-[0_0_14px_rgba(124,58,237,0.45)]',
+                                    cyan: 'border-cyan-400/55 bg-gradient-to-br from-cyan-500/25 to-[#3B82F6]/10 shadow-[0_0_14px_rgba(34,211,238,0.45)]',
+                                    sky: 'border-sky-400/55 bg-gradient-to-br from-sky-500/25 to-[#1D4ED8]/10 shadow-[0_0_14px_rgba(56,189,248,0.45)]',
+                                    amber: 'border-amber-400/55 bg-gradient-to-br from-amber-500/30 to-[#F97316]/10 shadow-[0_0_14px_rgba(245,158,11,0.45)]',
+                                };
+                                const cardCls = p.running
+                                    ? accentRing[accent]
+                                    : isNext
+                                    ? 'border-amber-400/40 bg-amber-500/10 animate-pulse'
+                                    : 'border-white/10 bg-white/[0.03]';
+                                const labelColor = p.running
+                                    ? 'text-white'
+                                    : isNext
+                                    ? 'text-amber-100'
+                                    : 'text-slate-400';
+                                return (
+                                    <Link
+                                        key={p.key}
+                                        to={p.cta_to}
+                                        className={`relative flex flex-col items-center justify-center rounded-lg border px-1 py-1.5 transition active:scale-[0.97] ${cardCls}`}
+                                        title={`${p.label} · ${panelStateLabel(p)}`}
+                                    >
+                                        {p.running ? (
+                                            <span className="absolute -right-0.5 -top-0.5 inline-flex h-2 w-2 items-center justify-center">
+                                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                                            </span>
+                                        ) : null}
+                                        <p className={`text-[8px] font-bold leading-tight tabular-nums ${labelColor}`}>
+                                            {p.max > 1 ? `${p.count}/${p.max}` : p.running ? '✓' : '—'}
+                                        </p>
+                                        <p className={`mt-0.5 truncate text-[8.5px] leading-tight ${p.running ? 'text-white/85' : isNext ? 'text-amber-200/85' : 'text-slate-400'}`}>
+                                            {p.label.replace(' Panels', '').replace(' Panel', '')}
+                                        </p>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -389,7 +455,7 @@ export default function MemberDashboardPage() {
                             <div className="min-w-0">
                                 <p className="text-[9px] font-medium uppercase tracking-wide text-[#A0AEC0]">Today's Earnings</p>
                                 <p className="mt-1 text-sm font-bold tabular-nums text-white">{fmtUsd(todayEarningsUsd)}</p>
-                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Level income today</p>
+                                <p className="mt-0.5 text-[9px] text-[#A0AEC0]/90">Direct + Level + Survey + Matching</p>
                             </div>
                         </div>
                     </RmsCard>
@@ -434,6 +500,69 @@ export default function MemberDashboardPage() {
                         </div>
                     </RmsCard>
                 </Link>
+            </div>
+
+            <div>
+                <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#A0AEC0]">Income Totals</p>
+                <div className="grid grid-cols-3 gap-2">
+                    <Link to="/member/direct-income" className="block">
+                        <RmsCard
+                            variant="inset"
+                            className="!p-3 !rounded-[20px] !border-[#7C3AED]/35 !bg-gradient-to-br !from-[#1a1030]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(124,58,237,0.22)] transition active:scale-[0.99]"
+                            padding={false}
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#7C3AED]/45 bg-[#7C3AED]/20 text-[#C4B5FD]">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 11a4 4 0 100-8 4 4 0 000 8z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 8v6M23 11h-6" />
+                                    </svg>
+                                </span>
+                                <p className="text-[9px] font-semibold uppercase tracking-wider text-[#C4B5FD]">Direct</p>
+                            </div>
+                            <p className="mt-2 text-base font-bold tabular-nums text-white sm:text-lg">{fmtUsd(e?.direct_income ?? 0)}</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">Lifetime total</p>
+                        </RmsCard>
+                    </Link>
+                    <Link to="/member/level-income" className="block">
+                        <RmsCard
+                            variant="inset"
+                            className="!p-3 !rounded-[20px] !border-cyan-400/35 !bg-gradient-to-br !from-[#062131]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(34,211,238,0.18)] transition active:scale-[0.99]"
+                            padding={false}
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-cyan-400/45 bg-cyan-500/15 text-cyan-200">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l3-9 4 18 3-9h4" />
+                                    </svg>
+                                </span>
+                                <p className="text-[9px] font-semibold uppercase tracking-wider text-cyan-200">Level</p>
+                            </div>
+                            <p className="mt-2 text-base font-bold tabular-nums text-white sm:text-lg">{fmtUsd(e?.level_income ?? 0)}</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">Lifetime total</p>
+                        </RmsCard>
+                    </Link>
+                    <Link to="/member/panel-matching" className="block">
+                        <RmsCard
+                            variant="inset"
+                            className="!p-3 !rounded-[20px] !border-amber-400/35 !bg-gradient-to-br !from-[#2b1c08]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(245,158,11,0.22)] transition active:scale-[0.99]"
+                            padding={false}
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-amber-400/45 bg-amber-500/15 text-amber-200">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 18.5v-13z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 8h8M8 12h8M8 16h5" />
+                                    </svg>
+                                </span>
+                                <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-200">Sub+Super</p>
+                            </div>
+                            <p className="mt-2 text-base font-bold tabular-nums text-white sm:text-lg">{fmtUsd(e?.matching_income ?? 0)}</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">Sub + super matching</p>
+                        </RmsCard>
+                    </Link>
+                </div>
             </div>
 
             {overview?.recent_transactions?.length > 0 ? (
