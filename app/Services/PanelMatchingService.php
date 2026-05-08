@@ -124,25 +124,46 @@ class PanelMatchingService
     }
 
     /**
-     * Lifetime sub-panel purchases that flowed into this earner's binary carry,
-     * split by left / right leg (immediate binary children only — same scope
-     * as `processSubPanelPurchase`).
+     * Lifetime sub-panel purchases across the earner's full left/right binary legs.
      *
      * @return array{left:int,right:int}
      */
     public function lifetimeSubPanelBuys(User $earner): array
     {
-        $rows = User::query()
-            ->where('binary_parent_id', $earner->id)
-            ->whereIn('binary_side', ['left', 'right'])
-            ->selectRaw('binary_side, COALESCE(SUM(sub_panel_count), 0) AS total')
-            ->groupBy('binary_side')
-            ->pluck('total', 'binary_side');
-
         return [
-            'left' => (int) ($rows['left'] ?? 0),
-            'right' => (int) ($rows['right'] ?? 0),
+            'left' => $this->sumSubPanelsInSubtree($earner->left_child_id),
+            'right' => $this->sumSubPanelsInSubtree($earner->right_child_id),
         ];
+    }
+
+    private function sumSubPanelsInSubtree(?int $rootId): int
+    {
+        if ($rootId === null) {
+            return 0;
+        }
+
+        $total = 0;
+        $frontier = [$rootId];
+
+        while ($frontier !== []) {
+            $nodes = User::query()
+                ->whereIn('id', $frontier)
+                ->get(['id', 'left_child_id', 'right_child_id', 'sub_panel_count']);
+
+            $frontier = [];
+            foreach ($nodes as $node) {
+                $total += (int) $node->sub_panel_count;
+
+                if ($node->left_child_id !== null) {
+                    $frontier[] = (int) $node->left_child_id;
+                }
+                if ($node->right_child_id !== null) {
+                    $frontier[] = (int) $node->right_child_id;
+                }
+            }
+        }
+
+        return $total;
     }
 
     public function status(User $earner): array

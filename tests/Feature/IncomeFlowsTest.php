@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\PanelMatchingService;
 use App\Services\SelfSurveyIncomeService;
+use App\Services\SuperSubPanelMatchingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -172,6 +173,48 @@ class IncomeFlowsTest extends TestCase
             ->first();
 
         $this->assertNotNull($afterEligibleTx, 'Panel matching should pay after 9/9 sub panels.');
+    }
+
+    public function test_matching_table_status_counts_full_left_and_right_team_legs(): void
+    {
+        $earner = User::factory()->create(['user_type' => 'normal']);
+
+        $left = User::factory()->create([
+            'user_type' => 'normal',
+            'binary_parent_id' => $earner->id,
+            'binary_side' => 'left',
+            'sub_panel_count' => 1,
+            'super_sub_panel_count' => 2,
+        ]);
+        $leftDeep = User::factory()->create([
+            'user_type' => 'normal',
+            'binary_parent_id' => $left->id,
+            'binary_side' => 'left',
+            'sub_panel_count' => 2,
+            'super_sub_panel_count' => 3,
+        ]);
+        $right = User::factory()->create([
+            'user_type' => 'normal',
+            'binary_parent_id' => $earner->id,
+            'binary_side' => 'right',
+            'sub_panel_count' => 4,
+            'super_sub_panel_count' => 5,
+        ]);
+
+        $earner->left_child_id = $left->id;
+        $earner->right_child_id = $right->id;
+        $earner->save();
+
+        $left->left_child_id = $leftDeep->id;
+        $left->save();
+
+        $panelStatus = app(PanelMatchingService::class)->status($earner->fresh());
+        $superStatus = app(SuperSubPanelMatchingService::class)->status($earner->fresh());
+
+        $this->assertSame(3, $panelStatus['total_left_subs']);
+        $this->assertSame(4, $panelStatus['total_right_subs']);
+        $this->assertSame(5, $superStatus['total_left_supers']);
+        $this->assertSame(5, $superStatus['total_right_supers']);
     }
 }
 
