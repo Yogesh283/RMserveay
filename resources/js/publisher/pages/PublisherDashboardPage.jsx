@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PubButton from '../components/PubButton';
 import PubCard from '../components/PubCard';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import { formatCompact, formatInr, publisherGet } from '../lib/publisherApi';
 import { pub } from '../ui/pubTheme';
@@ -184,17 +185,19 @@ export default function PublisherDashboardPage() {
 
     if (loading) {
         return (
-            <div className={`py-16 text-center text-sm ${pub.muted}`}>
-                Loading dashboard…
-            </div>
+            <PubPageFrame>
+                <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading dashboard…</p>
+            </PubPageFrame>
         );
     }
 
     if (err) {
         return (
-            <PubCard className="border-red-500/30 p-6">
-                <p className="text-red-400">{err}</p>
-            </PubCard>
+            <PubPageFrame>
+                <PubCard className="border-red-500/30 p-6">
+                    <p className="text-red-400">{err}</p>
+                </PubCard>
+            </PubPageFrame>
         );
     }
 
@@ -202,7 +205,7 @@ export default function PublisherDashboardPage() {
         stats?.surveysThisMonth != null && stats.surveysThisMonth > 0 ? `+${stats.surveysThisMonth} this month` : null;
 
     return (
-        <div className="space-y-8">
+        <PubPageFrame>
             <PubPageHeader
                 title="Dashboard"
                 subtitle="RM Survey Publisher — live stats from your database."
@@ -257,6 +260,6 @@ export default function PublisherDashboardPage() {
                     Explore suggestions
                 </PubButton>
             </PubCard>
-        </div>
+        </PubPageFrame>
     );
 }

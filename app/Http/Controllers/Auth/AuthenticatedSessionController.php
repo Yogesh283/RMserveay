@@ -52,11 +52,10 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        if ($user->user_type !== $validated['user_type']) {
-            throw ValidationException::withMessages([
-                'user_type' => ['Selected account type does not match this user ID.'],
-            ]);
-        }
+        /**
+         * Allow the same login credentials for both app roles (normal/publisher).
+         * Client selection is used for redirect only.
+         */
 
         Auth::login($user);
 

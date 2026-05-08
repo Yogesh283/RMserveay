@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'user_type',
         'profile',
+        'survey_profile',
         'qualification',
         'phone',
         'referral_code',
@@ -91,6 +92,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'password' => 'hashed',
+            'survey_profile' => 'array',
             'wallet_balance' => 'decimal:2',
             'p2p_wallet_balance' => 'decimal:2',
             'activation_fee_paid_at' => 'datetime',
@@ -347,15 +349,19 @@ class User extends Authenticatable
         return ((int) $this->sub_panel_count + (int) $this->super_sub_panel_count) >= 1;
     }
 
-    /** Earner must hold at least one $10 sub panel to receive panel matching bonuses. */
+    /** Earner must complete full sub-panel slots (default 9/9) to receive sub-panel matching income. */
     public function qualifiesForPanelMatchingIncome(): bool
     {
-        return (int) $this->sub_panel_count >= 1;
+        $required = (int) config('self_survey.max_sub_panels', 9);
+
+        return (int) $this->sub_panel_count >= $required;
     }
 
-    /** Earner must hold at least one $100 super sub panel for super-sub matching payouts. */
+    /** Earner must complete full super-panel slots (default 9/9) to receive super-panel matching income. */
     public function qualifiesForSuperSubPanelMatchingIncome(): bool
     {
-        return (int) $this->super_sub_panel_count >= 1;
+        $required = (int) config('self_survey.max_super_sub_panels', 9);
+
+        return (int) $this->super_sub_panel_count >= $required;
     }
 }

@@ -139,11 +139,6 @@ export default function MemberSuperSubPanelsPage() {
                                 <p className="mt-1 text-lg font-bold text-white">
                                     Super panel <span className="text-fuchsia-300">structure</span>
                                 </p>
-                                <p className="mt-1 max-w-xl text-xs text-white/60">
-                                    <span className="font-semibold text-orange-200/90">{entryFee}</span> →{' '}
-                                    <span className="font-semibold text-white">{maxEntryLabel}</span> total entry ({maxSuper} panels) · super
-                                    tier per survey = panels × {fmtUsd(String(eachSuper))}.
-                                </p>
                             </div>
 
                             <div className="relative grid lg:grid-cols-[1fr_1fr] xl:grid-cols-[1.2fr_1fr_280px] lg:gap-0">

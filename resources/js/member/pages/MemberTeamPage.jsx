@@ -26,7 +26,7 @@ async function copyTextToClipboard(text) {
     }
 }
 
-function BinaryReferralLegRow({ title, url, borderClass, labelClass }) {
+function BinaryReferralLegRow({ title, url, tone = 'emerald', status = 'Primary' }) {
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
 
@@ -51,20 +51,75 @@ function BinaryReferralLegRow({ title, url, borderClass, labelClass }) {
         await handleCopy();
     };
 
-    const btn =
-        'rounded-md border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] active:scale-[0.98]';
+    const isEmerald = tone === 'emerald';
+    const frame = isEmerald
+        ? 'border-emerald-400/35 bg-gradient-to-br from-emerald-950/35 via-[#0b1322] to-[#0b1020] shadow-[0_0_28px_rgba(16,185,129,0.12)]'
+        : 'border-violet-400/35 bg-gradient-to-br from-violet-950/35 via-[#0b1322] to-[#0b1020] shadow-[0_0_28px_rgba(139,92,246,0.14)]';
+    const titleTone = isEmerald ? 'text-emerald-200' : 'text-violet-200';
+    const statusTone = isEmerald
+        ? 'border-emerald-300/35 bg-emerald-500/15 text-emerald-200'
+        : 'border-violet-300/35 bg-violet-500/15 text-violet-200';
+    const shareBtn = isEmerald
+        ? 'border-emerald-300/30 bg-gradient-to-r from-emerald-500/85 to-teal-500/85 text-white shadow-[0_8px_20px_rgba(16,185,129,0.28)]'
+        : 'border-violet-300/30 bg-gradient-to-r from-violet-600/90 to-fuchsia-500/85 text-white shadow-[0_8px_20px_rgba(139,92,246,0.28)]';
 
     return (
-        <div className={`rounded-lg border p-2.5 sm:p-3 ${borderClass}`}>
-            <p className={`text-[11px] font-semibold uppercase tracking-wide ${labelClass}`}>{title}</p>
-            <p className="mt-1.5 break-all font-mono text-[11px] leading-snug text-white/90 sm:text-[12px]">{url || t('member.ui.dash')}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-                <button type="button" onClick={handleCopy} disabled={!url} className={`${btn} disabled:cursor-not-allowed disabled:opacity-40`}>
-                    {copied ? t('member.ui.copied') : t('member.ui.copy')}
-                </button>
-                <button type="button" onClick={handleShare} disabled={!url} className={`${btn} disabled:cursor-not-allowed disabled:opacity-40`}>
-                    {t('member.ui.share')}
-                </button>
+        <div className={`relative overflow-hidden rounded-lg border p-2.5 ${frame}`}>
+            <div className="pointer-events-none absolute -right-5 top-1 h-12 w-12 rounded-full bg-white/5 blur-2xl" />
+            <div className="relative">
+                <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${isEmerald ? 'border-emerald-300/40 bg-emerald-500/15 text-emerald-200' : 'border-violet-300/40 bg-violet-500/15 text-violet-200'}`}>
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 14a3 3 0 010-4.243l2-2a3 3 0 114.243 4.243l-1 1M14 10a3 3 0 010 4.243l-2 2a3 3 0 11-4.243-4.243l1-1" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p className={`text-[11px] font-bold uppercase tracking-[0.06em] ${titleTone}`}>{title}</p>
+                            <span className={`mt-0.5 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${statusTone}`}>● {status}</span>
+                        </div>
+                    </div>
+                    <span className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${isEmerald ? 'border-emerald-300/30 bg-emerald-500/10 text-emerald-200' : 'border-violet-300/30 bg-violet-500/10 text-violet-200'}`}>
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+                        </svg>
+                    </span>
+                </div>
+
+                <div className="relative mt-1.5 rounded-md border border-white/10 bg-black/25 px-2 py-1.5">
+                    <p className="break-all pr-7 font-mono text-[10px] leading-snug text-white/90">{url || t('member.ui.dash')}</p>
+                    <button
+                        type="button"
+                        onClick={handleCopy}
+                        disabled={!url}
+                        className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-md border border-white/15 bg-white/[0.06] text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        title={t('member.ui.copy')}
+                    >
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16h8a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 8H5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-1" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="mt-1.5 grid grid-cols-2 gap-1">
+                    <button
+                        type="button"
+                        onClick={handleCopy}
+                        disabled={!url}
+                        className="rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-white transition hover:border-violet-300/35 hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {copied ? t('member.ui.copied') : t('member.ui.copy')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleShare}
+                        disabled={!url}
+                        className={`rounded-md border px-2 py-1 text-[10px] font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${shareBtn}`}
+                    >
+                        {t('member.ui.share')}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -468,24 +523,22 @@ export default function MemberTeamPage() {
 
     return (
         <div className="relative space-y-4 pb-24">
-            <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0c1529] to-[#111827] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
-                    <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#7C3AED]/25 blur-2xl" />
-                    <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
-                    <div className="relative flex items-center justify-between gap-3">
-                        <button
-                            type="button"
-                            onClick={() => loadTree()}
-                            className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45"
-                        >
-                            {t('member.team.binaryTree')}
-                        </button>
-                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8B5CF6]/50 bg-[#7C3AED]/20 text-[#DDD6FE]">
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 8l8-4 8 4-8 4-8-4zm0 8l8-4 8 4-8 4-8-4zm8-4v8" />
-                            </svg>
-                        </span>
-                    </div>
+            <div className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#1a1030] via-[#0c1529] to-[#111827] p-4 shadow-[0_16px_38px_rgba(76,29,149,0.28)]">
+                <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#7C3AED]/25 blur-2xl" />
+                <div className="pointer-events-none absolute -left-6 bottom-0 h-16 w-16 rounded-full bg-cyan-400/15 blur-2xl" />
+                <div className="relative flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => loadTree()}
+                        className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(124,58,237,0.4)] ring-1 ring-[#A78BFA]/45"
+                    >
+                        {t('member.team.binaryTree')}
+                    </button>
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8B5CF6]/50 bg-[#7C3AED]/20 text-[#DDD6FE]">
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 8l8-4 8 4-8 4-8-4zm0 8l8-4 8 4-8 4-8-4zm8-4v8" />
+                        </svg>
+                    </span>
                 </div>
             </div>
 
@@ -808,39 +861,39 @@ export default function MemberTeamPage() {
                         />
                     </div>
 
-                    <RmsCard variant="elevated" className="!p-3 sm:!p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-2 sm:items-center">
-                            <h2 className="text-lg font-bold text-white">{t('member.team.referralLinks')}</h2>
+                    <RmsCard variant="elevated" className="!p-2.5 sm:!p-3">
+                        <div className="flex flex-wrap items-start justify-between gap-1.5 sm:items-center">
+                            <h2 className="text-base font-bold text-white">{t('member.team.referralLinks')}</h2>
                             <button
                                 type="button"
                                 onClick={() => setInviteLinksExpanded((v) => !v)}
                                 aria-expanded={inviteLinksExpanded}
                                 aria-controls="binary-referral-links-panel"
                                 id="binary-referral-links-toggle"
-                                className="rounded-md border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] active:scale-[0.98]"
+                                className="rounded-md border border-white/15 bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-white transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] active:scale-[0.98]"
                             >
                                 {inviteLinksExpanded ? t('member.ui.hide') : t('member.ui.show')}
                             </button>
                         </div>
                         {inviteLinksExpanded ? (
-                            <div id="binary-referral-links-panel" className="mt-2 space-y-2">
+                            <div id="binary-referral-links-panel" className="mt-1.5 space-y-1.5">
                                 {data.self?.referral_code ? (
                                     <>
-                                        <p className="text-[11px] text-[#94A3B8]">
+                                        <p className="text-[10px] text-[#94A3B8]">
                                             {t('member.team.referralCodeHint', { code: data.self.referral_code })}
                                         </p>
-                                        <div className="grid gap-2 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
                                             <BinaryReferralLegRow
                                                 title={t('member.team.leftLink')}
                                                 url={inviteUrls.left}
-                                                borderClass="border-emerald-500/30 bg-emerald-950/20 ring-1 ring-emerald-500/10"
-                                                labelClass="text-emerald-200/95"
+                                                tone="emerald"
+                                                status="Primary"
                                             />
                                             <BinaryReferralLegRow
                                                 title={t('member.team.rightLink')}
                                                 url={inviteUrls.right}
-                                                borderClass="border-violet-500/30 bg-violet-950/20 ring-1 ring-violet-500/10"
-                                                labelClass="text-violet-200/95"
+                                                tone="violet"
+                                                status="Secondary"
                                             />
                                         </div>
                                     </>

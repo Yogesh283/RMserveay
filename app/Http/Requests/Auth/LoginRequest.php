@@ -68,13 +68,12 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        if ($user->user_type !== $this->string('user_type')->toString()) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'user_type' => ['Selected account type does not match this user ID.'],
-            ]);
-        }
+        /**
+         * Allow the same login credentials for both app roles (normal/publisher).
+         * - Client can select account type; backend will redirect accordingly.
+         * - Authorization for specific resources is still enforced by ownership checks
+         *   (e.g. publisher surveys belong to the authenticated user_id).
+         */
 
         if (! config('otp.bypass') && ! OtpController::verifyLoginUser((int) $user->id, $otp)) {
             RateLimiter::hit($this->throttleKey());

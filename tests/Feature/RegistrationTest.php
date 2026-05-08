@@ -17,6 +17,8 @@ class RegistrationTest extends TestCase
         $email = 'register-test-'.uniqid('', true).'@example.com';
 
         $response = $this->postJson('/api/register', [
+            'user_type' => 'normal',
+            'login_uid' => 'reg'.strtolower(substr(md5((string) microtime(true)), 0, 8)),
             'name' => 'Register Test',
             'email' => $email,
             'password' => 'password123',

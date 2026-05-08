@@ -385,6 +385,7 @@ export default function MemberProfilePage() {
                 {[
                     { to: '/member/transactions', label: 'Transactions', desc: 'Full ledger history' },
                     { to: '/member/wallet', label: 'Wallet & deposits', desc: 'USDT BEP-20, deposit & withdraw' },
+                    { to: '/member/profile-form', label: 'Short Profile Form', desc: 'Complete survey preference details' },
                     { to: '/member/terms', label: 'Terms & conditions', desc: 'Rules and limits' },
                 ].map((item) => (
                     <Link key={item.to} to={item.to}>

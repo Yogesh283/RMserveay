@@ -61,7 +61,7 @@ function isMoreMenuPath(pathname) {
 }
 
 function IconHome({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0 lg:h-5 lg:w-5" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -70,7 +70,7 @@ function IconHome({ active }) {
 }
 
 function IconTeam({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75}>
             <path
@@ -83,7 +83,7 @@ function IconTeam({ active }) {
 }
 
 function IconSurvey({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75}>
             <path
@@ -131,7 +131,7 @@ function IconSubPanels({ active }) {
 
 /** Transactions — receipt list (bottom nav + sidebar). */
 function IconTransactionsNav({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75} aria-hidden>
             <path
@@ -144,7 +144,7 @@ function IconTransactionsNav({ active }) {
 }
 
 function IconWalletNav({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75}>
             <path
@@ -157,7 +157,7 @@ function IconWalletNav({ active }) {
 }
 
 function IconUser({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke={c} strokeWidth={1.75}>
             <path
@@ -171,7 +171,7 @@ function IconUser({ active }) {
 
 /** More menu — 3×3 dots */
 function IconMore({ active }) {
-    const c = active ? '#8E6BFF' : '#A0AEC0';
+    const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill={c} aria-hidden>
             {[0, 1, 2].flatMap((row) =>

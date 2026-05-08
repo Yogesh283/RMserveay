@@ -41,6 +41,7 @@ import MemberWalletP2pPage from './member/pages/MemberWalletP2pPage';
 import MemberTermsPage from './member/pages/MemberTermsPage';
 import MemberTransactionsPage from './member/pages/MemberTransactionsPage';
 import MemberSupportTicketsPage from './member/pages/MemberSupportTicketsPage';
+import MemberSurveyProfileFormPage from './member/pages/MemberSurveyProfileFormPage';
 
 export default function Application() {
     return (
@@ -54,6 +55,7 @@ export default function Application() {
                         <Route path="surveys/:surveyId/session" element={<MemberSurveySessionPage />} />
                         <Route path="surveys" element={<MemberSurveysPage />} />
                         <Route path="profile" element={<MemberProfilePage />} />
+                        <Route path="profile-form" element={<MemberSurveyProfileFormPage />} />
                         <Route path="plans" element={<Navigate to="/member" replace />} />
                         <Route path="transactions" element={<MemberTransactionsPage />} />
                         <Route path="self-survey-income" element={<Navigate to="/member" replace />} />

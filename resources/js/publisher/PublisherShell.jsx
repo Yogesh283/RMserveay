@@ -26,7 +26,6 @@ const mobileNav = [
     { to: '/publisher/create', label: 'Create', icon: IconPlus, accent: true },
     { to: '/publisher/wallet/deposit', label: 'Deposit', icon: IconDeposit },
     { to: '/publisher/analytics', label: 'Stats', icon: IconChart },
-    { to: '/publisher/settings', label: 'Settings', icon: IconGear },
 ];
 
 function IconHome() {
@@ -197,7 +196,9 @@ export default function PublisherShell() {
     }
 
     return (
-        <div className={`min-h-dvh w-full max-w-[100vw] overflow-x-hidden font-sans antialiased ${pub.bg} ${pub.page}`}>
+        <div className={`relative min-h-dvh w-full max-w-[100vw] overflow-x-hidden font-sans antialiased ${pub.bg} ${pub.page}`}>
+            <div className="pointer-events-none absolute -left-24 top-10 h-60 w-60 rounded-full bg-[#6C4CF1]/20 blur-3xl" />
+            <div className="pointer-events-none absolute right-0 top-40 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
             {sidebarOpen ? (
                 <button
                     type="button"
@@ -257,90 +258,100 @@ export default function PublisherShell() {
             </aside>
 
             <div className={`transition-[padding] duration-200 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[272px]'}`}>
-                <header
-                    className={`flex h-16 shrink-0 items-center gap-3 px-3 sm:px-5 max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:z-50 max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:z-20 lg:pt-0 ${pub.glassHeader}`}
-                >
-                    <button
-                        type="button"
-                        className="rounded-xl p-2 text-white transition hover:bg-white/[0.06] lg:hidden"
-                        onClick={() => setSidebarOpen(true)}
-                        aria-label="Open menu"
-                    >
-                        <IconPanel />
-                    </button>
-                    <button
-                        type="button"
-                        className="hidden rounded-xl p-2 text-white transition hover:bg-white/[0.06] lg:block"
-                        onClick={() => setCollapsed((c) => !c)}
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    >
-                        <IconPanel />
-                    </button>
-
-                    <div
-                        className={`relative flex flex-1 items-center rounded-full border border-[#2A3550] bg-[#1A2235] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus-within:border-[#7C5CFF] focus-within:ring-2 focus-within:ring-[#7C5CFF]/20`}
-                    >
-                        <IconSearch />
-                        <input
-                            type="search"
-                            placeholder="Search surveys, users…"
-                            className="ml-2 w-full bg-transparent text-sm text-white outline-none placeholder:text-[#9CA3AF]/55"
-                        />
-                    </div>
-
-                    <div className="shrink-0 min-w-0 max-w-[min(42vw,9.5rem)] sm:max-w-none">
-                        <HomeLanguageSwitcher variant="compact" />
-                    </div>
-
-                    <Link
-                        to="/publisher/notifications"
-                        className="relative rounded-full p-2 text-white transition hover:bg-white/[0.06] hover:shadow-[0_0_20px_rgba(124,92,255,0.2)]"
-                        aria-label="Notifications"
-                    >
-                        <IconBell />
-                        <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#111827]" />
-                    </Link>
-
-                    <div className="relative" ref={menuRef}>
-                        <button
-                            type="button"
-                            onClick={() => setMenuOpen((o) => !o)}
-                            className="flex items-center gap-2 rounded-full border border-[#2A3550] bg-[#1A2235] py-1 pl-1 pr-2 transition hover:border-[#7C5CFF]/40 hover:shadow-[0_0_20px_rgba(124,92,255,0.15)]"
-                        >
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#6C4CF1] to-[#8E6BFF] text-xs font-bold text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]">
-                                {(user.name || user.email || '?').charAt(0).toUpperCase()}
-                            </span>
-                            <IconChevron />
-                        </button>
-                        {menuOpen ? (
-                            <div className="absolute right-0 z-[120] mt-2 w-52 overflow-hidden rounded-2xl border border-[#2A3550] bg-[#111827] py-1 shadow-[0_16px_48px_rgba(0,0,0,0.45)]">
-                                <Link
-                                    to="/publisher/settings"
-                                    className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white"
-                                    onClick={() => setMenuOpen(false)}
-                                >
-                                    Profile
-                                </Link>
-                                <Link
-                                    to="/publisher/settings"
-                                    className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white"
-                                    onClick={() => setMenuOpen(false)}
-                                >
-                                    Settings
-                                </Link>
+                <header className={`max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:z-50 max-lg:px-3 max-lg:pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] lg:sticky lg:top-0 lg:z-20 ${pub.glassHeader}`}>
+                    <div className="mx-auto w-full max-w-lg lg:max-w-none">
+                        <div className="rounded-[22px] border border-[#8B5CF6]/35 bg-[rgba(10,15,30,0.72)] p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_20px_rgba(124,92,255,0.22)] backdrop-blur-2xl lg:hidden">
+                            <div className="flex items-center gap-1.5">
                                 <button
                                     type="button"
-                                    onClick={logout}
-                                    className="w-full px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-red-500/10"
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#8B5CF6]/55 bg-[#8B5CF6]/12 text-white shadow-[0_0_20px_rgba(124,92,255,0.38)]"
+                                    onClick={() => setSidebarOpen(true)}
+                                    aria-label="Open menu"
                                 >
-                                    Logout
+                                    <IconPanel />
                                 </button>
+
+                                <Link
+                                    to="/publisher"
+                                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#8B5CF6]/35 bg-[rgba(16,22,38,0.8)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_14px_rgba(124,92,255,0.2)]"
+                                >
+                                    <AppLogo alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-white">Publisher</p>
+                                        <p className="truncate text-[10px] font-medium text-[#B4A0FF]">RM Survey</p>
+                                    </div>
+                                </Link>
+
+                                <div className="relative shrink-0" ref={menuRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMenuOpen((o) => !o)}
+                                        className="flex h-10 items-center gap-1.5 rounded-xl border border-[#8B5CF6]/40 bg-[rgba(16,22,38,0.84)] py-1 pl-1 pr-2 shadow-[0_0_14px_rgba(124,92,255,0.22)]"
+                                    >
+                                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#6C4CF1] to-[#8E6BFF] text-xs font-bold text-white shadow-[0_0_14px_rgba(124,92,255,0.45)]">
+                                            {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                                        </span>
+                                        <IconChevron />
+                                    </button>
+                                    {menuOpen ? (
+                                        <div className="absolute right-0 z-[120] mt-2 w-52 overflow-hidden rounded-2xl border border-[#2A3550] bg-[#111827] py-1 shadow-[0_16px_48px_rgba(0,0,0,0.45)]">
+                                            <Link to="/publisher/settings" className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white" onClick={() => setMenuOpen(false)}>
+                                                Profile
+                                            </Link>
+                                            <Link to="/publisher/settings" className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white" onClick={() => setMenuOpen(false)}>
+                                                Settings
+                                            </Link>
+                                            <button type="button" onClick={logout} className="w-full px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-red-500/10">
+                                                Logout
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
-                        ) : null}
+                        </div>
+
+                        <div className="hidden h-16 items-center gap-3 px-5 lg:flex">
+                            <button
+                                type="button"
+                                className="rounded-xl p-2 text-white transition hover:bg-white/[0.06]"
+                                onClick={() => setCollapsed((c) => !c)}
+                                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            >
+                                <IconPanel />
+                            </button>
+                            <div className="hidden shrink-0 min-w-0 sm:block sm:max-w-none">
+                                <HomeLanguageSwitcher variant="compact" />
+                            </div>
+                            <div className="relative ml-auto" ref={menuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setMenuOpen((o) => !o)}
+                                    className="flex items-center gap-2 rounded-full border border-[#2A3550] bg-[#1A2235] py-1 pl-1 pr-2 transition hover:border-[#7C5CFF]/40 hover:shadow-[0_0_20px_rgba(124,92,255,0.15)]"
+                                >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#6C4CF1] to-[#8E6BFF] text-xs font-bold text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]">
+                                        {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                                    </span>
+                                    <IconChevron />
+                                </button>
+                                {menuOpen ? (
+                                    <div className="absolute right-0 z-[120] mt-2 w-52 overflow-hidden rounded-2xl border border-[#2A3550] bg-[#111827] py-1 shadow-[0_16px_48px_rgba(0,0,0,0.45)]">
+                                        <Link to="/publisher/settings" className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white" onClick={() => setMenuOpen(false)}>
+                                            Profile
+                                        </Link>
+                                        <Link to="/publisher/settings" className="block px-4 py-2.5 text-sm text-[#9CA3AF] transition hover:bg-[#1A2235] hover:text-white" onClick={() => setMenuOpen(false)}>
+                                            Settings
+                                        </Link>
+                                        <button type="button" onClick={logout} className="w-full px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-red-500/10">
+                                            Logout
+                                        </button>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
                     </div>
                 </header>
 
-                <main className="p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8 lg:pb-8 max-lg:!pt-[calc(4rem+1rem+env(safe-area-inset-top,0px))] sm:max-lg:!pt-[calc(4rem+1.5rem+env(safe-area-inset-top,0px))]">
+                <main className="relative p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8 lg:pb-8 max-lg:!pt-[calc(4rem+1rem+env(safe-area-inset-top,0px))] sm:max-lg:!pt-[calc(4rem+1.5rem+env(safe-area-inset-top,0px))]">
                     <Outlet context={{ user }} />
                 </main>
             </div>

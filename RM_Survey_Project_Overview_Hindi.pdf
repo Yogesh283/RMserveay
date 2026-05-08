@@ -1,0 +1,146 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 2978 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 40 805 Tm
+/F1 13 Tf
+(RM Survey Project Overview \(Hindi Guide\)) Tj
+/F1 10 Tf
+0 -14 Td
+() Tj
+0 -14 Td
+(1\) Project ka main purpose) Tj
+0 -14 Td
+(Yeh platform do major roles handle karta hai: Member aur Publisher.) Tj
+0 -14 Td
+(Member side par user survey complete karke income streams unlock karta hai.) Tj
+0 -14 Td
+(Publisher side par survey create, responses track aur analytics dekhta hai.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(2\) Tech stack short me) Tj
+0 -14 Td
+(Backend: Laravel + Sanctum auth + MySQL) Tj
+0 -14 Td
+(Frontend: React + Vite + Tailwind style utility classes) Tj
+0 -14 Td
+(Admin: Filament panel \(custom path configured\).) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(3\) User flow \(Member\)) Tj
+0 -14 Td
+(Register/Login -> Dashboard -> ID Activation -> Sub/Super Panels -> Team/Matching) Tj
+0 -14 Td
+(Wallet module: Main wallet, P2P wallet, deposit, withdraw, internal transfer.) Tj
+0 -14 Td
+(Transactions page me full ledger dikhta hai.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(4\) Income structure) Tj
+0 -14 Td
+(Direct income: referral/sponsor based.) Tj
+0 -14 Td
+(Panel matching: left-right binary volume par based.) Tj
+0 -14 Td
+(Sub panel matching aur Super panel matching alag tiers me chalte hain.) Tj
+0 -14 Td
+(Level income: team depth logic ke through calculate hota hai.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(5\) Team structure ka logic) Tj
+0 -14 Td
+(Do relations parallel chalti hain:) Tj
+0 -14 Td
+(- sponsor relation \(kisne invite kiya\)) Tj
+0 -14 Td
+(- binary relation \(left/right tree placement\)) Tj
+0 -14 Td
+(User table me sponsor_id, binary_parent_id, binary_side, left_child_id, right_child_id fields hain.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(6\) Important APIs \(example\)) Tj
+0 -14 Td
+(/api/member/dashboard/summary) Tj
+0 -14 Td
+(/api/member/team/overview) Tj
+0 -14 Td
+(/api/member/wallet/overview) Tj
+0 -14 Td
+(/api/member/programme/self-survey/*) Tj
+0 -14 Td
+(/api/member/support-tickets) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(7\) Admin panel) Tj
+0 -14 Td
+(Filament admin me users, wallets, earnings, survey data, support tickets manage hote hain.) Tj
+0 -14 Td
+(Admin user detail me team tree visual check kiya ja sakta hai.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(8\) Deployment flow) Tj
+0 -14 Td
+(Local commit/push -> Server git pull -> composer install -> npm build -> artisan cache commands.) Tj
+0 -14 Td
+(Typical commands: optimize:clear, config:cache, route:cache, migrate --force.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(9\) Security & Ops notes) Tj
+0 -14 Td
+(- Production me APP_DEBUG=false rakho.) Tj
+0 -14 Td
+(- .env secrets ko public commit na karo.) Tj
+0 -14 Td
+(- storage/bootstrap cache permissions sahi hone chahiye.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(10\) Current customization highlights) Tj
+0 -14 Td
+(- Member UI dark neon fintech theme me redesign.) Tj
+0 -14 Td
+(- More menu compact + referral copy/share support.) Tj
+0 -14 Td
+(- Panel pages \(active/sub/super\) ka visual alignment improve.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Ye document quick understanding ke liye banaya gaya hai.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000003271 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+3341
+%%EOF

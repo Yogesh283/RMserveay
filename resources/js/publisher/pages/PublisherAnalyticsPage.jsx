@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PubCard from '../components/PubCard';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import { publisherGet } from '../lib/publisherApi';
 import { pub } from '../ui/pubTheme';
@@ -44,21 +45,27 @@ export default function PublisherAnalyticsPage() {
     }, []);
 
     if (loading) {
-        return <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading analytics…</p>;
+        return (
+            <PubPageFrame>
+                <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading analytics…</p>
+            </PubPageFrame>
+        );
     }
 
     if (err) {
         return (
-            <PubCard className="border-red-500/30 p-6">
-                <p className="text-red-400">{err}</p>
-            </PubCard>
+            <PubPageFrame>
+                <PubCard className="border-red-500/30 p-6">
+                    <p className="text-red-400">{err}</p>
+                </PubCard>
+            </PubPageFrame>
         );
     }
 
     const topDrop = data?.dropOffByQuestion?.[0];
 
     return (
-        <div className="space-y-8">
+        <PubPageFrame>
             <PubPageHeader title="Analytics" subtitle="Aggregated from survey responses in your account." />
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -103,7 +110,7 @@ export default function PublisherAnalyticsPage() {
                 </div>
             </PubCard>
 
-            <PubCard className="border-dashed border-[#2A3550] bg-[#111827]/80 p-6">
+            <PubCard className="border-[#7C5CFF]/25 p-6">
                 <p className="text-sm font-semibold text-white">Responses by survey (title)</p>
                 <ul className={`mt-3 space-y-2 text-sm ${pub.muted}`}>
                     {(data?.surveys ?? []).length ? (
@@ -118,6 +125,6 @@ export default function PublisherAnalyticsPage() {
                     )}
                 </ul>
             </PubCard>
-        </div>
+        </PubPageFrame>
     );
 }

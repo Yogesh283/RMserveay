@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PubCard from '../components/PubCard';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import { publisherGet } from '../lib/publisherApi';
 import { pub } from '../ui/pubTheme';
@@ -46,19 +47,25 @@ export default function PublisherNotificationsPage() {
     }, []);
 
     if (loading) {
-        return <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading…</p>;
+        return (
+            <PubPageFrame>
+                <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading…</p>
+            </PubPageFrame>
+        );
     }
 
     if (err) {
         return (
-            <PubCard className="border-red-500/30 p-6">
-                <p className="text-red-400">{err}</p>
-            </PubCard>
+            <PubPageFrame>
+                <PubCard className="border-red-500/30 p-6">
+                    <p className="text-red-400">{err}</p>
+                </PubCard>
+            </PubPageFrame>
         );
     }
 
     return (
-        <div className="space-y-6">
+        <PubPageFrame>
             <PubPageHeader title="Notifications" subtitle="Stored notifications for your publisher account." />
             <ul className="space-y-3">
                 {items.length === 0 ? (
@@ -89,6 +96,6 @@ export default function PublisherNotificationsPage() {
                     })
                 )}
             </ul>
-        </div>
+        </PubPageFrame>
     );
 }

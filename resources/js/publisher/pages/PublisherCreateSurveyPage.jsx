@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PubButton from '../components/PubButton';
 import PubCard from '../components/PubCard';
 import PubInput from '../components/PubInput';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import PubSelect from '../components/PubSelect';
 import { publisherPost } from '../lib/publisherApi';
@@ -101,7 +102,7 @@ export default function PublisherCreateSurveyPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <PubPageFrame>
             <PubPageHeader
                 title="Create survey"
                 subtitle="Multi-step flow — publishes to the database as an active survey."
@@ -296,6 +297,6 @@ export default function PublisherCreateSurveyPage() {
                     </div>
                 </PubCard>
             ) : null}
-        </div>
+        </PubPageFrame>
     );
 }

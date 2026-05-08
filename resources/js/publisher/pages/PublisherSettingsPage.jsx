@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import PubButton from '../components/PubButton';
 import PubCard from '../components/PubCard';
 import PubInput from '../components/PubInput';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import PubToggle from '../components/PubToggle';
 import { pub } from '../ui/pubTheme';
@@ -21,7 +22,7 @@ export default function PublisherSettingsPage() {
     const [notifMarketing, setNotifMarketing] = useState(false);
 
     return (
-        <div className="space-y-8">
+        <PubPageFrame>
             <PubPageHeader
                 title="Settings"
                 subtitle="Profile, security, payouts, and notification control — one premium dark layout."
@@ -111,6 +112,6 @@ export default function PublisherSettingsPage() {
                 </div>
                 <PubButton className="mt-6">Save preferences</PubButton>
             </PubCard>
-        </div>
+        </PubPageFrame>
     );
 }

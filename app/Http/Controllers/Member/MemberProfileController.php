@@ -90,6 +90,7 @@ class MemberProfileController extends Controller
             'email' => $nextEmail,
             'phone' => $validated['phone'] ?? null,
             'profile' => $validated['profile'] ?? null,
+            'survey_profile' => $validated['survey_profile'] ?? $user->survey_profile,
         ]);
         $user->save();
 

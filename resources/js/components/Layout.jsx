@@ -22,7 +22,7 @@ function linkClass(isActive, dense) {
 /** Mobile drawer — compressed rows (~40px), readable type */
 function mobileNavLinkClass(isActive) {
     return [
-        'group flex min-h-[48px] items-center rounded-2xl px-3 py-2 text-[13px] font-medium leading-snug tracking-tight transition duration-200 ease-out active:scale-[0.99]',
+        'group flex min-h-[42px] items-center rounded-xl px-2.5 py-1.5 text-[13px] font-medium leading-snug tracking-tight transition duration-200 ease-out active:scale-[0.99]',
         isActive
             ? 'bg-gradient-to-r from-[#7C3AED]/35 to-[#2563EB]/22 text-white shadow-[0_8px_24px_rgba(124,58,237,0.35)] ring-1 ring-[#8B5CF6]/55'
             : 'text-slate-200 hover:bg-white/[0.06] hover:text-white',
@@ -45,7 +45,7 @@ const drawerToggleThumbBase =
 
 function DrawerRowIcon({ children }) {
     return (
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] text-white/90">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] text-white/90">
             {children}
         </span>
     );
@@ -112,6 +112,17 @@ export default function Layout() {
         return items;
     }, [user?.user_type, user, t, i18n.resolvedLanguage]);
 
+    const footerQuickLinks = useMemo(
+        () => [
+            { to: '/about', label: t('layout.nav.about') },
+            { to: '/why-join-us', label: t('layout.nav.whyJoin') },
+            { to: '/faqs', label: t('layout.nav.faqs') },
+            { to: '/contact', label: t('layout.nav.contact') },
+            { to: '/dashboard', label: t('layout.nav.dashboard') },
+        ],
+        [t, i18n.resolvedLanguage],
+    );
+
     useEffect(() => {
         let cancelled = false;
         /** Guest-only routes: skip session fetch on login page. */
@@ -177,15 +188,18 @@ export default function Layout() {
                 aria-hidden
             />
 
-            <header className="z-50 border-b border-white/[0.08] bg-[rgba(11,15,26,0.85)] shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:bg-[rgba(11,15,26,0.72)] lg:pt-0">
+            <header className="z-50 border-b border-white/[0.1] bg-[linear-gradient(180deg,rgba(8,12,24,0.92),rgba(11,15,26,0.82))] shadow-[0_8px_34px_rgba(0,0,0,0.4)] backdrop-blur-xl max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:pt-0">
                 <div className="relative z-[52] mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
                     <NavLink
                         to="/"
-                        className="flex min-w-0 max-w-[58%] shrink-0 items-center gap-2.5 outline-none ring-offset-2 ring-offset-[#0B0F1A] transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#7C3AED]/50 sm:max-w-none"
+                        className="group flex min-w-0 max-w-[66%] shrink-0 items-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-2.5 py-1.5 outline-none ring-offset-2 ring-offset-[#0B0F1A] transition hover:border-[#7C3AED]/35 hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-[#7C3AED]/50 sm:max-w-none"
                     >
-                        <AppLogo alt="" className="h-14 w-14 sm:h-16 sm:w-16" aria-hidden />
-                        <span className="truncate bg-gradient-to-r from-white via-slate-100 to-[#93C5FD] bg-clip-text text-sm font-semibold tracking-tight text-transparent sm:text-lg">
-                            {appName}
+                        <AppLogo alt="" className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12" aria-hidden />
+                        <span className="min-w-0">
+                            <span className="block truncate bg-gradient-to-r from-white via-slate-100 to-[#93C5FD] bg-clip-text text-sm font-semibold tracking-tight text-transparent sm:text-base">
+                                {appName}
+                            </span>
+                            <span className="block truncate text-[10px] text-slate-400 group-hover:text-slate-300">Insight • Innovation • Impact</span>
                         </span>
                     </NavLink>
 
@@ -225,7 +239,7 @@ export default function Layout() {
 
                         <button
                             type="button"
-                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.14] bg-gradient-to-br from-white/[0.09] to-white/[0.03] text-white shadow-[0_4px_24px_rgba(124,58,237,0.15)] ring-1 ring-white/[0.06] backdrop-blur-sm transition hover:border-[#7C3AED]/35 hover:from-[rgba(124,58,237,0.15)] active:scale-[0.96] lg:hidden"
+                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#8B5CF6]/35 bg-gradient-to-br from-[#8B5CF6]/16 to-white/[0.03] text-white shadow-[0_4px_24px_rgba(124,58,237,0.24)] ring-1 ring-white/[0.06] backdrop-blur-sm transition hover:border-[#7C3AED]/55 hover:from-[rgba(124,58,237,0.2)] active:scale-[0.96] lg:hidden"
                             aria-expanded={menuOpen}
                             aria-label={menuOpen ? t('common.closeMenu') : t('common.openMenu')}
                             onClick={() => setMenuOpen((o) => !o)}
@@ -250,63 +264,15 @@ export default function Layout() {
                             aria-label={t('common.closeMenu')}
                             onClick={() => setMenuOpen(false)}
                         />
-                        <div className="relative z-[51] mx-auto max-h-[min(84vh,calc(100dvh-4.25rem))] overflow-y-auto overscroll-contain rounded-b-[28px] border-x border-b border-white/[0.1] border-t border-white/[0.06] bg-gradient-to-b from-[#050816]/[0.97] via-[#0A1020]/[0.98] to-[#0B1120]/[0.98] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_30px_70px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl lg:hidden">
-                            <div className="mx-auto mb-3 h-1 w-12 shrink-0 rounded-full bg-white/18" aria-hidden />
+                        <div className="relative z-[51] mx-auto max-h-[min(84vh,calc(100dvh-4.25rem))] overflow-y-auto overscroll-contain rounded-b-[26px] border-x border-b border-white/[0.1] border-t border-white/[0.06] bg-gradient-to-b from-[#050816]/[0.97] via-[#0A1020]/[0.98] to-[#0B1120]/[0.98] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_30px_70px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl lg:hidden">
+                            <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/18" aria-hidden />
 
-                            <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <AppLogo alt="" className="h-11 w-11 shrink-0 rounded-2xl" aria-hidden />
-                                        <div className="min-w-0">
-                                            <p className="truncate bg-gradient-to-r from-white to-[#93C5FD] bg-clip-text text-[16px] font-semibold tracking-tight text-transparent">
-                                                {appName}
-                                            </p>
-                                            <p className="mt-0.5 truncate text-[10px] tracking-wide text-slate-400">
-                                                Insight • Innovation • Impact
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#8B5CF6]/60 bg-[#8B5CF6]/10 text-[#C4B5FD] shadow-[0_0_18px_rgba(139,92,246,0.4)]"
-                                        aria-label={t('common.closeMenu')}
-                                        onClick={() => setMenuOpen(false)}
-                                    >
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="mb-4 rounded-[24px] border border-[#8B5CF6]/30 bg-gradient-to-r from-[#6D28D9]/40 via-[#7C3AED]/30 to-[#2563EB]/25 p-3 shadow-[0_16px_40px_rgba(76,29,149,0.35)]">
-                                <div className="flex items-center gap-3">
-                                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-[0_0_14px_rgba(168,85,247,0.35)]">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6v12m-4-8h8m4 2a8 8 0 11-16 0 8 8 0 0116 0z" />
-                                        </svg>
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-white">Join. Participate. Earn.</p>
-                                        <p className="mt-0.5 text-[11px] leading-4 text-slate-200">Be a part of our global survey network.</p>
-                                    </div>
-                                    <ArrowRightIcon />
-                                </div>
-                            </div>
-
-                            <div className="mb-4">
-                                <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                                    <svg className="h-4 w-4 text-[#93C5FD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
-                                    </svg>
-                                    <HomeLanguageSwitcher variant="compact" density="tight" />
-                                </div>
-                            </div>
-
-                            <div className="mt-2">
+                            <div className="mt-1">
                                 <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A78BFA]">{t('layout.explore')}</p>
                                 <nav className="flex flex-col gap-1">
-                                    {siteNavItems.map(({ to, label, end }) => (
+                                    {siteNavItems
+                                        .filter((item) => ['/', '/about', '/why-join-us', '/faqs'].includes(item.to))
+                                        .map(({ to, label, end }) => (
                                         <NavLink
                                             key={to}
                                             to={to}
@@ -326,7 +292,7 @@ export default function Layout() {
                                 </nav>
                             </div>
 
-                            <div className="my-4 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                            <div className="my-2.5 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
 
                             <div>
                                 <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A78BFA]">{t('layout.account')}</p>
@@ -337,22 +303,7 @@ export default function Layout() {
                                         </button>
                                     ) : authChecked ? (
                                         <div className="grid grid-cols-2 gap-2">
-                                            <NavLink
-                                                to={`/login?user_type=${drawerLoginAsPublisher ? 'publisher' : 'normal'}`}
-                                                onClick={() => setMenuOpen(false)}
-                                                className={mobileDrawerBtnLogin}
-                                            >
-                                                {t('layout.login')}
-                                            </NavLink>
-                                            <NavLink
-                                                to={registerMemberTo}
-                                                onClick={() => setMenuOpen(false)}
-                                                className={mobileDrawerBtnSignup}
-                                            >
-                                                {t('layout.register')}
-                                            </NavLink>
-
-                                            <div className="col-span-2 mt-1 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5">
+                                            <div className="col-span-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5">
                                                 <div className="flex items-center justify-between gap-2 py-1">
                                                     <span className="text-xs text-slate-200">Log in as Publisher</span>
                                                     <button
@@ -395,12 +346,18 @@ export default function Layout() {
                                                 </div>
                                             </div>
                                             <NavLink
+                                                to={registerMemberTo}
+                                                onClick={() => setMenuOpen(false)}
+                                                className={mobileDrawerBtnSignup}
+                                            >
+                                                {t('layout.register')}
+                                            </NavLink>
+                                            <NavLink
                                                 to={`/login?user_type=${drawerLoginAsPublisher ? 'publisher' : 'normal'}`}
                                                 onClick={() => setMenuOpen(false)}
-                                                className="col-span-2 mt-1 flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(124,58,237,0.45)] ring-1 ring-[#A78BFA]/45"
+                                                className={mobileDrawerBtnLogin}
                                             >
-                                                Log in
-                                                <ArrowRightIcon />
+                                                {t('layout.login')}
                                             </NavLink>
                                             <p className="col-span-2 text-center text-[11px] text-slate-400">
                                                 <NavLink to="/login/forgot-password" onClick={() => setMenuOpen(false)} className="hover:text-[#93C5FD]">
@@ -414,21 +371,6 @@ export default function Layout() {
                                 </div>
                             </div>
 
-                            <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                                <div className="flex items-start gap-3">
-                                    <span className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#8B5CF6]/40 bg-[#7C3AED]/18 text-[#C4B5FD] shadow-[0_0_20px_rgba(124,58,237,0.45)]">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4zm0 5v8m0 0l-3-3m3 3l3-3" />
-                                        </svg>
-                                    </span>
-                                    <div>
-                                        <p className="text-sm font-semibold text-white">Your Data, Our Priority</p>
-                                        <p className="mt-1 text-[11px] leading-4 text-slate-300">
-                                            Bank-level security to keep your information and earnings safe.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </>
                 ) : null}
@@ -440,44 +382,27 @@ export default function Layout() {
 
             <footer className="relative z-10 border-t border-white/[0.08] bg-[rgba(11,15,26,0.85)] backdrop-blur-md">
                 <div className="mx-auto max-w-6xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-8 sm:px-6 sm:py-12 sm:pb-12">
-                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-3 lg:gap-10">
+                    <div className="rounded-3xl border border-white/[0.1] bg-white/[0.02] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-6">
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-8">
                         <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
                             <NavLink to="/" className="inline-flex outline-none">
                                 <AppLogo alt={appName} className="h-16 w-16 sm:h-20 sm:w-20" />
                             </NavLink>
                             <p className="mt-3 max-w-sm text-sm leading-relaxed text-white sm:max-w-none">{t('layout.footerTagline')}</p>
                         </div>
-                        <div>
+                        <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
                             <p className="text-xs font-semibold uppercase tracking-wide text-[#93C5FD] sm:text-sm">{t('layout.quickLinks')}</p>
                             <ul className="mt-3 space-y-1.5 text-sm text-white sm:mt-4 sm:space-y-2">
-                                <li>
-                                    <NavLink to="/about" className="hover:text-white">
-                                        {t('layout.nav.about')}
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink to="/why-join-us" className="hover:text-white">
-                                        {t('layout.nav.whyJoin')}
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink to="/faqs" className="hover:text-white">
-                                        {t('layout.nav.faqs')}
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink to="/contact" className="hover:text-white">
-                                        {t('layout.nav.contact')}
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink to="/dashboard" className="hover:text-white">
-                                        {t('layout.nav.dashboard')}
-                                    </NavLink>
-                                </li>
+                                {footerQuickLinks.map(({ to, label }) => (
+                                    <li key={to}>
+                                        <NavLink to={to} className="hover:text-white">
+                                            {label}
+                                        </NavLink>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
-                        <div className="sm:col-span-2 lg:col-span-1">
+                        <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
                             <p className="text-xs font-semibold uppercase tracking-wide text-[#93C5FD] sm:text-sm">{t('layout.account')}</p>
                             <ul className="mt-3 space-y-1.5 text-sm text-white sm:mt-4 sm:space-y-2">
                                 <li>
@@ -526,6 +451,7 @@ export default function Layout() {
                                     <span className="cursor-default hover:text-slate-400">{t('layout.privacy')}</span>
                                 </li>
                             </ul>
+                        </div>
                         </div>
                     </div>
                     <p className="mt-8 border-t border-white/[0.08] pt-6 text-center text-[11px] leading-snug text-slate-500 sm:mt-10 sm:pt-8 sm:text-sm">

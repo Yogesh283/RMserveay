@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PubButton from '../components/PubButton';
 import PubCard from '../components/PubCard';
+import PubPageFrame from '../components/PubPageFrame';
 import PubPageHeader from '../components/PubPageHeader';
 import { formatInrFull, publisherGet } from '../lib/publisherApi';
 import { pub } from '../ui/pubTheme';
@@ -47,19 +48,25 @@ export default function PublisherEarningsPage() {
     const maxAmt = Math.max(...series.map((x) => x.amount), 1);
 
     if (loading) {
-        return <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading earnings…</p>;
+        return (
+            <PubPageFrame>
+                <p className={`py-16 text-center text-sm ${pub.muted}`}>Loading earnings…</p>
+            </PubPageFrame>
+        );
     }
 
     if (err) {
         return (
-            <PubCard className="border-red-500/30 p-6">
-                <p className="text-red-400">{err}</p>
-            </PubCard>
+            <PubPageFrame>
+                <PubCard className="border-red-500/30 p-6">
+                    <p className="text-red-400">{err}</p>
+                </PubCard>
+            </PubPageFrame>
         );
     }
 
     return (
-        <div className="space-y-8">
+        <PubPageFrame>
             <PubPageHeader title="Earnings" subtitle="Live balance and history from the earnings table." />
 
             <PubCard className="p-6" hover>
@@ -95,7 +102,25 @@ export default function PublisherEarningsPage() {
                 </div>
             </PubCard>
 
-            <div className={pub.tableWrap}>
+            <div className="space-y-2 md:hidden">
+                {tx.length === 0 ? (
+                    <PubCard className="p-4">
+                        <p className={`text-sm ${pub.muted}`}>No transactions yet.</p>
+                    </PubCard>
+                ) : (
+                    tx.map((t) => (
+                        <PubCard key={t.id} className="p-3.5">
+                            <p className="text-xs text-white/90">{t.surveyTitle ? `${t.description} — ${t.surveyTitle}` : t.description}</p>
+                            <div className="mt-1 flex items-center justify-between">
+                                <span className={`text-[11px] ${pub.muted}`}>{new Date(t.createdAt).toLocaleString()}</span>
+                                <span className="text-sm font-semibold text-emerald-400">+ {formatInrFull(t.amount)}</span>
+                            </div>
+                        </PubCard>
+                    ))
+                )}
+            </div>
+
+            <div className={`hidden md:block ${pub.tableWrap}`}>
                 <table className="w-full text-left text-sm">
                     <thead className={pub.tableHead}>
                         <tr>
@@ -123,6 +148,6 @@ export default function PublisherEarningsPage() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </PubPageFrame>
     );
 }
