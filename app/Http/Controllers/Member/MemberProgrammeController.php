@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Member;
 use App\Http\Controllers\Controller;
 use App\Models\WalletTransaction;
 use App\Services\ActivePanelMatchingService;
+use App\Services\PanelEnrollmentService;
 use App\Services\PanelMatchingService;
 use App\Services\SelfSurveyIncomeService;
 use App\Services\SubPanelMatchingService;
@@ -22,6 +23,7 @@ class MemberProgrammeController extends Controller
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected SurveyLevelIncomeService $surveyLevelIncome,
         protected ActivePanelMatchingService $activePanelMatching,
+        protected PanelEnrollmentService $panelEnrollment,
     ) {}
 
     public function levelIncome(Request $request): JsonResponse
@@ -143,6 +145,9 @@ class MemberProgrammeController extends Controller
         $user->minimum_panel_fee_paid_at = now();
         $user->save();
 
+        // Snapshot row in active_panel_users (one-row-per-user state table).
+        $this->panelEnrollment->recordActivePanelActivation($user->fresh());
+
         // Award an active-panel binary matching carry to the user's direct binary
         // upline (closing job credits 10 USDT × 10% = 1 USDT per matched pair).
         $this->activePanelMatching->processActivePanelActivation($user->fresh());
@@ -168,6 +173,9 @@ class MemberProgrammeController extends Controller
         $user->sub_panel_count = (int) $user->sub_panel_count + 1;
         $user->save();
 
+        // Snapshot row in sub_panel_users (one-row-per-user state table).
+        $this->panelEnrollment->recordSubPanelPurchase($user->fresh());
+
         $this->panelMatching->processSubPanelPurchase($user->fresh());
 
         return $this->show($request);
@@ -190,6 +198,9 @@ class MemberProgrammeController extends Controller
         $user->refresh();
         $user->super_sub_panel_count = (int) $user->super_sub_panel_count + 1;
         $user->save();
+
+        // Snapshot row in super_sub_panel_users (one-row-per-user state table).
+        $this->panelEnrollment->recordSuperSubPanelPurchase($user->fresh());
 
         $this->superSubPanelMatching->processSuperSubPanelPurchase($user->fresh());
 
