@@ -333,20 +333,32 @@ function LegsCompareTable({ rows, caption, accent = 'default' }) {
     );
 }
 
-function buildActiveLegRows(legs, t) {
+function fmtUsdShort(s) {
+    const n = Number.parseFloat(String(s));
+    if (Number.isNaN(n)) return '$0.00';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+}
+
+function buildActiveLegRows(legs, t, activeMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
     }
     const L = legs.left;
     const R = legs.right;
+    const am = activeMatching ?? {};
+    const carryL = Number(am.carry_left ?? 0) | 0;
+    const carryR = Number(am.carry_right ?? 0) | 0;
+    const pairsToday = Number(am.pairs_paid_today ?? 0) | 0;
+    const lapseL = Number(am.today_left_lapsed ?? 0) | 0;
+    const lapseR = Number(am.today_right_lapsed ?? 0) | 0;
+    const payoutToday = am.earned_today_usd ?? '0.00';
     return [
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
         { label: t('member.team.rowActivePanelists'), left: L.active, right: R.active },
-        {
-            label: t('member.team.rowPanelCarry'),
-            left: `${L.carry_panel_left} / ${L.carry_panel_right}`,
-            right: `${R.carry_panel_left} / ${R.carry_panel_right}`,
-        },
+        { label: 'Active carry forward', left: carryL, right: carryR },
+        { label: 'Matched pairs today', left: pairsToday, right: pairsToday },
+        { label: 'Payout today', left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
+        { label: 'Lapsed today', left: lapseL, right: lapseR },
     ];
 }
 
@@ -401,13 +413,21 @@ function buildSuperLegRows(legs, t) {
 }
 
 /** Same three concepts as section 2, for the tree card summary strip. */
-function buildTreeLegMatchingRows(legs, t) {
+function buildTreeLegMatchingRows(legs, t, activeMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
     }
     const L = legs.left;
     const R = legs.right;
+    const am = activeMatching ?? {};
+    const carryAL = Number(am.carry_left ?? 0) | 0;
+    const carryAR = Number(am.carry_right ?? 0) | 0;
     return [
+        {
+            label: 'Active matching carry',
+            left: carryAL,
+            right: carryAR,
+        },
         {
             label: t('member.team.rowMatchingPanels'),
             left: `${L.carry_panel_left} / ${L.carry_panel_right}`,
@@ -541,7 +561,8 @@ export default function MemberTeamPage() {
     const [treePreviewExpanded, setTreePreviewExpanded] = useState(true);
     const [levelIncomeExpanded, setLevelIncomeExpanded] = useState(false);
     const [inviteLinksExpanded, setInviteLinksExpanded] = useState(false);
-    /** Sub vs super milestone table inside “Matching income” (click option — no separate expand toggle). */
+    /** Sub vs super matching table inside “Matching income” (Active is shown
+     *  in the My Team section instead). */
     const [matchingIncomeTab, setMatchingIncomeTab] = useState('sub');
     const [panelMatchData, setPanelMatchData] = useState(null);
     const [subMatchData, setSubMatchData] = useState(null);
@@ -665,13 +686,13 @@ export default function MemberTeamPage() {
             return [];
         }
         if (totalTeamTab === 'active') {
-            return buildActiveLegRows(data.legs, t);
+            return buildActiveLegRows(data.legs, t, data?.matching?.active_panel);
         }
         if (totalTeamTab === 'sub') {
             return buildSubLegRows(data.legs, t);
         }
         return buildSuperLegRows(data.legs, t);
-    }, [data?.legs, totalTeamTab, t, i18n.resolvedLanguage]);
+    }, [data?.legs, data?.matching?.active_panel, totalTeamTab, t, i18n.resolvedLanguage]);
 
     const tabBtn =
         'rounded-2xl border px-3 py-2 text-[12px] font-semibold transition sm:px-3 sm:text-sm';
@@ -721,7 +742,7 @@ export default function MemberTeamPage() {
                         <p className="text-base font-bold text-white">{t('member.team.binaryTreeTitle')}</p>
                         <p className="mt-0.5 text-[11px] text-[#A0AEC0]">{t('member.team.sameLegStatsHint')}</p>
                         {data?.legs ? (
-                            <LegsCompareTable rows={buildTreeLegMatchingRows(data.legs, t)} caption={t('member.team.matchCaption')} />
+                            <LegsCompareTable rows={buildTreeLegMatchingRows(data.legs, t, data?.matching?.active_panel)} caption={t('member.team.matchCaption')} />
                         ) : (
                             <p className="mt-2 text-[12px] text-[#94A3B8]">{t('member.team.reloadIfStatsMissing')}</p>
                         )}

@@ -168,8 +168,9 @@ class BinaryDailyClosingService
         $perPair = $this->normalizeUsd((string) $cfg['pair_income_usd']);
         $maxPairs = max(0, (int) $cfg['max_pairs_per_day']);
         $txType = (string) $cfg['wallet_tx_type'];
+        $strategy = (string) ($cfg['lapse_strategy'] ?? 'no_lapse_both_carry');
 
-        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $date) {
+        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $date) {
             $existing = BinaryDailyClosing::query()
                 ->where('user_id', $userId)
                 ->where('scope', $scope)
@@ -200,18 +201,34 @@ class BinaryDailyClosingService
 
             $payout = bcmul((string) $pairsMatched, $perPair, 2);
 
-            $leftAfterMatch = $leftIn - $pairsMatched;
-            $rightAfterMatch = $rightIn - $pairsMatched;
-
-            // No-lapse rule: any unmatched pairs (cap-induced excess or
-            // weak-leg leftover) on EITHER side carry forward to next day.
-            // The user's working rule is "daily 20 pairs match, sab baki
-            // pairs next day carry forward" — applies uniformly across all
-            // closing scopes (active_panel, panel, super).
-            $leftOut = $leftAfterMatch;
-            $rightOut = $rightAfterMatch;
-            $leftLapsed = 0;
-            $rightLapsed = 0;
+            // Carry / lapse split — strategy-driven so different scopes can
+            // follow their own MLM rule. See config/binary_closing.php for
+            // the per-scope `lapse_strategy` value.
+            if ($strategy === 'weak_lapse_strong_diff') {
+                // Classical binary MLM (Active Panel rule):
+                //   - weak leg fully consumed (any leftover LAPSES);
+                //   - strong leg carries only the diff = strong - weak;
+                //   - cap-induced surplus on strong (when weak > max_pairs)
+                //     also LAPSES — only the "diff" part carries.
+                $diff = abs($leftIn - $rightIn);
+                if ($leftIn >= $rightIn) {
+                    $leftOut = $diff;
+                    $rightOut = 0;
+                } else {
+                    $leftOut = 0;
+                    $rightOut = $diff;
+                }
+                $leftLapsed = max(0, $leftIn - $pairsMatched - $leftOut);
+                $rightLapsed = max(0, $rightIn - $pairsMatched - $rightOut);
+            } else {
+                // 'no_lapse_both_carry' (Sub / Super rule): any unmatched
+                // pairs on EITHER side roll forward; the milestone-side
+                // lapse is handled inside Sub/SuperSubPanelMatchingService.
+                $leftOut = $leftIn - $pairsMatched;
+                $rightOut = $rightIn - $pairsMatched;
+                $leftLapsed = 0;
+                $rightLapsed = 0;
+            }
 
             $walletTxId = null;
             $balanceAfter = (string) $user->wallet_balance;

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
 
@@ -139,11 +140,31 @@ class SubPanelMatchingService
             }
         }
 
+        /** Latest daily-closing row is the live source for matched pairs / paid milestone. */
+        $todayClosing = BinaryDailyClosing::query()
+            ->where('user_id', $earner->id)
+            ->where('scope', BinaryDailyClosing::SCOPE_PANEL)
+            ->whereDate('closing_date', now()->toDateString())
+            ->latest('id')
+            ->first();
+        $todayMilestone = (int) ($todayClosing?->meta['milestone'] ?? 0);
+        $milestoneMask = 0;
+        foreach (array_values($milestones) as $idx => $m) {
+            if ((int) $m > 0 && (int) $m === $todayMilestone) {
+                $milestoneMask |= (1 << $idx);
+                break;
+            }
+        }
+
         return [
             'eligible' => $earner->qualifiesForPanelMatchingIncome(),
             'daily_cap_usd' => $cap,
             'earned_today_usd' => $earned,
             'remaining_cap_usd' => $remaining,
+            'cumulative_matched_panels_today' => (int) ($todayClosing?->pairs_matched ?? 0),
+            'milestones_hit_mask' => $milestoneMask,
+            'today_milestone_lapsed_pairs' => (int) ($todayClosing?->meta['milestone_lapsed_pairs'] ?? 0),
+            'today_milestone_paid_usd' => (string) ($todayClosing?->meta['milestone_paid_usd'] ?? '0.00'),
             'pair_carry_forward' => 0,
             'next_milestone' => $smallestMilestone,
             'pairs_until_next_milestone' => $smallestMilestone,

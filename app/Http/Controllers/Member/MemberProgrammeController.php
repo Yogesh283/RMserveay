@@ -36,6 +36,11 @@ class MemberProgrammeController extends Controller
         return response()->json($this->panelMatching->status($request->user()));
     }
 
+    public function activePanelMatching(Request $request): JsonResponse
+    {
+        return response()->json($this->activePanelMatching->status($request->user()));
+    }
+
     public function subPanelMatching(Request $request): JsonResponse
     {
         return response()->json($this->subPanelMatching->status($request->user()));

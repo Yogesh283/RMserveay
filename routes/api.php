@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/member/plans/purchase', [MemberPlanController::class, 'purchase'])->middleware('throttle:20,1');
 
     Route::get('/member/programme/direct-income', [MemberProgrammeController::class, 'directIncome']);
+    Route::get('/member/programme/active-panel-matching', [MemberProgrammeController::class, 'activePanelMatching']);
     Route::get('/member/programme/panel-matching', [MemberProgrammeController::class, 'panelMatching']);
     Route::get('/member/programme/sub-panel-matching', [MemberProgrammeController::class, 'subPanelMatching']);
     Route::get('/member/programme/super-sub-panel-matching', [MemberProgrammeController::class, 'superSubPanelMatching']);

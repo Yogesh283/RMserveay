@@ -11,6 +11,7 @@ class MemberTeamService
         protected SubPanelMatchingService $subPanelMatching,
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected SurveyLevelIncomeService $surveyLevelIncome,
+        protected ActivePanelMatchingService $activePanelMatching,
     ) {}
 
     /**
@@ -50,6 +51,7 @@ class MemberTeamService
     /**
      * @return array{
      *     count:int, active:int, sub_panels:int, super_sub_panels:int,
+     *     carry_active_left:int, carry_active_right:int,
      *     carry_panel_left:int, carry_panel_right:int, carry_super_left:int, carry_super_right:int,
      *     sub_matching_cumulative_today:int, super_matching_cumulative_today:int
      * }
@@ -65,6 +67,8 @@ class MemberTeamService
                 'active' => 0,
                 'sub_panels' => 0,
                 'super_sub_panels' => 0,
+                'carry_active_left' => 0,
+                'carry_active_right' => 0,
                 'carry_panel_left' => 0,
                 'carry_panel_right' => 0,
                 'carry_super_left' => 0,
@@ -76,6 +80,7 @@ class MemberTeamService
 
         $rows = User::query()->whereIn('id', $ids)->get([
             'id', 'sub_panel_count', 'super_sub_panel_count',
+            'active_panel_match_carry_left', 'active_panel_match_carry_right',
             'panel_match_carry_left', 'panel_match_carry_right',
             'super_panel_match_carry_left', 'super_panel_match_carry_right',
             'activation_fee_paid_at', 'minimum_panel_fee_paid_at',
@@ -86,6 +91,8 @@ class MemberTeamService
         $active = 0;
         $subPanels = 0;
         $superSub = 0;
+        $cal = 0;
+        $car = 0;
         $cpl = 0;
         $cpr = 0;
         $csl = 0;
@@ -99,6 +106,8 @@ class MemberTeamService
             }
             $subPanels += (int) $u->sub_panel_count;
             $superSub += (int) $u->super_sub_panel_count;
+            $cal += (int) $u->active_panel_match_carry_left;
+            $car += (int) $u->active_panel_match_carry_right;
             $cpl += (int) $u->panel_match_carry_left;
             $cpr += (int) $u->panel_match_carry_right;
             $csl += (int) $u->super_panel_match_carry_left;
@@ -116,6 +125,8 @@ class MemberTeamService
             'active' => $active,
             'sub_panels' => $subPanels,
             'super_sub_panels' => $superSub,
+            'carry_active_left' => $cal,
+            'carry_active_right' => $car,
             'carry_panel_left' => $cpl,
             'carry_panel_right' => $cpr,
             'carry_super_left' => $csl,
@@ -238,6 +249,7 @@ class MemberTeamService
                 'right' => $rightLeg,
             ],
             'matching' => [
+                'active_panel' => $this->activePanelMatching->status($user),
                 'panel' => $this->panelMatching->status($user),
                 'sub_panel' => $this->subPanelMatching->status($user),
                 'super_sub_panel' => $this->superSubPanelMatching->status($user),

@@ -104,7 +104,7 @@ export default function RegisterPanelistPage() {
                 </div>
 
                 <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(420px,520px)] lg:items-start lg:gap-12">
-                    <div className="text-center lg:text-left">
+                    <div className="order-2 text-center lg:order-1 lg:text-left">
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-[#A78BFA]/30 bg-[rgba(124,58,237,0.18)] px-4 py-2 ring-1 ring-[#A78BFA]/20 lg:mx-0">
                             <AppLogo alt="" className="h-9 w-9 rounded-xl" />
                             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#C4B5FD] sm:text-[11px]">
@@ -150,49 +150,47 @@ export default function RegisterPanelistPage() {
                         </div>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative order-1 lg:order-2">
                         <div
                             className="pointer-events-none absolute -inset-2 -z-10 rounded-[24px] bg-gradient-to-br from-[#7C3AED]/40 via-[#5B6BFF]/30 to-[#22D3EE]/30 opacity-60 blur-2xl"
                             aria-hidden
                         />
-                        <div className="rounded-[22px] border border-[#A78BFA]/35 bg-[#0B0F1A]/85 p-3 shadow-[0_18px_60px_rgba(2,6,23,0.6)] sm:p-5">
-                            <div className="rounded-[18px] border border-white/[0.06] bg-[rgba(15,23,42,0.7)] p-3 sm:p-5">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#93C5FD] sm:text-[11px]">Step 1 of 1</p>
-                                        <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">Create your panelist account</h2>
-                                    </div>
-                                    <span className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-[#A78BFA]/40 bg-gradient-to-br from-[#7C3AED]/35 to-[#22D3EE]/20 text-[#C4B5FD] sm:inline-flex">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </span>
+                        <div className="rounded-[22px] border border-[#A78BFA]/35 bg-[#0B0F1A]/90 p-4 shadow-[0_18px_60px_rgba(2,6,23,0.6)] sm:p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#93C5FD] sm:text-[11px]">Step 1 of 1</p>
+                                    <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">Create your panelist account</h2>
                                 </div>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                                    {referral.ref ? (
-                                        <>
-                                            Joining via invite from <span className="font-mono font-semibold text-[#FDE68A]">{referral.ref.toUpperCase()}</span>
-                                            {referral.side ? (
-                                                <>
-                                                    {' '}— placement on{' '}
-                                                    <span className="font-semibold text-[#FDE68A]">{referral.side === 'left' ? 'Left leg' : 'Right leg'}</span>.
-                                                </>
-                                            ) : null}
-                                        </>
-                                    ) : (
-                                        'We’ll set you up as a Panelist user. You can add a sponsor referral code below if you have one.'
-                                    )}
-                                </p>
-                                <div className="mt-4 sm:mt-6">
-                                    <RegisterCard
-                                        userType="normal"
-                                        otpBypass={otpBypass}
-                                        urlRef={referral.ref}
-                                        urlSide={referral.side}
-                                        accent="panelist"
-                                        surfaceClassName="rounded-[16px] border border-white/[0.05] bg-black/20 p-3 sm:p-4"
-                                    />
-                                </div>
+                                <span className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-[#A78BFA]/40 bg-gradient-to-br from-[#7C3AED]/35 to-[#22D3EE]/20 text-[#C4B5FD] sm:inline-flex">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                                {referral.ref ? (
+                                    <>
+                                        Joining via invite from <span className="font-mono font-semibold text-[#FDE68A]">{referral.ref.toUpperCase()}</span>
+                                        {referral.side ? (
+                                            <>
+                                                {' '}— placement on{' '}
+                                                <span className="font-semibold text-[#FDE68A]">{referral.side === 'left' ? 'Left leg' : 'Right leg'}</span>.
+                                            </>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    'We’ll set you up as a Panelist user. You can add a sponsor referral code below if you have one.'
+                                )}
+                            </p>
+                            <div className="mt-4 sm:mt-6">
+                                <RegisterCard
+                                    userType="normal"
+                                    otpBypass={otpBypass}
+                                    urlRef={referral.ref}
+                                    urlSide={referral.side}
+                                    accent="panelist"
+                                    surfaceClassName=""
+                                />
                             </div>
                         </div>
                     </div>

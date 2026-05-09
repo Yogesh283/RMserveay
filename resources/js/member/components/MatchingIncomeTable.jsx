@@ -86,12 +86,12 @@ export function MatchingIncomeTable({
      * Adds a small green check when the side fully meets this tier.
      */
     function progressCell(stripeFn, total, required, side) {
-        const done = Math.min(Math.max(0, total | 0), required);
-        const reached = done >= required && required > 0;
+        const live = Math.max(0, total | 0);
+        const reached = live >= required && required > 0;
         return (
             <td className={stripeFn}>
                 <span className={`inline-flex items-center gap-1 ${reached ? (side === 'L' ? 'text-cyan-100' : 'text-fuchsia-100') : ''}`}>
-                    <span className="tabular-nums">{done}</span>
+                    <span className="tabular-nums">{live}</span>
                     {reached ? (
                         <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -143,6 +143,8 @@ export function MatchingIncomeTable({
             carryR: panelData.carry_right | 0,
             extraLabel: 'Matched today',
             extraValue: subData.cumulative_matched_panels_today ?? 0,
+            extraLabel2: 'Lapsed today',
+            extraValue2: subData.today_milestone_lapsed_pairs ?? 0,
         };
         rows = tiers.map((row, idx) => {
             const paid = tierPaid(mask, idx);
@@ -178,6 +180,8 @@ export function MatchingIncomeTable({
             carryR: superData.carry_right | 0,
             extraLabel: 'Matched today',
             extraValue: superData.cumulative_matched_panels_today ?? 0,
+            extraLabel2: 'Lapsed today',
+            extraValue2: superData.today_milestone_lapsed_pairs ?? 0,
         };
         rows = tiers.map((row, idx) => {
             const paid = tierPaid(mask, idx);
@@ -233,6 +237,12 @@ export function MatchingIncomeTable({
                         <span className="opacity-70">{summary.extraLabel}:</span>
                         <span className="tabular-nums">{summary.extraValue}</span>
                     </span>
+                    {summary.extraLabel2 ? (
+                        <span className={`${summaryChipBase} ${dark ? 'border-rose-400/30 bg-rose-500/10 text-rose-100' : 'border-rose-300 bg-rose-50'}`}>
+                            <span className="opacity-70">{summary.extraLabel2}:</span>
+                            <span className="tabular-nums">{summary.extraValue2 ?? 0}</span>
+                        </span>
+                    ) : null}
                 </div>
             ) : null}
             <div className={embedded ? 'overflow-x-auto' : 'overflow-x-auto rounded-xl ring-1 ring-white/10'}>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
@@ -216,6 +217,12 @@ class ActivePanelMatchingService
         $carryR = (int) $earner->active_panel_match_carry_right;
         $available = min($carryL, $carryR);
         $lifetime = $this->lifetimeActivePanelistsInLegs($earner);
+        $todayClosing = BinaryDailyClosing::query()
+            ->where('user_id', $earner->id)
+            ->where('scope', BinaryDailyClosing::SCOPE_ACTIVE_PANEL)
+            ->whereDate('closing_date', now()->toDateString())
+            ->latest('id')
+            ->first();
 
         return [
             'eligible' => $earner->qualifiesActivePanelistIncome(),
@@ -225,6 +232,12 @@ class ActivePanelMatchingService
             'total_right_active_panels' => $lifetime['right'],
             'pairs_available' => $available,
             'pairs_paid_today' => $used,
+            'today_lapsed_pairs' => (int) (($todayClosing?->left_lapsed ?? 0) + ($todayClosing?->right_lapsed ?? 0)),
+            'today_left_lapsed' => (int) ($todayClosing?->left_lapsed ?? 0),
+            'today_right_lapsed' => (int) ($todayClosing?->right_lapsed ?? 0),
+            'today_left_carry_out' => (int) ($todayClosing?->left_carry_out ?? $carryL),
+            'today_right_carry_out' => (int) ($todayClosing?->right_carry_out ?? $carryR),
+            'earned_today_usd' => $todayClosing?->payout_usd !== null ? (string) $todayClosing->payout_usd : '0.00',
             'pairs_remaining_today' => max(0, $max - $used),
             'pairs_payable_today' => min($available, max(0, $max - $used)),
             'max_pairs_per_day' => $max,

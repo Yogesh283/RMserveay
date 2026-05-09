@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
@@ -244,14 +245,31 @@ class SuperSubPanelMatchingService
         }
 
         $lifetime = $this->lifetimeSuperSubPanelBuys($earner);
+        /** Latest daily-closing row is the live source for matched pairs / paid milestone. */
+        $todayClosing = BinaryDailyClosing::query()
+            ->where('user_id', $earner->id)
+            ->where('scope', BinaryDailyClosing::SCOPE_SUPER)
+            ->whereDate('closing_date', now()->toDateString())
+            ->latest('id')
+            ->first();
+        $todayMilestone = (int) ($todayClosing?->meta['milestone'] ?? 0);
+        $milestoneMask = 0;
+        foreach (array_values($milestones) as $idx => $m) {
+            if ((int) $m > 0 && (int) $m === $todayMilestone) {
+                $milestoneMask |= (1 << $idx);
+                break;
+            }
+        }
 
         return [
             'eligible' => $earner->qualifiesForSuperSubPanelMatchingIncome(),
             'daily_cap_usd' => $cap,
             'earned_today_usd' => $earned,
             'remaining_cap_usd' => $remaining,
-            'cumulative_matched_panels_today' => (int) ($earner->sspm_match_day !== null && now()->isSameDay($earner->sspm_match_day) ? $earner->sspm_cumulative_panels : 0),
-            'milestones_hit_mask' => (int) ($earner->sspm_match_day !== null && now()->isSameDay($earner->sspm_match_day) ? $earner->sspm_milestone_mask : 0),
+            'cumulative_matched_panels_today' => (int) ($todayClosing?->pairs_matched ?? 0),
+            'milestones_hit_mask' => $milestoneMask,
+            'today_milestone_lapsed_pairs' => (int) ($todayClosing?->meta['milestone_lapsed_pairs'] ?? 0),
+            'today_milestone_paid_usd' => (string) ($todayClosing?->meta['milestone_paid_usd'] ?? '0.00'),
             'carry_left' => (int) $earner->super_panel_match_carry_left,
             'carry_right' => (int) $earner->super_panel_match_carry_right,
             /** Lifetime cumulative left/right super-sub-panel buys (live). */

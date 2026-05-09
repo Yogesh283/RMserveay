@@ -112,42 +112,40 @@ export default function RegisterPublisherPage() {
                 </div>
 
                 <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(420px,500px)_1fr] lg:items-start lg:gap-12">
-                    <div className="order-2 lg:order-1">
+                    <div className="order-1 lg:order-1">
                         <div className="relative">
                             <div
                                 className="pointer-events-none absolute -inset-2 -z-10 rounded-[24px] bg-gradient-to-br from-[#F59E0B]/40 via-[#F97316]/30 to-[#3B82F6]/25 opacity-60 blur-2xl"
                                 aria-hidden
                             />
-                            <div className="rounded-[22px] border border-amber-300/35 bg-[#0B0F1A]/85 p-3 shadow-[0_18px_60px_rgba(2,6,23,0.6)] sm:p-5">
-                                <div className="rounded-[18px] border border-white/[0.06] bg-[rgba(15,23,42,0.7)] p-3 sm:p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200 sm:text-[11px]">Publisher onboarding</p>
-                                            <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">Open a Publisher account</h2>
-                                        </div>
-                                        <span className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-[#F59E0B]/35 to-[#F97316]/20 text-amber-100 sm:inline-flex">
-                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M9 14h.01M9 18h.01M15 10h.01M15 14h.01M15 18h.01" />
-                                            </svg>
-                                        </span>
+                            <div className="rounded-[22px] border border-amber-300/35 bg-[#0B0F1A]/90 p-4 shadow-[0_18px_60px_rgba(2,6,23,0.6)] sm:p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200 sm:text-[11px]">Publisher onboarding</p>
+                                        <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">Open a Publisher account</h2>
                                     </div>
-                                    <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                                        Publishers can create surveys, target respondents, and run analytics. Referral codes don’t apply for publisher accounts.
-                                    </p>
-                                    <div className="mt-4 sm:mt-6">
-                                        <RegisterCard
-                                            userType="publisher"
-                                            otpBypass={otpBypass}
-                                            accent="publisher"
-                                            surfaceClassName="rounded-[16px] border border-white/[0.05] bg-black/20 p-3 sm:p-4"
-                                        />
-                                    </div>
+                                    <span className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-[#F59E0B]/35 to-[#F97316]/20 text-amber-100 sm:inline-flex">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M9 14h.01M9 18h.01M15 10h.01M15 14h.01M15 18h.01" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                                    Publishers can create surveys, target respondents, and run analytics. Referral codes don’t apply for publisher accounts.
+                                </p>
+                                <div className="mt-4 sm:mt-6">
+                                    <RegisterCard
+                                        userType="publisher"
+                                        otpBypass={otpBypass}
+                                        accent="publisher"
+                                        surfaceClassName=""
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="order-1 text-center lg:order-2 lg:text-left">
+                    <div className="order-2 text-center lg:order-2 lg:text-left">
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-amber-300/35 bg-[rgba(245,158,11,0.16)] px-4 py-2 ring-1 ring-amber-300/20 lg:mx-0">
                             <AppLogo alt="" className="h-9 w-9 rounded-xl" />
                             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-100 sm:text-[11px]">Publisher</span>
