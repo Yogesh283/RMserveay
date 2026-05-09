@@ -8,6 +8,37 @@ function sortQuestions(questions) {
     return [...questions].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
+function normalizeQuestionType(type) {
+    if (type === 'single_choice' || type === 'dropdown') return 'single_choice';
+    if (type === 'multi_choice' || type === 'multiple_choice') return 'multi_choice';
+    if (type === 'textarea') return 'textarea';
+    if (type === 'email') return 'email';
+    if (type === 'number') return 'number';
+    return type;
+}
+
+function normalizeOptions(options) {
+    if (Array.isArray(options)) return options;
+    if (typeof options !== 'string' || options.trim() === '') return [];
+
+    try {
+        const parsed = JSON.parse(options);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function optionLabel(option) {
+    if (typeof option === 'string') return option;
+    return option?.label ?? option?.value ?? String(option);
+}
+
+function optionValue(option) {
+    if (typeof option === 'string') return option;
+    return option?.value ?? option?.label ?? String(option);
+}
+
 export default function MemberSurveySessionPage() {
     const { surveyId } = useParams();
     const navigate = useNavigate();
@@ -45,13 +76,19 @@ export default function MemberSurveySessionPage() {
     const total = questions.length;
     const q = questions[step];
     const progress = useMemo(() => (total > 0 ? ((step + 1) / total) * 100 : 0), [step, total]);
+    const qType = normalizeQuestionType(q?.type);
+    const qOptions = normalizeOptions(q?.options);
 
     const canNext = useMemo(() => {
         if (!q) return false;
         const v = answers[q.key];
-        if (q.type === 'text') return String(v ?? '').trim().length > 0;
-        if (q.type === 'rating') return v != null && v !== '';
-        if (q.type === 'yes_no') return v === true || v === false;
+        const type = normalizeQuestionType(q.type);
+        if (!q.required) return true;
+        if (type === 'text' || type === 'textarea' || type === 'email') return String(v ?? '').trim().length > 0;
+        if (type === 'number') return v !== '' && v != null && !Number.isNaN(Number(v));
+        if (type === 'rating') return v != null && v !== '';
+        if (type === 'yes_no') return v === true || v === false;
+        if (type === 'multi_choice') return Array.isArray(v) && v.length > 0;
         return v != null && v !== '';
     }, [q, answers]);
 
@@ -113,8 +150,6 @@ export default function MemberSurveySessionPage() {
         );
     }
 
-    const optLabel = (o) => (typeof o === 'string' ? o : o?.label ?? String(o));
-
     return (
         <div className="relative mx-auto max-w-lg space-y-6 pb-8">
             <div className="flex items-center justify-between gap-2">
@@ -145,16 +180,17 @@ export default function MemberSurveySessionPage() {
                 {q.description ? <p className="mb-2 text-xs text-[#A0AEC0]">{q.description}</p> : null}
                 <p className="text-lg font-bold text-white">{q.label}</p>
 
-                {(q.type === 'multiple_choice' || q.type === 'dropdown') && Array.isArray(q.options) ? (
+                {qType === 'single_choice' && qOptions.length > 0 ? (
                     <ul className="mt-4 space-y-2">
-                        {q.options.map((opt) => {
-                            const label = optLabel(opt);
-                            const sel = answers[q.key] === label || answers[q.key] === opt;
+                        {qOptions.map((opt) => {
+                            const label = optionLabel(opt);
+                            const value = optionValue(opt);
+                            const sel = answers[q.key] === value;
                             return (
-                                <li key={label}>
+                                <li key={value}>
                                     <button
                                         type="button"
-                                        onClick={() => setAnswer(typeof opt === 'string' ? opt : label)}
+                                        onClick={() => setAnswer(value)}
                                         className={`flex w-full items-center rounded-2xl border px-4 py-3 text-left text-sm font-medium transition active:scale-[0.99] ${
                                             sel
                                                 ? 'border-[#8E6BFF]/50 bg-[#6C4CF1]/20 text-white ring-1 ring-[#8E6BFF]/30'
@@ -169,7 +205,36 @@ export default function MemberSurveySessionPage() {
                     </ul>
                 ) : null}
 
-                {q.type === 'rating' ? (
+                {qType === 'multi_choice' && qOptions.length > 0 ? (
+                    <ul className="mt-4 space-y-2">
+                        {qOptions.map((opt) => {
+                            const label = optionLabel(opt);
+                            const value = optionValue(opt);
+                            const current = Array.isArray(answers[q.key]) ? answers[q.key] : [];
+                            const sel = current.includes(value);
+                            return (
+                                <li key={value}>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setAnswer(sel ? current.filter((v) => v !== value) : [...current, value])
+                                        }
+                                        className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition active:scale-[0.99] ${
+                                            sel
+                                                ? 'border-[#8E6BFF]/50 bg-[#6C4CF1]/20 text-white ring-1 ring-[#8E6BFF]/30'
+                                                : 'border-white/10 bg-[#0B0F1A]/60 text-[#A0AEC0] hover:border-white/20 hover:text-white'
+                                        }`}
+                                    >
+                                        <span>{label}</span>
+                                        {sel ? <span className="text-[#8E6BFF]">✓</span> : null}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                ) : null}
+
+                {qType === 'rating' ? (
                     <div className="mt-4 flex flex-wrap gap-2">
                         {Array.from({ length: (q.maxRating ?? 5) - (q.minRating ?? 1) + 1 }, (_, i) => i + (q.minRating ?? 1)).map((n) => {
                             const sel = answers[q.key] === n;
@@ -191,7 +256,7 @@ export default function MemberSurveySessionPage() {
                     </div>
                 ) : null}
 
-                {q.type === 'yes_no' ? (
+                {qType === 'yes_no' ? (
                     <div className="mt-4 flex gap-3">
                         {[
                             { v: true, lab: 'Yes' },
@@ -216,8 +281,17 @@ export default function MemberSurveySessionPage() {
                     </div>
                 ) : null}
 
-                {q.type === 'text' ? (
+                {qType === 'text' || qType === 'email' || qType === 'number' ? (
                     <RmsInput className="mt-4" placeholder="Your answer…" value={answers[q.key] ?? ''} onChange={(e) => setAnswer(e.target.value)} />
+                ) : null}
+
+                {qType === 'textarea' ? (
+                    <textarea
+                        className="mt-4 min-h-28 w-full rounded-2xl border border-white/10 bg-[#0B0F1A]/80 px-4 py-3 text-sm text-white placeholder:text-[#A0AEC0] focus:border-[#8E6BFF] focus:outline-none focus:ring-2 focus:ring-[#8E6BFF]/20"
+                        placeholder="Your answer…"
+                        value={answers[q.key] ?? ''}
+                        onChange={(e) => setAnswer(e.target.value)}
+                    />
                 ) : null}
             </RmsCard>
 
