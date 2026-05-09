@@ -17,6 +17,10 @@ class MemberTeamService
     /**
      * BFS collect all user IDs in binary subtree under $startId (inclusive of start).
      *
+     * Dummy test users (created by `php artisan dummy:place`) are skipped so
+     * any aggregation built on top of these IDs (counts, active panelists,
+     * carry totals) reflects only real members.
+     *
      * @return list<int>
      */
     public function collectBinarySubtreeIds(?int $startId): array
@@ -32,10 +36,12 @@ class MemberTeamService
             if (in_array($id, $ids, true)) {
                 continue;
             }
-            $ids[] = $id;
-            $u = User::query()->whereKey($id)->first(['id', 'left_child_id', 'right_child_id']);
+            $u = User::query()->whereKey($id)->first(['id', 'email', 'left_child_id', 'right_child_id']);
             if ($u === null) {
                 continue;
+            }
+            if (! $u->isDummy()) {
+                $ids[] = $id;
             }
             if ($u->left_child_id) {
                 $queue[] = (int) $u->left_child_id;
@@ -158,6 +164,7 @@ class MemberTeamService
 
         $currentIds = User::query()
             ->where('sponsor_id', $root->id)
+            ->excludeDummy()
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();
@@ -166,6 +173,7 @@ class MemberTeamService
         while ($depth <= $max && $currentIds !== []) {
             $users = User::query()
                 ->whereIn('id', $currentIds)
+                ->excludeDummy()
                 ->get([
                     'sub_panel_count', 'super_sub_panel_count',
                     'activation_fee_paid_at', 'minimum_panel_fee_paid_at',
@@ -182,6 +190,7 @@ class MemberTeamService
 
             $currentIds = User::query()
                 ->whereIn('sponsor_id', $currentIds)
+                ->excludeDummy()
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->all();
@@ -200,6 +209,7 @@ class MemberTeamService
 
         $direct = User::query()
             ->where('sponsor_id', $user->id)
+            ->excludeDummy()
             ->orderBy('id')
             ->get([
                 'id', 'name', 'email', 'referral_code', 'created_at',
@@ -287,6 +297,22 @@ class MemberTeamService
     }
 
     /**
+     * Walk past dummy chains so the tree renderer never sees them.
+     * Returns the first non-dummy descendant on the same side, or null.
+     */
+    private function firstRealDescendant(?User $u, string $side): ?User
+    {
+        $hops = 0;
+        while ($u !== null && $u->isDummy() && $hops < 64) {
+            $childId = $side === 'left' ? $u->left_child_id : $u->right_child_id;
+            $u = $childId ? User::find($childId) : null;
+            $hops++;
+        }
+
+        return $u;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function nodePayload(User $u, int $remainingDepth): ?array
@@ -322,6 +348,10 @@ class MemberTeamService
 
         $left = $u->left_child_id ? User::find($u->left_child_id) : null;
         $right = $u->right_child_id ? User::find($u->right_child_id) : null;
+
+        // Dummy chains are invisible — recurse into their first real descendant.
+        $left = $this->firstRealDescendant($left, 'left');
+        $right = $this->firstRealDescendant($right, 'right');
 
         $node['left'] = $left ? $this->nodePayload($left, $remainingDepth - 1) : null;
         $node['right'] = $right ? $this->nodePayload($right, $remainingDepth - 1) : null;

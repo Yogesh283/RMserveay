@@ -49,10 +49,10 @@ class MemberProfileController extends Controller
             'expires_at' => now()->addMinutes(self::EMAIL_OTP_TTL_MINUTES)->timestamp,
         ], now()->addMinutes(self::EMAIL_OTP_TTL_MINUTES));
 
-        Mail::to($nextEmail)->send(new OtpMail($otp, 'Email change'));
+        Mail::to((string) $user->email)->send(new OtpMail($otp, 'Email change'));
 
         return response()->json([
-            'message' => 'OTP sent to your new email.',
+            'message' => 'OTP sent to your current email.',
         ]);
     }
 
@@ -110,7 +110,7 @@ class MemberProfileController extends Controller
             $otp = (string) ($validated['email_otp'] ?? '');
             if ($otp === '') {
                 throw ValidationException::withMessages([
-                    'email_otp' => ['Enter the OTP sent to your new email.'],
+                    'email_otp' => ['Enter the OTP sent to your current email.'],
                 ]);
             }
             if (! OtpController::verifyEmailChangeUser($user->id, $nextEmail, $otp)) {

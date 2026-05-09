@@ -138,7 +138,7 @@ export default function MemberProfilePage() {
             await prepareSanctum();
             const { data } = await window.axios.post('api/member/profile/email-change-otp', { email: nextEmail });
             setEmailOtpSentFor(nextEmail);
-            setSavedMsg(data?.message ?? 'OTP sent to your new email.');
+            setSavedMsg(data?.message ?? 'OTP sent to your current email.');
             window.setTimeout(() => setSavedMsg(null), 3000);
         } catch (err) {
             const data = err.response?.data;
@@ -316,7 +316,7 @@ export default function MemberProfilePage() {
                                         {sendingEmailOtp ? 'Sending OTP…' : 'Send OTP'}
                                     </RmsButton>
                                     <p className="text-[11px] text-[#94A3B8]">
-                                        OTP will be sent to new email before save.
+                                        OTP will be sent to your current email before save.
                                     </p>
                                 </div>
                             ) : null}
@@ -339,7 +339,7 @@ export default function MemberProfilePage() {
                                         required={isEmailChanged}
                                     />
                                     {emailOtpSentFor === normalizedNextEmail ? (
-                                        <p className="mt-1 text-[11px] text-emerald-300/90">OTP sent to {normalizedNextEmail}</p>
+                                        <p className="mt-1 text-[11px] text-emerald-300/90">OTP sent to current email: {normalizedCurrentEmail}</p>
                                     ) : (
                                         <p className="mt-1 text-[11px] text-[#94A3B8]">Click “Send OTP” then enter the code.</p>
                                     )}

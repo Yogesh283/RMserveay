@@ -225,7 +225,7 @@ export default function HomePage() {
                             <img
                                 src="/images/bann.png"
                                 alt="RM Survey featured banner"
-                                className="h-44 w-full object-cover sm:h-56 lg:h-64"
+                                className="h-80 w-full object-cover sm:h-[28rem] lg:h-[34rem] xl:h-[40rem] 2xl:h-[44rem]"
                                 loading="eager"
                             />
                             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0B0F1A]/55 via-transparent to-transparent" />

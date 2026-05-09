@@ -327,6 +327,31 @@ class User extends Authenticatable implements FilamentUser
         return $this->profile_completed_at !== null;
     }
 
+    /**
+     * Detect users created by `php artisan dummy:place`.
+     *
+     * Dummy users are minted with `*@dummy.test` emails. Filter / hide them
+     * from public-facing aggregations (team page, leaderboards, etc.) so a
+     * sponsor's tree only shows real members.
+     */
+    public function isDummy(): bool
+    {
+        return is_string($this->email) && str_ends_with(strtolower($this->email), '@dummy.test');
+    }
+
+    /**
+     * Eloquent query scope to exclude dummy users.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<User>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public function scopeExcludeDummy($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('email')->orWhere('email', 'not like', '%@dummy.test');
+        });
+    }
+
     public static function generateReferralCode(): string
     {
         do {
