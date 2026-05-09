@@ -30,12 +30,13 @@ i18n.use(LanguageDetector)
     .use(initReactI18next)
     .init({
         resources,
+        lng: 'en',
         fallbackLng: 'en',
         supportedLngs: ['en', 'hi', 'es', 'zh', 'fr', 'de'],
         load: 'languageOnly',
         nonExplicitSupportedLngs: true,
         detection: {
-            order: ['localStorage', 'navigator', 'htmlTag'],
+            order: ['localStorage'],
             caches: ['localStorage'],
             lookupLocalStorage: 'i18nextLng',
         },
