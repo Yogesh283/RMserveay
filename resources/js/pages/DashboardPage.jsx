@@ -73,7 +73,7 @@ export default function DashboardPage() {
             <RmSurveyBackdrop />
             <div className="relative z-10 mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-4 text-center">
                 <Link to="/" className="mb-8 outline-none transition hover:opacity-90">
-                    <AppLogo alt="Home" className="h-28 w-28" />
+                    <AppLogo alt="Home" className="h-36 w-36" />
                 </Link>
                 <p className="text-lg text-slate-300">Sign in to open your dashboard.</p>
                 <Link to="/login" className={`mt-6 ${btnPrimary} ${glowPurple}`}>

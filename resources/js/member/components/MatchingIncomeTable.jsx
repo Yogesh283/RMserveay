@@ -11,6 +11,8 @@ export function MatchingIncomeTable({
     embedded = false,
     /** Slightly larger type (e.g. member team page embedded preview). */
     comfortable = false,
+    /** Team page preview can hide milestone rows and show only carry-forward. */
+    carryForwardOnly = false,
 }) {
     /** Team page already wraps in `RmsCard` — no second bordered box when embedded. */
     const card = embedded
@@ -209,6 +211,32 @@ export function MatchingIncomeTable({
 
     if (!rows) {
         return null;
+    }
+
+    if (carryForwardOnly) {
+        const carryCard = (side, value, tone) => (
+            <div
+                className={[
+                    'rounded-2xl border px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
+                    tone === 'left'
+                        ? 'border-cyan-400/25 bg-cyan-500/10 text-cyan-100'
+                        : 'border-fuchsia-400/25 bg-fuchsia-500/10 text-fuchsia-100',
+                ].join(' ')}
+            >
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-75">{side}</p>
+                <p className="mt-1 text-xs opacity-70">Carry Forward</p>
+                <p className="mt-1 text-2xl font-black tabular-nums text-white">{value ?? 0}</p>
+            </div>
+        );
+
+        return (
+            <div className={card}>
+                <div className="grid grid-cols-2 gap-2">
+                    {carryCard('Left', summary?.carryL ?? 0, 'left')}
+                    {carryCard('Right', summary?.carryR ?? 0, 'right')}
+                </div>
+            </div>
+        );
     }
 
     const summaryChipBase = dark

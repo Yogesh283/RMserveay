@@ -190,14 +190,14 @@ export default function Layout() {
                 <div className="relative z-[52] mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
                     <NavLink
                         to="/"
-                        className="group flex min-w-0 max-w-[66%] shrink-0 items-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-2.5 py-1.5 outline-none ring-offset-2 ring-offset-[#0B0F1A] transition hover:border-[#7C3AED]/35 hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-[#7C3AED]/50 sm:max-w-none"
+                        className="group flex min-w-0 max-w-[66%] shrink-0 items-center gap-2 outline-none transition hover:opacity-90 sm:max-w-none"
                     >
-                        <AppLogo alt="" className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12" aria-hidden />
+                        <AppLogo alt="" className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" aria-hidden />
                         <span className="min-w-0">
-                            <span className="block truncate bg-gradient-to-r from-white via-slate-100 to-[#93C5FD] bg-clip-text text-sm font-semibold tracking-tight text-transparent sm:text-base">
+                            <span className="block truncate text-sm font-semibold tracking-tight text-white sm:text-base">
                                 {appName}
                             </span>
-                            <span className="block truncate text-[10px] text-slate-400 group-hover:text-slate-300">Insight • Innovation • Impact</span>
+                            <span className="block truncate text-[10px] text-slate-400">Insight • Innovation • Impact</span>
                         </span>
                     </NavLink>
 
@@ -384,7 +384,7 @@ export default function Layout() {
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-8">
                         <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
                             <NavLink to="/" className="inline-flex outline-none">
-                                <AppLogo alt={appName} className="h-16 w-16 sm:h-20 sm:w-20" />
+                                <AppLogo alt={appName} className="h-20 w-20 sm:h-24 sm:w-24" />
                             </NavLink>
                             <p className="mt-3 max-w-sm text-sm leading-relaxed text-white sm:max-w-none">{t('layout.footerTagline')}</p>
                         </div>

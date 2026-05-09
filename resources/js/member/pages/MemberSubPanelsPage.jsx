@@ -99,191 +99,9 @@ export default function MemberSubPanelsPage() {
                 <p className="text-xs text-[#94A3B8]">Upgrade slots, grow survey-tier earnings, and scale faster.</p>
             </div>
 
-            {loadError ? (
-                <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
-            ) : null}
-            {actionError ? <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{actionError}</p> : null}
 
-            {!qualified && data ? (
-                <p className="rounded-xl border border-amber-500/25 bg-amber-950/30 px-3.5 py-2.5 text-sm text-amber-100">
-                    Complete{' '}
-                    <Link to="/member/active-panels" className="font-semibold text-amber-300 underline underline-offset-2 hover:text-white">
-                        active panelist
-                    </Link>{' '}
-                    fees before purchasing this package slots.
-                </p>
-            ) : null}
 
-            {data ? (
-                <>
-                    {/* Package — matches pitch infographic (rules + diagram + table) */}
-                    <section aria-labelledby="sub-package-heading">
-                        <h2 id="sub-package-heading" className="sr-only">
-                            Sub panel income package
-                        </h2>
-                        <div className="relative overflow-hidden rounded-[24px] border border-violet-400/28 bg-[#0d1629] shadow-[0_0_52px_-12px_rgba(139,92,246,0.2)]">
-                            {/* subtle grid like slide */}
-                            <div
-                                className="pointer-events-none absolute inset-0 opacity-[0.07]"
-                                style={{
-                                    backgroundImage:
-                                        'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                                    backgroundSize: '20px 20px',
-                                }}
-                            />
-                            <div className="relative border-b border-white/[0.08] bg-gradient-to-r from-[#1e3a5f] via-[#1a1040] to-[#0f2847] px-4 py-3.5 sm:px-5">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-300/90">Package</p>
-                                <p className="mt-1 text-lg font-bold text-white">
-                                    Sub panel income <span className="text-violet-300">structure</span>
-                                </p>
-                                <p className="mt-1 max-w-xl text-xs text-white/60">
-                                    <span className="font-semibold text-orange-200/90">{entryFee}</span> →{' '}
-                                    <span className="font-semibold text-white">{maxEntryLabel}</span> total entry ({maxSub} panels) · sub-tier
-                                    income = panels × {fmtUsd(String(eachSub))} per survey.
-                                </p>
-                            </div>
-
-                            <div className="relative grid lg:grid-cols-2 lg:gap-0">
-                                {/* Left: rules + hierarchy diagram */}
-                                <div className="space-y-4 border-white/[0.06] p-4 sm:p-5 lg:border-r">
-                                    <div className="space-y-3">
-                                        {/* White cards like slide */}
-                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
-                                            <IconEntryFee />
-                                            <div>
-                                                <p className="text-xs font-medium text-slate-600">Entry fee</p>
-                                                <p className="mt-0.5 text-base font-bold text-slate-900">
-                                                    <span className="tabular-nums text-orange-500">{entryFee}</span>
-                                                    <span className="text-sm font-semibold text-slate-600"> (per panel)</span>
-                                                </p>
-                                                <p className="mt-1 text-[11px] text-slate-500">
-                                                    Build from {entryFee} to <span className="font-semibold text-slate-700">{maxEntryLabel}</span>{' '}
-                                                    ({maxSub} panels)
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
-                                            <IconMaxPanels />
-                                            <div>
-                                                <p className="text-xs font-medium text-slate-600">Maximum panels</p>
-                                                <p className="mt-0.5 text-base font-bold text-slate-900">
-                                                    <span className="text-orange-500">{maxSub} sub panels</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-white/45">Panel tree</p>
-                                        <div className="relative mt-3.5 flex flex-col items-center">
-                                            <div
-                                                className="relative z-[1] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-[#1e3a5f] text-sm font-bold text-white shadow-xl ring-4 ring-sky-400/30"
-                                                aria-hidden
-                                            >
-                                                You
-                                            </div>
-                                            <div
-                                                className="relative -mt-1 flex h-10 w-[85%] max-w-md justify-around border-t border-dashed border-white/25 pt-2"
-                                                aria-hidden
-                                            >
-                                                <span className="absolute -top-px left-1/2 h-5 w-px -translate-x-1/2 border-l border-dashed border-white/25" />
-                                            </div>
-                                            <div className="-mt-2 flex max-w-full flex-wrap justify-center gap-1.5 px-1">
-                                                {Array.from({ length: maxSub }, (_, i) => i + 1).map((n) => {
-                                                    const altBlue = n % 2 === 1;
-                                                    const active = n <= count;
-                                                    const isNext = n === nextSlot && qualified;
-                                                    return (
-                                                        <div
-                                                            key={n}
-                                                            className={[
-                                                                'flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold tabular-nums shadow-md ring-2 transition',
-                                                                active
-                                                                    ? 'bg-emerald-500 text-white ring-emerald-300/50'
-                                                                    : isNext
-                                                                      ? 'bg-amber-400 text-slate-900 ring-amber-200'
-                                                                      : altBlue
-                                                                        ? 'bg-sky-600/90 text-white ring-sky-400/40'
-                                                                        : 'bg-orange-500/90 text-white ring-orange-300/40',
-                                                                !active && !isNext ? 'opacity-80' : '',
-                                                            ].join(' ')}
-                                                            title={`Sub panel ${n}`}
-                                                        >
-                                                            {n}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-center text-xs text-white/50">
-                                        Wallet{' '}
-                                        <span className="font-semibold tabular-nums text-white">{fmtUsd(data.wallet_balance)}</span>
-                                        <span className="mx-2 text-white/30">·</span>
-                                        <Link
-                                            to="/member/wallet/deposit"
-                                            className="font-medium text-violet-300 underline-offset-2 hover:text-violet-200 hover:underline"
-                                        >
-                                            Add funds
-                                        </Link>
-                                    </p>
-                                </div>
-
-                                {/* Right: income structure table */}
-                                <div className="flex flex-col border-t border-white/[0.06] bg-black/20 lg:border-t-0">
-                                    <div className="border-b border-[#1e3a5f]/90 bg-[#1e3a5f] px-4 py-2.5 sm:px-5">
-                                        <p className="text-sm font-bold tracking-tight text-white">Income structure:</p>
-                                    </div>
-                                    <div className="flex-1 overflow-x-auto">
-                                        <table className="w-full min-w-[280px] border-collapse text-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th className="bg-orange-500 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-                                                        Sub panels
-                                                    </th>
-                                                    <th className="bg-[#152f52] px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-                                                        Total entry
-                                                    </th>
-                                                    <th className="bg-[#1e3a5f] px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-                                                        Income / survey
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white/[0.03]">
-                                                {Array.from({ length: maxSub }, (_, i) => i + 1).map((n) => (
-                                                    <tr key={n} className="border-t border-white/[0.06]">
-                                                        <td className="px-3 py-2.5 text-white/90 sm:px-4">
-                                                            {n} sub panel{n !== 1 ? 's' : ''}
-                                                        </td>
-                                                        <td className="px-3 py-2.5 text-right sm:px-4">
-                                                            <span className="font-semibold tabular-nums text-sky-200">
-                                                                {fmtUsd((n * safePanelFee).toFixed(2))}
-                                                            </span>
-                                                            <span className="hidden text-[10px] text-white/40 sm:inline"> paid</span>
-                                                        </td>
-                                                        <td className="px-3 py-2.5 text-right sm:px-4">
-                                                            <span className="font-bold tabular-nums text-violet-300">
-                                                                {fmtUsd((n * eachSub).toFixed(2))}
-                                                            </span>
-                                                            <span className="text-xs font-medium text-white/55"> /survey</span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <p className="border-t border-white/[0.06] px-4 py-2.5 text-[10px] leading-relaxed text-white/45 sm:px-5">
-                                        Total entry = panels × {entryFee} ({entryFee} … {maxEntryLabel}). Sub-tier survey income only; full pay may
-                                        include other tiers.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Action slots */}
-                    <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
+            <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
                         <h2 className="text-base font-bold text-white">Buy package slots</h2>
                         <ul className="mt-3.5 grid list-none grid-cols-2 gap-2 sm:grid-cols-3">
                             {Array.from({ length: maxSub }, (_, i) => i + 1).map((n) => {
@@ -343,6 +161,102 @@ export default function MemberSubPanelsPage() {
                             <p className="mt-4 text-center text-sm font-medium text-emerald-400">Full package — all {maxSub} panels active.</p>
                         ) : null}
                     </RmsCard>
+
+            {loadError ? (
+                <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
+            ) : null}
+            {actionError ? <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{actionError}</p> : null}
+
+            {!qualified && data ? (
+                <p className="rounded-xl border border-amber-500/25 bg-amber-950/30 px-3.5 py-2.5 text-sm text-amber-100">
+                    Complete{' '}
+                    <Link to="/member/active-panels" className="font-semibold text-amber-300 underline underline-offset-2 hover:text-white">
+                        active panelist
+                    </Link>{' '}
+                    fees before purchasing this package slots.
+                </p>
+            ) : null}
+
+            {data ? (
+                <>
+                    {/* Package — matches pitch infographic (rules + diagram + table) */}
+                    <section aria-labelledby="sub-package-heading">
+                        <h2 id="sub-package-heading" className="sr-only">
+                            Sub panel income package
+                        </h2>
+                        <div className="relative overflow-hidden rounded-[24px] border border-violet-400/28 bg-[#0d1629] shadow-[0_0_52px_-12px_rgba(139,92,246,0.2)]">
+                            {/* subtle grid like slide */}
+                            <div
+                                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                                style={{
+                                    backgroundImage:
+                                        'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+                                    backgroundSize: '20px 20px',
+                                }}
+                            />
+                            <div className="relative border-b border-white/[0.08] bg-gradient-to-r from-[#1e3a5f] via-[#1a1040] to-[#0f2847] px-4 py-3.5 sm:px-5">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-300/90">Package</p>
+                                <p className="mt-1 text-lg font-bold text-white">
+                                    Sub panel income <span className="text-violet-300">structure</span>
+                                </p>
+                             
+                            </div>
+
+                            <div className="relative grid lg:grid-cols-1 lg:gap-0">
+                                {/* Income structure table */}
+                                <div className="flex flex-col bg-black/20">
+                                    <div className="border-b border-[#1e3a5f]/90 bg-[#1e3a5f] px-4 py-2.5 sm:px-5">
+                                        <p className="text-sm font-bold tracking-tight text-white">Income structure:</p>
+                                    </div>
+                                    <div className="flex-1 overflow-x-auto">
+                                        <table className="w-full min-w-[280px] border-collapse text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th className="bg-orange-500 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
+                                                        Sub panels
+                                                    </th>
+                                                    <th className="bg-[#152f52] px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
+                                                        Total entry
+                                                    </th>
+                                                    <th className="bg-[#1e3a5f] px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
+                                                        Income / survey
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white/[0.03]">
+                                                {Array.from({ length: maxSub }, (_, i) => i + 1).map((n) => (
+                                                    <tr key={n} className="border-t border-white/[0.06]">
+                                                        <td className="px-3 py-2.5 text-white/90 sm:px-4">
+                                                            {n} sub panel{n !== 1 ? 's' : ''}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right sm:px-4">
+                                                            <span className="font-semibold tabular-nums text-sky-200">
+                                                                {fmtUsd((n * safePanelFee).toFixed(2))}
+                                                            </span>
+                                                            <span className="hidden text-[10px] text-white/40 sm:inline"> paid</span>
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right sm:px-4">
+                                                            <span className="font-bold tabular-nums text-violet-300">
+                                                                {fmtUsd((n * eachSub).toFixed(2))}
+                                                            </span>
+                                                            <span className="text-xs font-medium text-white/55"> /survey</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="border-t border-white/[0.06] px-4 py-2.5 text-[10px] leading-relaxed text-white/45 sm:px-5">
+                                        Total entry = panels × {entryFee} ({entryFee} … {maxEntryLabel}). Sub-tier survey income only; full pay may
+                                        include other tiers.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Action slots */}
+
                 </>
             ) : (
                 !loadError && (

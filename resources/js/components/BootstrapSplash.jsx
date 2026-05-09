@@ -43,7 +43,7 @@ export default function BootstrapSplash({ onComplete }) {
                 aria-hidden
             />
             <div className="relative flex flex-col items-center px-6">
-                <AppLogo alt="" className="h-32 w-32 sm:h-36 sm:w-36" aria-hidden />
+                <AppLogo alt="" className="h-40 w-40 sm:h-48 sm:w-48" aria-hidden />
                 <p className="mt-6 text-center text-lg font-semibold tracking-tight text-white sm:text-xl">{appName}</p>
                 <p className="mt-2 text-center text-xs font-medium uppercase tracking-[0.28em] text-[#94a3b8]">Loading</p>
                 <div className="mt-10 h-1.5 w-[min(280px,85vw)] overflow-hidden rounded-full bg-white/[0.12]">

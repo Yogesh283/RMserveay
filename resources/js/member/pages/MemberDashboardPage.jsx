@@ -5,6 +5,120 @@ import { prepareSanctum } from '../../lib/auth';
 import { formatTransactionDetailRow } from '../lib/formatTransactionDetail';
 import { RmsButtonLink, RmsCard } from '../components/rms';
 
+const WEEK_DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function EarningsOverviewCard({ weekly, fmtUsd }) {
+    const fallback = useMemo(
+        () =>
+            WEEK_DAY_ORDER.map((d) => ({
+                date: d,
+                day_label: d,
+                direct: '0.00',
+                matching: '0.00',
+                level: '0.00',
+                survey: '0.00',
+                total: '0.00',
+            })),
+        [],
+    );
+    const daily = Array.isArray(weekly?.daily) && weekly.daily.length === 7 ? weekly.daily : fallback;
+    const total = Number.parseFloat(weekly?.total ?? '0') || 0;
+    const direct = Number.parseFloat(weekly?.direct ?? '0') || 0;
+    const matching = Number.parseFloat(weekly?.matching ?? '0') || 0;
+    const other = Number.parseFloat(weekly?.other ?? '0') || 0;
+
+    const totals = daily.map((d) => Number.parseFloat(d.total) || 0);
+    const max = Math.max(1, ...totals);
+    const w = 100;
+    const h = 40;
+    const stepX = w / (totals.length - 1 || 1);
+    const points = totals.map((v, i) => {
+        const x = i * stepX;
+        const y = h - (v / max) * (h - 6) - 3;
+        return [x, y];
+    });
+    const linePath = points
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)} ${p[1].toFixed(2)}`)
+        .join(' ');
+    const areaPath = `${linePath} L${(w).toFixed(2)} ${h} L0 ${h} Z`;
+
+    const directPct = total > 0 ? (direct / total) * 100 : 0;
+    const matchingPct = total > 0 ? (matching / total) * 100 : 0;
+    const otherPct = total > 0 ? (other / total) * 100 : 0;
+    const conic = total > 0
+        ? `conic-gradient(#8B5CF6 0% ${directPct.toFixed(2)}%, #06B6D4 ${directPct.toFixed(2)}% ${(directPct + matchingPct).toFixed(2)}%, #F59E0B ${(directPct + matchingPct).toFixed(2)}% 100%)`
+        : 'conic-gradient(#1f2937 0% 100%)';
+
+    return (
+        <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0f162b]/95 !p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">Earnings Overview</p>
+                    <p className="text-[11px] text-slate-400">This Week (Mon–Sun)</p>
+                </div>
+                <span className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-200">This Week</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-[#8B5CF6]/30 bg-[#11182b]/90 p-3">
+                    <div className="relative h-24 overflow-hidden rounded-xl border border-[#8B5CF6]/20 bg-black/25">
+                        <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden>
+                            <defs>
+                                <linearGradient id="ew-area" x1="0" x2="0" y1="0" y2="1">
+                                    <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.55" />
+                                    <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                            <path d={areaPath} fill="url(#ew-area)" />
+                            <path d={linePath} stroke="#A78BFA" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            {points.map(([x, y], i) => {
+                                const v = totals[i];
+                                if (v <= 0) return null;
+                                return <circle key={i} cx={x} cy={y} r="1.4" fill="#E9D5FF" />;
+                            })}
+                        </svg>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-7 gap-0.5 text-center text-[8px] text-slate-400">
+                        {daily.map((d, i) => (
+                            <span
+                                key={d.date ?? i}
+                                title={`${d.day_label}: ${fmtUsd(d.total)}`}
+                                className={`truncate ${totals[i] > 0 ? 'text-violet-200' : ''}`}
+                            >
+                                {d.day_label?.slice(0, 1)}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-cyan-400/25 bg-[#11182b]/90 p-3">
+                    <div className="relative mx-auto h-24 w-24" aria-hidden>
+                        <div className="h-full w-full rounded-full" style={{ background: conic }} />
+                        <div className="absolute inset-2 flex items-center justify-center rounded-full bg-[#0f162b] text-center">
+                            <div>
+                                <p className="text-[9px] text-slate-400">Total</p>
+                                <p className="text-xs font-bold text-white">{fmtUsd(total)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-slate-300">
+                <span className="inline-flex items-center gap-1">
+                    <i className="h-2 w-2 rounded-full bg-[#8B5CF6]" />
+                    Direct <span className="ml-auto tabular-nums text-slate-400">{fmtUsd(direct)}</span>
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <i className="h-2 w-2 rounded-full bg-[#06B6D4]" />
+                    Matching <span className="ml-auto tabular-nums text-slate-400">{fmtUsd(matching)}</span>
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <i className="h-2 w-2 rounded-full bg-[#F59E0B]" />
+                    Other <span className="ml-auto tabular-nums text-slate-400">{fmtUsd(other)}</span>
+                </span>
+            </div>
+        </RmsCard>
+    );
+}
+
 export default function MemberDashboardPage() {
     const { t, i18n } = useTranslation();
     const [user, setUser] = useState(null);
@@ -360,38 +474,8 @@ export default function MemberDashboardPage() {
                 </div>
             </div>
 
-            <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0f162b]/95 !p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white">Earnings Overview</p>
-                        <p className="text-[11px] text-slate-400">This Month</p>
-                    </div>
-                    <button className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-200">This Month</button>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#8B5CF6]/30 bg-[#11182b]/90 p-3">
-                        <div className="relative h-20 overflow-hidden rounded-xl border border-[#8B5CF6]/20 bg-black/25">
-                            <div className="absolute inset-x-2 bottom-2 h-8 rounded-full border border-[#8B5CF6]/30 bg-gradient-to-r from-transparent via-[#8B5CF6]/35 to-transparent blur-[1px]" />
-                            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 40" preserveAspectRatio="none">
-                                <path d="M2 32 C20 30, 30 14, 46 18 C60 22, 72 8, 98 10" stroke="#A78BFA" strokeWidth="2.2" fill="none" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="rounded-2xl border border-cyan-400/25 bg-[#11182b]/90 p-3">
-                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-cyan-400/25 border-t-[#06B6D4] border-r-[#F59E0B] text-center">
-                            <div>
-                                <p className="text-[10px] text-slate-400">Total</p>
-                                <p className="text-xs font-bold text-white">{fmtUsd(e?.total_from_programme ?? 0)}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-slate-300">
-                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#8B5CF6]" />Direct</span>
-                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#06B6D4]" />Matching</span>
-                    <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#F59E0B]" />Other</span>
-                </div>
-            </RmsCard>
+            <EarningsOverviewCard weekly={summary?.weekly_earnings_usd} fmtUsd={fmtUsd} />
+
 
             <div>
                 <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
@@ -516,7 +600,7 @@ export default function MemberDashboardPage() {
             <div>
                 <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#A0AEC0]">Income Totals</p>
                 <div className="grid grid-cols-3 gap-2">
-                    <Link to="/member/transactions" className="block">
+                    <Link to="/member/transactions?type=direct_commission" className="block">
                         <RmsCard
                             variant="inset"
                             className="!p-3 !rounded-[20px] !border-[#7C3AED]/35 !bg-gradient-to-br !from-[#1a1030]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(124,58,237,0.22)] transition active:scale-[0.99]"
@@ -536,7 +620,7 @@ export default function MemberDashboardPage() {
                             <p className="mt-0.5 text-[9px] text-slate-400">Lifetime total</p>
                         </RmsCard>
                     </Link>
-                    <Link to="/member/transactions" className="block">
+                    <Link to="/member/transactions?type=survey_level_income" className="block">
                         <RmsCard
                             variant="inset"
                             className="!p-3 !rounded-[20px] !border-cyan-400/35 !bg-gradient-to-br !from-[#062131]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(34,211,238,0.18)] transition active:scale-[0.99]"
@@ -554,7 +638,7 @@ export default function MemberDashboardPage() {
                             <p className="mt-0.5 text-[9px] text-slate-400">Lifetime total</p>
                         </RmsCard>
                     </Link>
-                    <Link to="/member/panel-matching" className="block">
+                    <Link to="/member/transactions?types=active_panel_matching,panel_matching,sub_panel_matching,super_sub_panel_matching" className="block">
                         <RmsCard
                             variant="inset"
                             className="!p-3 !rounded-[20px] !border-amber-400/35 !bg-gradient-to-br !from-[#2b1c08]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(245,158,11,0.22)] transition active:scale-[0.99]"

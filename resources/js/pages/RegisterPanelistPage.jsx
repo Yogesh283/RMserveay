@@ -94,7 +94,7 @@ export default function RegisterPanelistPage() {
                 <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(420px,520px)] lg:items-start lg:gap-12">
                     <div className="order-2 text-center lg:order-1 lg:text-left">
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-[#A78BFA]/30 bg-[rgba(124,58,237,0.18)] px-4 py-2 ring-1 ring-[#A78BFA]/20 lg:mx-0">
-                            <AppLogo alt="" className="h-9 w-9 rounded-xl" />
+                            <AppLogo alt="" className="h-12 w-12 rounded-xl" />
                             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#C4B5FD] sm:text-[11px]">
                                 {t('register.panelist.eyebrow')}
                             </span>

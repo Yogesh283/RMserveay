@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { RmsButton, RmsCard, RmsInput, RmsScreenTitle } from '../components/rms';
+import { isSurveyProfileComplete, profileGateRedirectPath } from '../lib/surveyProfileGate';
 
 function sortQuestions(questions) {
     if (!Array.isArray(questions)) return [];
@@ -73,6 +74,8 @@ export default function MemberSurveySessionPage() {
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [profileChecked, setProfileChecked] = useState(false);
+    const [profileComplete, setProfileComplete] = useState(true);
     const startRef = useRef(Date.now());
 
     const load = useCallback(async () => {
@@ -80,6 +83,12 @@ export default function MemberSurveySessionPage() {
         setLoading(true);
         try {
             await prepareSanctum();
+            const u = await window.axios.get('api/user');
+            const ok = isSurveyProfileComplete(u.data?.user ?? null);
+            setProfileComplete(ok);
+            if (!ok) {
+                return;
+            }
             const { data } = await window.axios.get(`api/member/surveys/${surveyId}`);
             const s = data.survey;
             setTitle(s?.title ?? 'Survey');
@@ -87,6 +96,7 @@ export default function MemberSurveySessionPage() {
         } catch (e) {
             setLoadError(e.response?.data?.message ?? e.message ?? 'Could not load survey');
         } finally {
+            setProfileChecked(true);
             setLoading(false);
         }
     }, [surveyId]);
@@ -114,6 +124,10 @@ export default function MemberSurveySessionPage() {
         if (type === 'multi_choice') return Array.isArray(v) && v.length > 0;
         return v != null && v !== '';
     }, [q, answers, qOptions]);
+
+    if (profileChecked && !profileComplete) {
+        return <Navigate to={profileGateRedirectPath(`/member/surveys/${surveyId}/session`)} replace />;
+    }
 
     function setAnswer(val) {
         if (!q) return;

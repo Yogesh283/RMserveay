@@ -78,7 +78,7 @@ export default function MobileShell() {
 
             <nav className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/[0.08] bg-[rgba(11,15,26,0.88)] backdrop-blur-2xl">
                 <div className="mx-auto flex max-w-md items-center justify-between gap-2 px-4 pb-1 pt-2">
-                    <AppLogo alt={BRAND} className="h-11 w-11 shrink-0 opacity-90" />
+                    <AppLogo alt={BRAND} className="h-14 w-14 shrink-0 opacity-90" />
                     <HomeLanguageSwitcher variant="compact" />
                 </div>
                 <div className="mx-auto flex max-w-md items-stretch justify-around px-1 pb-3 pt-1">

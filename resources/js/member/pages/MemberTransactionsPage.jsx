@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { formatTransactionDetailRow } from '../lib/formatTransactionDetail';
 import { RmsCard, RmsScreenTitle } from '../components/rms';
@@ -11,6 +12,7 @@ const TYPE_VALUES = [
     'survey_credit',
     'direct_commission',
     'survey_level_income',
+    'matching',
     'panel_matching',
     'sub_panel_matching',
     'super_sub_panel_matching',
@@ -19,17 +21,31 @@ const TYPE_VALUES = [
     'plan_purchase',
 ];
 
+const TYPE_GROUPS = {
+    matching: ['active_panel_matching', 'panel_matching', 'sub_panel_matching', 'super_sub_panel_matching'],
+};
+
 function labelType(value, t) {
     if (!value) return t('member.transactionsPage.types.all');
+    if (value === 'matching') return 'Matching (all)';
     return t(`member.transactionsPage.types.${value}`);
 }
 
 export default function MemberTransactionsPage() {
     const { t, i18n } = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialType = useMemo(() => {
+        const fromTypes = searchParams.get('types');
+        if (fromTypes) {
+            const groupKey = Object.keys(TYPE_GROUPS).find((k) => TYPE_GROUPS[k].join(',') === fromTypes);
+            if (groupKey) return groupKey;
+        }
+        return searchParams.get('type') ?? '';
+    }, [searchParams]);
     const [rows, setRows] = useState([]);
     const [meta, setMeta] = useState(null);
     const [page, setPage] = useState(1);
-    const [type, setType] = useState('');
+    const [type, setType] = useState(initialType);
     const [err, setErr] = useState(null);
 
     const fmtUsd = useCallback(
@@ -49,8 +65,16 @@ export default function MemberTransactionsPage() {
         setErr(null);
         try {
             await prepareSanctum();
+            const filterParams = {};
+            if (type) {
+                if (TYPE_GROUPS[type]) {
+                    filterParams.types = TYPE_GROUPS[type].join(',');
+                } else {
+                    filterParams.type = type;
+                }
+            }
             const { data } = await window.axios.get('api/member/wallet/transactions', {
-                params: { page, per_page: 20, ...(type ? { type } : {}) },
+                params: { page, per_page: 20, ...filterParams },
             });
             setRows(data.data ?? []);
             setMeta(data.meta ?? null);
@@ -76,8 +100,20 @@ export default function MemberTransactionsPage() {
                 <select
                     value={type}
                     onChange={(e) => {
-                        setType(e.target.value);
+                        const next = e.target.value;
+                        setType(next);
                         setPage(1);
+                        const params = new URLSearchParams(searchParams);
+                        params.delete('type');
+                        params.delete('types');
+                        if (next) {
+                            if (TYPE_GROUPS[next]) {
+                                params.set('types', TYPE_GROUPS[next].join(','));
+                            } else {
+                                params.set('type', next);
+                            }
+                        }
+                        setSearchParams(params, { replace: true });
                     }}
                     className="rounded-xl border border-violet-300/20 bg-[#0b1020]/85 px-3 py-2 text-sm text-white shadow-[0_0_18px_rgba(139,92,246,0.12)] focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-2 focus:ring-[#6C4CF1]/25"
                 >

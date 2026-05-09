@@ -215,7 +215,7 @@ export default function PublisherShell() {
             >
                 <div className="flex h-16 items-center border-b border-[#2A3550] px-3">
                     <Link to="/publisher" className="flex min-w-0 items-center gap-2 font-semibold text-white">
-                        <AppLogo alt="RM Survey Publisher" className={collapsed ? 'h-12 w-12' : 'h-14 w-14'} />
+                        <AppLogo alt="RM Survey Publisher" className={collapsed ? 'h-14 w-14' : 'h-20 w-20'} />
                         {!collapsed ? <span className="truncate text-sm">RM Survey · Publisher</span> : null}
                     </Link>
                 </div>
@@ -275,7 +275,7 @@ export default function PublisherShell() {
                                     to="/publisher"
                                     className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#8B5CF6]/35 bg-[rgba(16,22,38,0.8)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_14px_rgba(124,92,255,0.2)]"
                                 >
-                                    <AppLogo alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+                                    <AppLogo alt="" className="h-11 w-11 shrink-0 rounded-lg" />
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-bold text-white">Publisher</p>
                                         <p className="truncate text-[10px] font-medium text-[#B4A0FF]">RM Survey</p>

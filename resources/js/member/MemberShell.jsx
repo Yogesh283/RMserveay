@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import HomeLanguageSwitcher from '../components/HomeLanguageSwitcher';
 import AppLogo from '../components/AppLogo';
+import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../lib/branding';
 import { fetchSessionUser, prepareSanctum } from '../lib/auth';
 import RmsPageBackdrop from './components/RmsPageBackdrop';
 
@@ -171,10 +172,10 @@ function IconUser({ active }) {
 function IconMore({ active }) {
     const c = active ? '#C4B5FD' : '#A0AEC0';
     return (
-        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill={c} aria-hidden>
+        <svg className="h-7 w-7 shrink-0 drop-shadow-[0_0_10px_rgba(167,139,250,0.35)]" viewBox="0 0 24 24" fill={c} aria-hidden>
             {[0, 1, 2].flatMap((row) =>
                 [0, 1, 2].map((col) => (
-                    <circle key={`${row}-${col}`} cx={6 + col * 6} cy={6 + row * 6} r="1.75" />
+                    <circle key={`${row}-${col}`} cx={6 + col * 6} cy={6 + row * 6} r="2.15" />
                 )),
             )}
         </svg>
@@ -384,9 +385,34 @@ export default function MemberShell() {
 
     async function shareReferralLink(url, label = 'Referral link') {
         if (!url) return;
+        const brand = APP_NAME_FALLBACK;
+        const text = `Join ${brand} — surveys, insights, and growth.`;
         try {
             if (navigator.share) {
-                await navigator.share({ title: 'RM Survey', text: 'Join RM Survey', url });
+                /**
+                 * Try sharing with the brand logo as a file so messengers
+                 * (WhatsApp/Telegram/Signal) attach a logo preview alongside
+                 * the link. Falls back gracefully when files can't be shared
+                 * (Safari iOS in-app, desktop, etc.) — the OG meta tags on
+                 * the URL itself still drive the link preview.
+                 */
+                let files;
+                try {
+                    const res = await fetch(APP_LOGO_URL, { cache: 'force-cache' });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const file = new File([blob], 'rm-survey-logo.png', {
+                            type: blob.type || 'image/png',
+                        });
+                        if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                            files = [file];
+                        }
+                    }
+                } catch {
+                    /* logo fetch failed — continue without files */
+                }
+                const payload = files ? { title: brand, text, url, files } : { title: brand, text, url };
+                await navigator.share(payload);
                 showMoreActionMsg(`${label} shared`);
                 return;
             }
@@ -432,7 +458,7 @@ export default function MemberShell() {
             <aside className="fixed left-0 top-0 z-30 hidden h-full w-[280px] flex-col border-r border-white/[0.08] bg-[#0B0F1A]/95 backdrop-blur-xl lg:flex">
                 <div className="flex h-16 items-center gap-2 border-b border-white/[0.08] px-4">
                     <Link to="/member" className="flex min-w-0 items-center gap-2 font-semibold text-white">
-                        <AppLogo alt="RM Survey" className="h-14 w-14 shrink-0" />
+                        <AppLogo alt="RM Survey" className="h-20 w-20 shrink-0" />
                         <span className="truncate text-sm">{t('layout.nav.rmSurvey')}</span>
                     </Link>
                 </div>
@@ -498,7 +524,7 @@ export default function MemberShell() {
                 <header className="flex h-12 shrink-0 items-center gap-3 border-b border-white/[0.08] bg-[#0B0F1A]/95 px-3.5 backdrop-blur-xl max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:left-0 max-lg:right-0 max-lg:z-[90] max-lg:pt-[env(safe-area-inset-top,0px)] lg:sticky lg:top-0 lg:z-20 lg:bg-[#0B0F1A]/90 lg:pt-0">
                     <div className="min-w-0 flex-1 lg:hidden">
                         <Link to="/member" className="flex items-center gap-2">
-                            <AppLogo alt="RM Survey" className="h-12 w-12" />
+                            <AppLogo alt="RM Survey" className="h-16 w-16" />
                             <span className="truncate text-sm font-semibold">{t('layout.nav.rmSurvey')}</span>
                         </Link>
                     </div>
@@ -644,6 +670,28 @@ export default function MemberShell() {
                                 </button>
                             </div>
                         ) : null}
+                        <div className="mx-2 mb-2">
+                            <Link
+                                to="/login?user_type=publisher"
+                                onClick={() => setMoreSheetOpen(false)}
+                                className="group flex items-center justify-between gap-3 rounded-lg border border-amber-300/30 bg-gradient-to-r from-amber-500/15 to-orange-500/10 px-3 py-2.5 text-left text-[12px] font-semibold text-amber-100 shadow-[0_0_22px_rgba(245,158,11,0.12)] transition hover:border-amber-300/55 hover:bg-amber-500/20"
+                            >
+                                <span className="flex min-w-0 items-center gap-2">
+                                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-300/35 bg-amber-400/15 text-amber-100">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M9 14h.01M9 18h.01M15 10h.01M15 14h.01M15 18h.01" />
+                                        </svg>
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className="block truncate text-sm font-bold text-white">Publisher Login</span>
+                                        <span className="block truncate text-[10px] font-medium text-amber-100/70">Open publisher account login</span>
+                                    </span>
+                                </span>
+                                <svg className="h-4 w-4 shrink-0 text-amber-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </Link>
+                        </div>
                         <ul className="grid auto-rows-fr grid-cols-2 gap-1.5 px-2 pb-2.5">
                             {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }, idx) => (
                                 <li key={to} className={idx === primaryNavMoreItemsMobile.length - 1 && primaryNavMoreItemsMobile.length % 2 === 1 ? 'col-span-2' : ''}>

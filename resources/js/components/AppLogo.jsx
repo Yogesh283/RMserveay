@@ -2,10 +2,10 @@ import { APP_LOGO_URL } from '../lib/branding';
 
 /**
  * Site logo (`public/images/logo.png`).
- * Transparent PNG — no outer frame; sizing via `className` (default h-14 w-14).
+ * Transparent PNG — no outer frame; sizing via `className` (default h-20 w-20).
  */
 export default function AppLogo({ alt = '', className, imgClassName = '', ...rest }) {
-    const defaultSize = 'h-14 w-14';
+    const defaultSize = 'h-20 w-20';
     return (
         <img
             src={APP_LOGO_URL}

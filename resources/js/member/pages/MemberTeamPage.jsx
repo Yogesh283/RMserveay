@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
+import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../../lib/branding';
 
 function fmtUsd(s, lang) {
     const n = Number.parseFloat(s);
@@ -40,7 +41,25 @@ function BinaryReferralLegRow({ title, url, tone = 'emerald', status = 'Primary'
         const shareTitle = t('member.team.shareInviteTitle', { leg: title });
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
             try {
-                await navigator.share({ title: shareTitle, text: shareTitle, url });
+                let files;
+                try {
+                    const res = await fetch(APP_LOGO_URL, { cache: 'force-cache' });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const file = new File([blob], 'rm-survey-logo.png', {
+                            type: blob.type || 'image/png',
+                        });
+                        if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                            files = [file];
+                        }
+                    }
+                } catch {
+                    /* logo fetch failed — share text+url only */
+                }
+                const payload = files
+                    ? { title: shareTitle, text: `${shareTitle} — ${APP_NAME_FALLBACK}`, url, files }
+                    : { title: shareTitle, text: `${shareTitle} — ${APP_NAME_FALLBACK}`, url };
+                await navigator.share(payload);
                 return;
             } catch (e) {
                 if (e?.name === 'AbortError') {
@@ -1049,13 +1068,14 @@ export default function MemberTeamPage() {
                                     dark
                                     embedded
                                     comfortable
+                                    carryForwardOnly
                                     variant="sub"
                                     panelData={panelMatchData}
                                     subData={subMatchData}
                                 />
                             ) : null}
                             {matchingIncomeTab === 'super' && superMatchData ? (
-                                <MatchingIncomeTable dark embedded comfortable variant="super" superData={superMatchData} />
+                                <MatchingIncomeTable dark embedded comfortable carryForwardOnly variant="super" superData={superMatchData} />
                             ) : null}
                             {matchingIncomeTab === 'sub' && (!panelMatchData || !subMatchData) ? (
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>

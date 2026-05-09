@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { RmsButton, RmsCard } from '../components/rms';
+import { isSurveyProfileComplete, REQUIRED_SURVEY_PROFILE_FIELDS } from '../lib/surveyProfileGate';
 
 const labelCls = 'block text-[10px] font-semibold uppercase tracking-wide text-white';
 const inputCls =
@@ -35,6 +36,10 @@ const emptyForm = {
 };
 
 export default function MemberSurveyProfileFormPage() {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const fromPath = searchParams.get('from') || '';
+    const isGate = Boolean(fromPath);
     const [user, setUser] = useState(null);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
@@ -85,26 +90,45 @@ export default function MemberSurveyProfileFormPage() {
         }));
     }
 
+    const missingRequired = useMemo(() => {
+        const out = [];
+        for (const k of REQUIRED_SURVEY_PROFILE_FIELDS) {
+            const v = form?.[k];
+            const has = v != null && (typeof v === 'string' ? v.trim().length > 0 : Boolean(v));
+            if (!has) out.push(k);
+        }
+        return out;
+    }, [form]);
+
     async function onSubmit(e) {
         e.preventDefault();
         if (!user) return;
+        if (isGate && missingRequired.length > 0) {
+            setErr('Please fill all required fields before continuing to surveys.');
+            return;
+        }
         setSaving(true);
         setErr('');
         setMsg('');
         setFieldErrors({});
         try {
             await prepareSanctum();
+            const payload = {
+                ...form,
+                age: form.age === '' ? null : Number(form.age),
+            };
             await window.axios.patch('api/user', {
                 name: user.name ?? '',
                 email: user.email ?? '',
                 phone: user.phone ?? null,
                 profile: user.profile ?? null,
-                survey_profile: {
-                    ...form,
-                    age: form.age === '' ? null : Number(form.age),
-                },
+                survey_profile: payload,
             });
             setMsg('Survey profile saved.');
+            if (isGate && isSurveyProfileComplete(payload)) {
+                navigate(fromPath || '/member/surveys', { replace: true });
+                return;
+            }
             window.setTimeout(() => setMsg(''), 2500);
         } catch (e2) {
             if (e2.response?.data?.errors) {
@@ -123,6 +147,17 @@ export default function MemberSurveyProfileFormPage() {
                 <h1 className="mt-1 text-xl font-bold text-white">Short User Profile Form</h1>
                 <p className="mt-1 text-xs text-white">Fill this once to improve survey targeting and rewards relevance.</p>
             </header>
+
+            {isGate ? (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    <p className="text-xs font-semibold">Profile required before surveys</p>
+                    {missingRequired.length > 0 ? (
+                        <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-100">
+                            {missingRequired.length} pending
+                        </span>
+                    ) : null}
+                </div>
+            ) : null}
 
             {err ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{err}</p> : null}
             {msg ? <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">{msg}</p> : null}
@@ -195,8 +230,15 @@ export default function MemberSurveyProfileFormPage() {
                 </RmsCard>
 
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <RmsButton type="submit" variant="neon" disabled={!canSave}>{saving ? 'Saving…' : 'Save form'}</RmsButton>
-                    <Link to="/member/profile" className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:text-white">Back to profile</Link>
+                    <RmsButton type="submit" variant="neon" disabled={!canSave || (isGate && missingRequired.length > 0)}>
+                        {saving ? 'Saving…' : isGate ? 'Save & continue to surveys' : 'Save form'}
+                    </RmsButton>
+                    <Link
+                        to={isGate ? (fromPath || '/member') : '/member/profile'}
+                        className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:text-white"
+                    >
+                        {isGate ? 'Cancel' : 'Back to profile'}
+                    </Link>
                 </div>
             </form>
         </div>

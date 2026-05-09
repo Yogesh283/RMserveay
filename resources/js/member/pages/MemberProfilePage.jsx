@@ -470,7 +470,7 @@ export default function MemberProfilePage() {
             </div>
 
             <div className="flex items-center justify-center gap-1.5 py-1 opacity-80 sm:gap-2 sm:py-1.5">
-                <AppLogo alt="RM Survey" className="h-9 w-9 sm:h-10 sm:w-10" />
+                <AppLogo alt="RM Survey" className="h-12 w-12 sm:h-14 sm:w-14" />
                 <span className="text-[11px] font-semibold text-[#A0AEC0] sm:text-xs">RM Survey</span>
             </div>
 

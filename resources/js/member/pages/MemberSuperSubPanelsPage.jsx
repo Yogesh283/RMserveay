@@ -101,6 +101,66 @@ export default function MemberSuperSubPanelsPage() {
                 <p className="text-xs text-[#94A3B8]">Premium tier slots for maximum per-survey rewards and matching growth.</p>
             </div>
 
+            
+            <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
+                        <h2 className="text-base font-bold text-white">Buy package slots</h2>
+                        <ul className="mt-3.5 grid list-none grid-cols-2 gap-2 sm:grid-cols-3">
+                            {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
+                                const owned = n <= count;
+                                const isNext = n === nextSlot;
+                                const locked = n > nextSlot;
+
+                                return (
+                                    <li
+                                        key={n}
+                                        className={[
+                                            'rounded-xl border px-2.5 py-3 transition',
+                                            owned
+                                                ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                                                : isNext && canBuyNext
+                                                  ? 'border-amber-400/40 bg-amber-500/10 ring-1 ring-amber-400/25'
+                                                  : 'border-white/[0.07] bg-white/[0.02]',
+                                            locked ? 'opacity-[0.72]' : '',
+                                        ].join(' ')}
+                                    >
+                                        <div className="flex items-center justify-between gap-1">
+                                            <span className="text-[11px] font-semibold uppercase text-white/75">#{n}</span>
+                                            {owned ? (
+                                                <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-300">
+                                                    Active
+                                                </span>
+                                            ) : locked ? (
+                                                <span className="text-[9px] uppercase text-white/35">Locked</span>
+                                            ) : (
+                                                <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-200">
+                                                    Next
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="mt-2 text-lg font-bold tabular-nums text-fuchsia-300">{fmtUsd((n * safePanelFee).toFixed(2))}</p>
+                                        <p className="mt-0.5 text-[11px] tabular-nums text-white/45">
+                                            package entry · +{fmtUsd((n * eachSuper).toFixed(2))}{' '}
+                                            <span className="text-white/35">/survey</span>
+                                        </p>
+                                        {isNext && !owned ? (
+                                            <button
+                                                type="button"
+                                                disabled={!canBuyNext || !qualified}
+                                                onClick={() => postSuperSubPanel()}
+                                                className="mt-3 w-full rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-500 py-2 text-xs font-semibold text-white shadow-md shadow-violet-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                                {qualified ? `Upgrade ${fmtUsd(data.fees.super_sub_panel_usd)}` : 'Locked'}
+                                            </button>
+                                        ) : null}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        {count >= maxSuper ? (
+                            <p className="mt-4 text-center text-sm font-medium text-emerald-400">Full package — all {maxSuper} super panels active.</p>
+                        ) : null}
+                    </RmsCard>
+
             {loadError ? (
                 <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
             ) : null}
@@ -141,87 +201,8 @@ export default function MemberSuperSubPanelsPage() {
                                 </p>
                             </div>
 
-                            <div className="relative grid lg:grid-cols-[1fr_1fr] xl:grid-cols-[1.2fr_1fr_280px] lg:gap-0">
-                                <div className="space-y-4 border-white/[0.06] p-4 sm:p-5 lg:border-r xl:border-r">
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
-                                            <IconWalletEntry />
-                                            <div>
-                                                <p className="text-xs font-medium text-slate-600">Entry fee</p>
-                                                <p className="mt-0.5 text-base font-bold text-slate-900">
-                                                    <span className="tabular-nums text-orange-500">{entryFee}</span>
-                                                    <span className="text-sm font-semibold text-slate-600"> (per panel)</span>
-                                                </p>
-                                                <p className="mt-1 text-[11px] text-slate-500">
-                                                    Build from {entryFee} to <span className="font-semibold text-slate-700">{maxEntryLabel}</span>{' '}
-                                                    ({maxSuper} panels)
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3.5 shadow-lg shadow-black/25">
-                                            <IconMaxPanels />
-                                            <div>
-                                                <p className="text-xs font-medium text-slate-600">Maximum panels</p>
-                                                <p className="mt-0.5 text-base font-bold text-slate-900">
-                                                    <span className="text-orange-500">{maxSuper} super panels</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-white/45">Panel tree</p>
-                                        <div className="relative mt-3.5 flex flex-col items-center">
-                                            <div className="relative z-[1] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-[#1e3a5f] text-sm font-bold text-white shadow-xl ring-4 ring-violet-400/30">
-                                                You
-                                            </div>
-                                            <div className="relative -mt-1 flex h-10 w-[85%] max-w-md justify-around border-t border-dashed border-white/25 pt-2">
-                                                <span className="absolute -top-px left-1/2 h-5 w-px -translate-x-1/2 border-l border-dashed border-white/25" />
-                                            </div>
-                                            <div className="-mt-2 flex max-w-full flex-wrap justify-center gap-1.5 px-1">
-                                                {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
-                                                    const altBlue = n % 2 === 1;
-                                                    const active = n <= count;
-                                                    const isNext = n === nextSlot && qualified;
-                                                    return (
-                                                        <div
-                                                            key={n}
-                                                            className={[
-                                                                'flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold tabular-nums shadow-md ring-2 transition',
-                                                                active
-                                                                    ? 'bg-emerald-500 text-white ring-emerald-300/50'
-                                                                    : isNext
-                                                                      ? 'bg-amber-400 text-slate-900 ring-amber-200'
-                                                                      : altBlue
-                                                                        ? 'bg-sky-600/90 text-white ring-sky-400/40'
-                                                                        : 'bg-orange-500/90 text-white ring-orange-300/40',
-                                                                !active && !isNext ? 'opacity-80' : '',
-                                                            ].join(' ')}
-                                                            title={`Super panel ${n}`}
-                                                        >
-                                                            {n}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                        <p className="mt-4 text-center text-[11px] text-white/45">More panels → more surveys → more income</p>
-                                    </div>
-
-                                    <p className="text-center text-xs text-white/50">
-                                        Wallet{' '}
-                                        <span className="font-semibold tabular-nums text-white">{fmtUsd(data.wallet_balance)}</span>
-                                        <span className="mx-2 text-white/30">·</span>
-                                        <Link
-                                            to="/member/wallet/deposit"
-                                            className="font-medium text-violet-300 underline-offset-2 hover:text-violet-200 hover:underline"
-                                        >
-                                            Add funds
-                                        </Link>
-                                    </p>
-                                </div>
-
-                                <div className="flex flex-col border-t border-white/[0.06] bg-black/20 lg:border-t-0 xl:border-r xl:border-t-0">
+                            <div className="relative grid lg:grid-cols-1 xl:grid-cols-[1fr_280px] lg:gap-0">
+                                <div className="flex flex-col bg-black/20 xl:border-r">
                                     <div className="border-b border-[#1e3a5f]/90 bg-[#1e3a5f] px-4 py-2.5 sm:px-5">
                                         <p className="text-sm font-bold tracking-tight text-white">Income structure:</p>
                                     </div>
@@ -289,64 +270,6 @@ export default function MemberSuperSubPanelsPage() {
                         </div>
                     </section>
 
-                    <RmsCard variant="neon" className="!rounded-[22px] !border-violet-300/25 !bg-[#0b1020]/80 !p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.14)] sm:!p-4">
-                        <h2 className="text-base font-bold text-white">Buy package slots</h2>
-                        <ul className="mt-3.5 grid list-none grid-cols-2 gap-2 sm:grid-cols-3">
-                            {Array.from({ length: maxSuper }, (_, i) => i + 1).map((n) => {
-                                const owned = n <= count;
-                                const isNext = n === nextSlot;
-                                const locked = n > nextSlot;
-
-                                return (
-                                    <li
-                                        key={n}
-                                        className={[
-                                            'rounded-xl border px-2.5 py-3 transition',
-                                            owned
-                                                ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                                                : isNext && canBuyNext
-                                                  ? 'border-amber-400/40 bg-amber-500/10 ring-1 ring-amber-400/25'
-                                                  : 'border-white/[0.07] bg-white/[0.02]',
-                                            locked ? 'opacity-[0.72]' : '',
-                                        ].join(' ')}
-                                    >
-                                        <div className="flex items-center justify-between gap-1">
-                                            <span className="text-[11px] font-semibold uppercase text-white/75">#{n}</span>
-                                            {owned ? (
-                                                <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-300">
-                                                    Active
-                                                </span>
-                                            ) : locked ? (
-                                                <span className="text-[9px] uppercase text-white/35">Locked</span>
-                                            ) : (
-                                                <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-200">
-                                                    Next
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="mt-2 text-lg font-bold tabular-nums text-fuchsia-300">{fmtUsd((n * safePanelFee).toFixed(2))}</p>
-                                        <p className="mt-0.5 text-[11px] tabular-nums text-white/45">
-                                            package entry · +{fmtUsd((n * eachSuper).toFixed(2))}{' '}
-                                            <span className="text-white/35">/survey</span>
-                                        </p>
-                                        {isNext && !owned ? (
-                                            <button
-                                                type="button"
-                                                disabled={!canBuyNext || !qualified}
-                                                onClick={() => postSuperSubPanel()}
-                                                className="mt-3 w-full rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-500 py-2 text-xs font-semibold text-white shadow-md shadow-violet-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                                            >
-                                                {qualified ? `Upgrade ${fmtUsd(data.fees.super_sub_panel_usd)}` : 'Locked'}
-                                            </button>
-                                        ) : null}
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                        {count >= maxSuper ? (
-                            <p className="mt-4 text-center text-sm font-medium text-emerald-400">Full package — all {maxSuper} super panels active.</p>
-                        ) : null}
-                    </RmsCard>
                 </>
             ) : (
                 !loadError && (

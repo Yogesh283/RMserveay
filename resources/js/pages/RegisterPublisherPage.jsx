@@ -131,7 +131,7 @@ export default function RegisterPublisherPage() {
 
                     <div className="order-2 text-center lg:order-2 lg:text-left">
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-amber-300/35 bg-[rgba(245,158,11,0.16)] px-4 py-2 ring-1 ring-amber-300/20 lg:mx-0">
-                            <AppLogo alt="" className="h-9 w-9 rounded-xl" />
+                            <AppLogo alt="" className="h-12 w-12 rounded-xl" />
                             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-100 sm:text-[11px]">{t('register.publisher.badge')}</span>
                         </div>
 

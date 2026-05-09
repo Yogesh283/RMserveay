@@ -22,7 +22,7 @@ export default function PageShell({ title, eyebrow, children, hideLogo, compact 
         : `rounded-3xl border border-white/[0.1] bg-[rgba(15,23,42,0.42)] p-8 shadow-[0_16px_56px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-10 md:p-12 lg:p-14`;
 
     const logoWrap = compact ? '-mt-0 mb-2 flex flex-col items-center gap-0.5 sm:mb-4 sm:gap-1' : '-mt-1 mb-8 flex flex-col items-center gap-2 sm:mb-10';
-    const logoSize = compact ? 'h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem]' : 'h-24 w-24 sm:h-28 sm:w-28';
+    const logoSize = compact ? 'h-20 w-20 sm:h-24 sm:w-24' : 'h-28 w-28 sm:h-36 sm:w-36';
     const nameCls = compact
         ? 'text-center text-xs font-semibold tracking-wide text-[#cbd5e1] sm:text-sm'
         : 'text-center text-sm font-semibold tracking-tight text-[#cbd5e1] sm:text-base';

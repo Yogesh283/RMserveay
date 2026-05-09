@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { prepareSanctum } from '../../lib/auth';
 import { RmsCard } from '../components/rms';
+import { isSurveyProfileComplete, profileGateRedirectPath } from '../lib/surveyProfileGate';
 
 function fmtUsd(n) {
     const x = Number.parseFloat(String(n));
@@ -200,22 +201,27 @@ export default function MemberSurveysPage() {
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState(null);
     const [openAvailableTiers, setOpenAvailableTiers] = useState(emptyTierOpenState);
+    const [profileChecked, setProfileChecked] = useState(false);
+    const [profileComplete, setProfileComplete] = useState(true);
 
     const load = useCallback(async () => {
         setErr(null);
         setLoading(true);
         try {
             await prepareSanctum();
-            const [a, c] = await Promise.all([
+            const [u, a, c] = await Promise.all([
+                window.axios.get('api/user'),
                 window.axios.get('api/member/surveys/available'),
                 window.axios.get('api/member/surveys/completed'),
             ]);
+            setProfileComplete(isSurveyProfileComplete(u.data?.user ?? null));
             setAvailable(a.data.surveys ?? []);
             setCompleted(c.data.completed ?? []);
             setSurveyIncomePayoutDelayDays(Number(c.data.surveyIncomePayoutDelayDays) || 7);
         } catch (e) {
             setErr(e.response?.data?.message ?? e.message ?? 'Failed to load surveys');
         } finally {
+            setProfileChecked(true);
             setLoading(false);
         }
     }, []);
@@ -239,6 +245,10 @@ export default function MemberSurveysPage() {
     const groupedAvailable = useMemo(() => groupByTier(filteredAvailable, (r) => r.memberTier), [filteredAvailable]);
 
     const anyAvailable = filteredAvailable.length > 0;
+
+    if (profileChecked && !profileComplete) {
+        return <Navigate to={profileGateRedirectPath('/member/surveys')} replace />;
+    }
 
     return (
         <div className="relative min-h-[40vh] space-y-3 pb-24">

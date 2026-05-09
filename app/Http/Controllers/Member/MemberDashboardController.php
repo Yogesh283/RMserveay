@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\WalletTransaction;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -118,6 +119,71 @@ class MemberDashboardController extends Controller
         $todaySurvey = $todaySum([WalletTransaction::TYPE_SURVEY_CREDIT]);
         $todayTotal = bcadd(bcadd(bcadd($todayDirect, $todayLevel, 2), $todayMatching, 2), $todaySurvey, 2);
 
+        /**
+         * Weekly earnings — Monday → Sunday of the user's current ISO week.
+         * Returned as 7 day-buckets (always 7 even if zero) so the frontend chart can
+         * render Mon..Sun consistently.
+         */
+        $weekStart = CarbonImmutable::now()->startOfWeek(CarbonImmutable::MONDAY);
+        $weekEnd = $weekStart->endOfWeek(CarbonImmutable::SUNDAY);
+        $weekRows = WalletTransaction::query()
+            ->where('user_id', $uid)
+            ->whereIn('type', self::PROGRAMME_CREDIT_TYPES)
+            ->whereBetween('created_at', [$weekStart->toDateTimeString(), $weekEnd->toDateTimeString()])
+            ->selectRaw('DATE(created_at) as d, type, SUM(amount) as total')
+            ->groupBy('d', 'type')
+            ->get();
+
+        $weekBuckets = [];
+        for ($i = 0; $i < 7; $i++) {
+            $day = $weekStart->addDays($i);
+            $weekBuckets[$day->toDateString()] = [
+                'date' => $day->toDateString(),
+                'day_label' => $day->format('D'),
+                'direct' => '0.00',
+                'matching' => '0.00',
+                'level' => '0.00',
+                'survey' => '0.00',
+                'total' => '0.00',
+            ];
+        }
+        foreach ($weekRows as $row) {
+            $key = $row->d;
+            if (! isset($weekBuckets[$key])) {
+                continue;
+            }
+            $val = number_format((float) $row->total, 2, '.', '');
+            if (bccomp($val, '0', 2) <= 0) {
+                continue;
+            }
+            $bucket = $weekBuckets[$key];
+            if ($row->type === WalletTransaction::TYPE_DIRECT_COMMISSION) {
+                $bucket['direct'] = bcadd($bucket['direct'], $val, 2);
+            } elseif (in_array($row->type, self::MATCHING_CREDIT_TYPES, true)) {
+                $bucket['matching'] = bcadd($bucket['matching'], $val, 2);
+            } elseif ($row->type === WalletTransaction::TYPE_SURVEY_LEVEL_INCOME) {
+                $bucket['level'] = bcadd($bucket['level'], $val, 2);
+            } elseif ($row->type === WalletTransaction::TYPE_SURVEY_CREDIT) {
+                $bucket['survey'] = bcadd($bucket['survey'], $val, 2);
+            }
+            $bucket['total'] = bcadd($bucket['total'], $val, 2);
+            $weekBuckets[$key] = $bucket;
+        }
+        $weekDaily = array_values($weekBuckets);
+
+        $weekTotalDirect = '0.00';
+        $weekTotalMatching = '0.00';
+        $weekTotalLevel = '0.00';
+        $weekTotalSurvey = '0.00';
+        foreach ($weekDaily as $bucket) {
+            $weekTotalDirect = bcadd($weekTotalDirect, $bucket['direct'], 2);
+            $weekTotalMatching = bcadd($weekTotalMatching, $bucket['matching'], 2);
+            $weekTotalLevel = bcadd($weekTotalLevel, $bucket['level'], 2);
+            $weekTotalSurvey = bcadd($weekTotalSurvey, $bucket['survey'], 2);
+        }
+        $weekOther = bcadd($weekTotalLevel, $weekTotalSurvey, 2);
+        $weekTotal = bcadd(bcadd($weekTotalDirect, $weekTotalMatching, 2), $weekOther, 2);
+
         $surveyCount = WalletTransaction::where('user_id', $uid)
             ->where('type', WalletTransaction::TYPE_SURVEY_CREDIT)
             ->count();
@@ -226,6 +292,17 @@ class MemberDashboardController extends Controller
                 'level_income' => $todayLevel,
                 'matching_income' => $todayMatching,
                 'survey_credits' => $todaySurvey,
+            ],
+            'weekly_earnings_usd' => [
+                'week_start' => $weekStart->toDateString(),
+                'week_end' => $weekEnd->toDateString(),
+                'daily' => $weekDaily,
+                'total' => $weekTotal,
+                'direct' => $weekTotalDirect,
+                'matching' => $weekTotalMatching,
+                'level' => $weekTotalLevel,
+                'survey' => $weekTotalSurvey,
+                'other' => $weekOther,
             ],
             'funding_summary_usd' => [
                 'deposits' => $deposits,
