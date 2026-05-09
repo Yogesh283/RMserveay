@@ -7,14 +7,20 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use App\Services\PublisherSurveyRewardService;
+use App\Services\SelfSurveyIncomeService;
 use App\Support\SurveyFormatter;
+use App\Support\SurveyRewardCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class MemberSurveyController extends Controller
 {
     public function __construct(
-        private PublisherSurveyRewardService $rewardService
+        private PublisherSurveyRewardService $rewardService,
+        private SurveyRewardCalculator $rewardCalculator,
+        private SelfSurveyIncomeService $selfSurveyIncome,
     ) {}
 
     private function normalizeMemberTier(?string $tier): string
@@ -32,16 +38,12 @@ class MemberSurveyController extends Controller
 
     private function memberEligibleForTier(User $user, string $tier): bool
     {
-        return match ($tier) {
-            Survey::TIER_FREE => true,
-            Survey::TIER_PANEL => $user->qualifiesActivePanelistIncome(),
-            Survey::TIER_SUB_PANEL => ((int) $user->sub_panel_count) >= 1,
-            Survey::TIER_SUPER_PANEL => ((int) $user->super_sub_panel_count) >= 1,
-            default => true,
-        };
+        $stub = (new Survey)->forceFill(['member_tier' => $tier]);
+
+        return $this->rewardCalculator->eligible($user, $stub);
     }
 
-    /** Active surveys this member has not completed yet. */
+    /** Active surveys this member has not completed yet (sab tiers ko show, lock=eligible:false). */
     public function available(Request $request): JsonResponse
     {
         $member = $request->user();
@@ -50,26 +52,25 @@ class MemberSurveyController extends Controller
             ->where('completed', true)
             ->pluck('survey_id');
 
-        $memberReward = (float) config('publisher.respondent_reward_usd', config('publisher.earning_per_response', 0));
-
         $surveys = Survey::query()
             ->where('status', 'active')
             ->whereHas('questions')
             ->whereNotIn('id', $completedIds)
             ->orderByDesc('updated_at')
             ->get()
-            ->map(function (Survey $s) use ($memberReward, $member) {
+            ->map(function (Survey $s) use ($member) {
                 $tier = $this->normalizeMemberTier($s->member_tier);
+                $reward = (float) $this->rewardCalculator->rewardFor($member, $s);
 
                 return [
                     'id' => $s->id,
                     'title' => $s->title,
                     'description' => $s->description,
                     'responseCount' => (int) $s->response_count,
-                    'estimatedRewardUsd' => $memberReward,
+                    'estimatedRewardUsd' => $reward,
                     'updatedAt' => $s->updated_at?->toIso8601String(),
                     'memberTier' => $tier,
-                    'eligible' => $this->memberEligibleForTier($member, $tier),
+                    'eligible' => $this->rewardCalculator->eligible($member, $s),
                 ];
             });
 
@@ -200,13 +201,30 @@ class MemberSurveyController extends Controller
         $survey->increment('response_count');
 
         $publisherRate = (string) config('publisher.earning_per_response', '0');
-        $respondentRate = (string) config('publisher.respondent_reward_usd', '0');
+        $respondentRate = $this->rewardCalculator->rewardFor($member, $survey);
         $delayDays = (int) config('publisher.respondent_payout_delay_days', 7);
+
+        $instantPaid = false;
 
         if ($completed && bccomp($respondentRate, '0.00', 2) > 0) {
             $response->respondent_reward_usd = $respondentRate;
-            $response->respondent_payout_at = now()->addDays($delayDays);
+            // Delay-window code is intact for future use; currently default = 0 (instant).
+            // We still set the field so the cron path remains functional if delay ever returns.
+            $response->respondent_payout_at = now()->addDays(max(0, $delayDays));
             $response->save();
+
+            if ($delayDays <= 0) {
+                try {
+                    $tx = $this->selfSurveyIncome->creditPublisherSurveyResponsePayout($response->fresh());
+                    $instantPaid = $tx !== null;
+                } catch (Throwable $e) {
+                    // Fall back to scheduled payout — log but don't fail the submit.
+                    Log::warning('Instant survey payout failed, falling back to scheduled cron', [
+                        'response_id' => $response->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         if ($completed && bccomp($publisherRate, '0.00', 2) > 0) {
@@ -219,6 +237,7 @@ class MemberSurveyController extends Controller
             'earningAmount' => $completed && bccomp($respondentRate, '0.00', 2) > 0 ? (float) $respondentRate : 0.0,
             'respondentPayoutAt' => $response->respondent_payout_at?->toIso8601String(),
             'payoutDelayDays' => $delayDays,
+            'instantPaid' => $instantPaid,
         ], 201);
     }
 

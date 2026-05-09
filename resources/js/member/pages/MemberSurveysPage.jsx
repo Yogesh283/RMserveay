@@ -423,10 +423,16 @@ export default function MemberSurveysPage() {
                                             <td className="px-2 py-2 tabular-nums text-[#e8ddd0] sm:px-3">{fmtCompletedTableDate(row.createdAt)}</td>
                                             <td className="px-2 py-2 font-medium tabular-nums text-white sm:px-3">{fmtUsd(amt)}</td>
                                             <td className="px-2 py-2 font-semibold text-white sm:px-3">{row.status ?? 'Complete'}</td>
-                                            <td className="px-2 py-2 tabular-nums text-[#e8ddd0] sm:px-3">
+                                                    <td className="px-2 py-2 tabular-nums text-[#e8ddd0] sm:px-3">
                                                 <span
                                                     className="block"
-                                                    title={success ? 'Wallet credit time' : `Typical delay: ${surveyIncomePayoutDelayDays} days after completion`}
+                                                    title={
+                                                        success
+                                                            ? 'Wallet credit time'
+                                                            : surveyIncomePayoutDelayDays > 0
+                                                                ? `Typical delay: ${surveyIncomePayoutDelayDays} days after completion`
+                                                                : 'Instant credit on completion'
+                                                    }
                                                 >
                                                     {fmtCompletedTableDate(inWalletIso)}
                                                 </span>
