@@ -54,6 +54,12 @@ export default function MemberWalletInternalTransferPage() {
     }, [load]);
 
     const bonusRate = overview?.limits?.main_to_p2p_bonus_rate ?? '0.10';
+    const bonusLifetime = overview?.p2p_bonus_summary?.lifetime_usd ?? '0.00';
+    const bonusTransferCount = overview?.p2p_bonus_summary?.transfer_count ?? 0;
+    const bonusRatePct = (() => {
+        const r = Number.parseFloat(overview?.p2p_bonus_summary?.rate ?? bonusRate);
+        return Number.isFinite(r) ? Math.round(r * 100) : 10;
+    })();
     const preview = useMemo(() => {
         const a = Number.parseFloat(mainAmt);
         if (Number.isNaN(a) || a <= 0) return null;
@@ -191,7 +197,23 @@ export default function MemberWalletInternalTransferPage() {
             <section className={`relative mt-4 overflow-hidden p-4 sm:p-5 ${glass}`}>
                 <div className="pointer-events-none absolute -right-6 top-0 h-24 w-24 rounded-full bg-violet-500/15 blur-2xl" aria-hidden />
 
-                <p className={walletFlowLabel}>Main → P2P (bonus)</p>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className={walletFlowLabel}>Main → P2P (bonus)</p>
+                    <div
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.18)]"
+                        title={`${bonusTransferCount} bonus transfer${bonusTransferCount === 1 ? '' : 's'} so far · ${bonusRatePct}% per transfer`}
+                    >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2" />
+                            <circle cx="12" cy="12" r="9" />
+                        </svg>
+                        <span className="opacity-75">Bonus earned</span>
+                        <span className="tabular-nums text-white">{fmtUsd(bonusLifetime)}</span>
+                    </div>
+                </div>
+                <p className="mt-1 text-[10px] text-slate-500">
+                    Lifetime {bonusRatePct}% bonus credited to your P2P wallet from {bonusTransferCount} transfer{bonusTransferCount === 1 ? '' : 's'}.
+                </p>
                 {preview ? (
                     <p className="mt-1 text-xs text-emerald-300/90">
                         ≈ {fmtUsd(preview.bonus)} bonus · {fmtUsd(preview.total)} to P2P

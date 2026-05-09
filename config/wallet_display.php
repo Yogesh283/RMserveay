@@ -19,7 +19,7 @@ return [
 
     'min_deposit_usd' => env('WALLET_MIN_DEPOSIT_USD', '1.00'),
 
-    'min_withdraw_usd' => env('WALLET_MIN_WITHDRAW_USD', '5.00'),
+    'min_withdraw_usd' => env('WALLET_MIN_WITHDRAW_USD', '10.00'),
 
     'min_p2p_usd' => env('WALLET_MIN_P2P_USD', '0.01'),
 

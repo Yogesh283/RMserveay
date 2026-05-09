@@ -38,6 +38,43 @@ class MemberWalletController extends Controller
 
         $p2pCode = (string) ($user->p2p_receive_code ?? '');
 
+        /**
+         * Lifetime Main → P2P bonus credited to this user's P2P wallet.
+         *
+         * Preferred source is `meta.bonus_usd` (always written since the bonus
+         * was introduced). For any legacy rows missing that, we fall back to
+         * `abs(amount) * meta.bonus_rate` (or current configured rate if even
+         * that is missing) so the running total stays accurate across schema
+         * upgrades.
+         */
+        $bonusRows = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', WalletTransaction::TYPE_MAIN_TO_P2P)
+            ->get(['amount', 'meta']);
+        $bonusLifetime = '0.00';
+        $bonusCount = 0;
+        $configuredRate = (string) config('wallet_display.main_to_p2p_bonus_rate');
+        foreach ($bonusRows as $row) {
+            $bonusCount++;
+            $meta = $row->meta ?? [];
+            $rowBonus = $meta['bonus_usd'] ?? null;
+            if ($rowBonus === null) {
+                $gross = number_format(abs((float) $row->amount), 2, '.', '');
+                $rate = (string) ($meta['bonus_rate'] ?? $configuredRate);
+                if (! is_numeric($rate)) {
+                    $rate = '0';
+                }
+                $rowBonus = bcmul($gross, $rate, 2);
+            } elseif (! is_numeric($rowBonus)) {
+                $rowBonus = '0.00';
+            } else {
+                $rowBonus = number_format((float) $rowBonus, 2, '.', '');
+            }
+            if (bccomp($rowBonus, '0', 2) > 0) {
+                $bonusLifetime = bcadd($bonusLifetime, $rowBonus, 2);
+            }
+        }
+
         return response()->json([
             'wallet_balance' => $b['wallet_balance'],
             'p2p_wallet_balance' => $b['p2p_wallet_balance'],
@@ -45,6 +82,11 @@ class MemberWalletController extends Controller
             'p2p_receive_qr_payload' => $p2pCode !== '' ? User::P2P_RECEIVE_QR_PREFIX.$p2pCode : '',
             'withdrawal_address' => $user->usdt_bep20_withdrawal_address,
             'recent_transactions' => $this->mapTransactions($user->id),
+            'p2p_bonus_summary' => [
+                'lifetime_usd' => $bonusLifetime,
+                'transfer_count' => $bonusCount,
+                'rate' => $configuredRate,
+            ],
             'limits' => [
                 'network' => config('wallet_display.network_label'),
                 'asset' => config('wallet_display.asset'),

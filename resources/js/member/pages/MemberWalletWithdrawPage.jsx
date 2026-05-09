@@ -38,7 +38,7 @@ export default function MemberWalletWithdrawPage() {
     }, [load]);
 
     const feeRateStr = overview?.limits?.direct_withdrawal_fee_rate ?? '0.15';
-    const minWithdraw = overview?.limits?.min_withdraw_usd ?? '5';
+    const minWithdraw = overview?.limits?.min_withdraw_usd ?? '10';
     const feePreview = useMemo(() => {
         const gross = Number.parseFloat(amount);
         if (Number.isNaN(gross) || gross <= 0) return null;
