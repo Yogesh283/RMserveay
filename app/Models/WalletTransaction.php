@@ -43,6 +43,8 @@ class WalletTransaction extends Model
 
     public const TYPE_PLAN_PURCHASE = 'plan_purchase';
 
+    public const TYPE_SIGNUP_BONUS = 'signup_bonus';
+
     /**
      * @var list<string>
      */

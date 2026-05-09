@@ -124,13 +124,40 @@ class User extends Authenticatable implements FilamentUser
 
         /** Every new user gets a `wallet` row (main + P2P) as soon as the user row exists — including registration. */
         static::created(function (User $user) {
+            $bonusEnabled = (bool) config('wallet_signup_bonus.enabled', false);
+            $bonusAmount = (string) config('wallet_signup_bonus.amount_usd', '0.00');
+
+            $startingBalance = (string) ($user->wallet_balance ?? '0.00');
+            $shouldGrant = $bonusEnabled
+                && bccomp($bonusAmount, '0', 2) > 0
+                && bccomp($startingBalance, '0', 2) === 0;
+
+            if ($shouldGrant) {
+                $startingBalance = bcadd($startingBalance, $bonusAmount, 2);
+                $user->wallet_balance = $startingBalance;
+                $user->saveQuietly();
+            }
+
             Wallet::query()->firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'wallet_balance' => $user->wallet_balance ?? '0.00',
+                    'wallet_balance' => $startingBalance,
                     'p2p_wallet_balance' => $user->p2p_wallet_balance ?? '0.00',
                 ]
             );
+
+            if ($shouldGrant) {
+                WalletTransaction::query()->create([
+                    'user_id' => $user->id,
+                    'type' => WalletTransaction::TYPE_SIGNUP_BONUS,
+                    'amount' => $bonusAmount,
+                    'balance_after' => $startingBalance,
+                    'meta' => [
+                        'reason' => 'default signup wallet credit',
+                        'config_key' => 'wallet_signup_bonus.amount_usd',
+                    ],
+                ]);
+            }
         });
 
         /** Keep `wallet` in sync when balances change on existing users (skip create: handled above). */
