@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BinaryDailyClosing;
+use App\Models\MatchingPayout;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Carbon\CarbonImmutable;
@@ -159,7 +160,10 @@ class BinaryDailyClosingService
     }
 
     /**
-     * Atomically close one (user, scope, date). Idempotent — re-running with the same date is a no-op.
+     * Atomically close one (user, scope, date).
+     *
+     * Testing requirement: same date can be closed multiple times. Each run
+     * consumes the user's current carry and records a fresh audit row.
      */
     private function processOne(int $userId, string $scope, array $cfg, CarbonImmutable $date): ?BinaryDailyClosing
     {
@@ -171,17 +175,6 @@ class BinaryDailyClosingService
         $strategy = (string) ($cfg['lapse_strategy'] ?? 'no_lapse_both_carry');
 
         return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $date) {
-            $existing = BinaryDailyClosing::query()
-                ->where('user_id', $userId)
-                ->where('scope', $scope)
-                ->whereDate('closing_date', $date->toDateString())
-                ->lockForUpdate()
-                ->first();
-
-            if ($existing !== null) {
-                return $existing;
-            }
-
             /** @var User|null $user */
             $user = User::query()->whereKey($userId)->lockForUpdate()->first();
             if ($user === null) {
@@ -303,7 +296,7 @@ class BinaryDailyClosingService
 
             $totalPayout = bcadd($payout, $milestonePaidUsd, 2);
 
-            return BinaryDailyClosing::create([
+            $closing = BinaryDailyClosing::create([
                 'user_id' => $user->id,
                 'closing_date' => $date->toDateString(),
                 'scope' => $scope,
@@ -330,6 +323,43 @@ class BinaryDailyClosingService
                     'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
                 ],
             ]);
+
+            // Paid-users-only ledger: only insert when this closing actually
+            // moved money. Idempotent via the (user_id, scope, closing_date)
+            // unique index — same-day re-runs hit the existing row.
+            if (bccomp((string) $totalPayout, '0.00', 2) > 0) {
+                // For sub / super scopes the milestone wallet_transaction is
+                // created INSIDE applyMatchedPairs (we don't have its id here).
+                // Pick it up from the wallet log so the payout row links back.
+                $linkedTxId = $walletTxId;
+                if ($linkedTxId === null && bccomp($milestonePaidUsd, '0.00', 2) > 0) {
+                    $linkedTxId = WalletTransaction::query()
+                        ->where('user_id', $user->id)
+                        ->where('type', $txType)
+                        ->latest('id')
+                        ->value('id');
+                }
+
+                MatchingPayout::query()->create([
+                    'user_id' => $user->id,
+                    'scope' => $scope,
+                    'closing_date' => $date->toDateString(),
+                    'pairs_matched' => $pairsMatched,
+                    'milestone' => $milestoneMeta['milestone'] ?? null,
+                    'lapsed_pairs' => (int) ($milestoneMeta['lapsed_pairs'] ?? ($leftLapsed + $rightLapsed)),
+                    'payout_usd' => $totalPayout,
+                    'balance_after_usd' => $balanceAfter,
+                    'binary_daily_closing_id' => $closing->id,
+                    'wallet_transaction_id' => $linkedTxId,
+                    'meta' => [
+                        'per_pair_paid_usd' => $payout,
+                        'milestone_paid_usd' => $milestonePaidUsd,
+                        'cap_hit' => $capHit,
+                    ],
+                ]);
+            }
+
+            return $closing;
         });
     }
 
