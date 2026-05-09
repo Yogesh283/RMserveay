@@ -8,39 +8,63 @@ use Illuminate\Support\Facades\DB;
 
 class PanelMatchingService
 {
+    /** Defensive cap — binary trees can theoretically grow very deep. */
+    private const MAX_UPLINE_WALK = 100000;
+
     public function __construct(
         protected SubPanelMatchingService $subPanelMatching,
     ) {}
 
     /**
      * Call after a user successfully purchases another $10 sub panel (count already incremented).
-     * Matching uses only direct binary legs: buyer's immediate binary upline gets left/right carry.
-     * Each matched pair can pay (1) panel-matching 10% × $10 base (= $1 at defaults), up to 20 pairs/day, and
-     * (2) sub-panel tabular milestone income, up to $256/day.
+     * Walks the FULL binary upline chain — every ancestor receives +1 carry on the
+     * leg the buyer falls under (relative to that ancestor). 1 left sub-panel buy
+     * anywhere in the LEFT leg + 1 right sub-panel buy anywhere in the RIGHT leg
+     * = 1 matching pair for the earner above.
+     *
+     * Each matched pair can pay (1) panel-matching 10% × $10 base (= $1 at defaults),
+     * up to 20 pairs/day, and (2) sub-panel tabular milestone income, up to $256/day.
      */
     public function processSubPanelPurchase(User $buyer): void
     {
-        $parentId = $buyer->binary_parent_id;
-        if ($parentId === null) {
+        if ($buyer->binary_parent_id === null) {
             return;
         }
 
-        $side = strtolower((string) $buyer->binary_side);
-        if (! in_array($side, ['left', 'right'], true)) {
-            return;
-        }
+        DB::transaction(function () use ($buyer) {
+            $touchedAncestorIds = [];
 
-        DB::transaction(function () use ($parentId, $side) {
-            /** @var User $earner */
-            $earner = User::whereKey($parentId)->lockForUpdate()->firstOrFail();
+            $childSide = strtolower((string) $buyer->binary_side);
+            $parentId = (int) $buyer->binary_parent_id;
 
-            if ($side === 'left') {
-                $earner->panel_match_carry_left = (int) $earner->panel_match_carry_left + 1;
-            } else {
-                $earner->panel_match_carry_right = (int) $earner->panel_match_carry_right + 1;
+            // Walk the full upline chain (not just the immediate parent) so that
+            // a sub-panel buy anywhere in the leg accrues to every earner above.
+            for ($depth = 0; $depth < self::MAX_UPLINE_WALK; $depth++) {
+                if ($parentId === 0) {
+                    break;
+                }
+                if (! in_array($childSide, ['left', 'right'], true)) {
+                    break;
+                }
+
+                /** @var User|null $ancestor */
+                $ancestor = User::whereKey($parentId)->lockForUpdate()->first();
+                if ($ancestor === null) {
+                    break;
+                }
+
+                if ($childSide === 'left') {
+                    $ancestor->panel_match_carry_left = (int) $ancestor->panel_match_carry_left + 1;
+                } else {
+                    $ancestor->panel_match_carry_right = (int) $ancestor->panel_match_carry_right + 1;
+                }
+                $ancestor->save();
+
+                $touchedAncestorIds[] = (int) $ancestor->id;
+
+                $childSide = strtolower((string) $ancestor->binary_side);
+                $parentId = (int) ($ancestor->binary_parent_id ?? 0);
             }
-
-            $earner->save();
 
             // When the daily closing system is the source-of-truth for panel matching,
             // we MUST NOT consume pairs in real-time — otherwise the midnight closing
@@ -50,75 +74,87 @@ class PanelMatchingService
                 return;
             }
 
-            $left = (int) $earner->panel_match_carry_left;
-            $right = (int) $earner->panel_match_carry_right;
-
-            $pairVolume = (string) config('panel_matching.pair_volume_usd');
-            $rate = (string) config('panel_matching.rate');
-            $perPair = bcmul($pairVolume, $rate, 2);
-
-            $maxPanelPairsPerDay = (int) config('panel_matching.max_pairs_per_day');
-            $usedPanelBase = $this->matchingPairsUsedToday($earner->id);
-            $panelPairsAdded = 0;
-            $panelBatchTotal = '0.00';
-
-            while (true) {
-                $avail = min($left, $right);
-                if ($avail <= 0) {
-                    break;
+            // Real-time fallback: try to match pairs at every ancestor we touched.
+            foreach ($touchedAncestorIds as $aid) {
+                $earner = User::whereKey($aid)->lockForUpdate()->first();
+                if ($earner !== null) {
+                    $this->matchPairsRealtime($earner);
                 }
-
-                $remainingPanelSlots = max(0, $maxPanelPairsPerDay - $usedPanelBase - $panelPairsAdded);
-                $eligiblePanel = $earner->qualifiesForPanelMatchingIncome();
-                $canPanel = $eligiblePanel && $remainingPanelSlots > 0;
-
-                $earnedSub = $this->subPanelMatching->earnedToday($earner->id);
-                $capSub = (string) config('sub_panel_matching.daily_cap_usd');
-                $eligibleSub = $earner->qualifiesForPanelMatchingIncome();
-                $canSub = $eligibleSub && bccomp($earnedSub, $capSub, 2) < 0;
-
-                if (! $canPanel && ! $canSub) {
-                    break;
-                }
-
-                $left--;
-                $right--;
-
-                if ($canPanel) {
-                    $panelPairsAdded++;
-                    $panelBatchTotal = bcadd($panelBatchTotal, $perPair, 2);
-                }
-
-                if ($canSub) {
-                    // Tier-based milestone counter is advanced by 1 pair; the
-                    // payout fires only when the highest milestone is reached.
-                    $this->subPanelMatching->applyMatchedPairs($earner, 1);
-                }
-
-                $earner->panel_match_carry_left = $left;
-                $earner->panel_match_carry_right = $right;
-                $earner->save();
-            }
-
-            if ($panelPairsAdded > 0 && bccomp($panelBatchTotal, '0.00', 2) > 0) {
-                $newBalance = bcadd((string) $earner->wallet_balance, $panelBatchTotal, 2);
-                $earner->wallet_balance = $newBalance;
-                $earner->save();
-
-                WalletTransaction::create([
-                    'user_id' => $earner->id,
-                    'type' => WalletTransaction::TYPE_PANEL_MATCHING,
-                    'amount' => $panelBatchTotal,
-                    'balance_after' => $newBalance,
-                    'meta' => [
-                        'pairs' => $panelPairsAdded,
-                        'per_pair_usd' => $perPair,
-                        'pair_volume_usd' => $pairVolume,
-                        'rate' => $rate,
-                    ],
-                ]);
             }
         });
+    }
+
+    /**
+     * Real-time pair matching for a single earner (used only when daily closing is disabled).
+     */
+    private function matchPairsRealtime(User $earner): void
+    {
+        $left = (int) $earner->panel_match_carry_left;
+        $right = (int) $earner->panel_match_carry_right;
+
+        $pairVolume = (string) config('panel_matching.pair_volume_usd');
+        $rate = (string) config('panel_matching.rate');
+        $perPair = bcmul($pairVolume, $rate, 2);
+
+        $maxPanelPairsPerDay = (int) config('panel_matching.max_pairs_per_day');
+        $usedPanelBase = $this->matchingPairsUsedToday($earner->id);
+        $panelPairsAdded = 0;
+        $panelBatchTotal = '0.00';
+
+        while (true) {
+            $avail = min($left, $right);
+            if ($avail <= 0) {
+                break;
+            }
+
+            $remainingPanelSlots = max(0, $maxPanelPairsPerDay - $usedPanelBase - $panelPairsAdded);
+            $eligiblePanel = $earner->qualifiesForPanelMatchingIncome();
+            $canPanel = $eligiblePanel && $remainingPanelSlots > 0;
+
+            $earnedSub = $this->subPanelMatching->earnedToday($earner->id);
+            $capSub = (string) config('sub_panel_matching.daily_cap_usd');
+            $eligibleSub = $earner->qualifiesForPanelMatchingIncome();
+            $canSub = $eligibleSub && bccomp($earnedSub, $capSub, 2) < 0;
+
+            if (! $canPanel && ! $canSub) {
+                break;
+            }
+
+            $left--;
+            $right--;
+
+            if ($canPanel) {
+                $panelPairsAdded++;
+                $panelBatchTotal = bcadd($panelBatchTotal, $perPair, 2);
+            }
+
+            if ($canSub) {
+                $this->subPanelMatching->applyMatchedPairs($earner, 1);
+            }
+
+            $earner->panel_match_carry_left = $left;
+            $earner->panel_match_carry_right = $right;
+            $earner->save();
+        }
+
+        if ($panelPairsAdded > 0 && bccomp($panelBatchTotal, '0.00', 2) > 0) {
+            $newBalance = bcadd((string) $earner->wallet_balance, $panelBatchTotal, 2);
+            $earner->wallet_balance = $newBalance;
+            $earner->save();
+
+            WalletTransaction::create([
+                'user_id' => $earner->id,
+                'type' => WalletTransaction::TYPE_PANEL_MATCHING,
+                'amount' => $panelBatchTotal,
+                'balance_after' => $newBalance,
+                'meta' => [
+                    'pairs' => $panelPairsAdded,
+                    'per_pair_usd' => $perPair,
+                    'pair_volume_usd' => $pairVolume,
+                    'rate' => $rate,
+                ],
+            ]);
+        }
     }
 
     /**

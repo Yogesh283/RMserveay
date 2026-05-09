@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 
 class SuperSubPanelMatchingService
 {
+    /** Defensive cap — binary trees can theoretically grow very deep. */
+    private const MAX_UPLINE_WALK = 100000;
+
     public function earnedToday(int $userId): string
     {
         $sum = WalletTransaction::query()
@@ -21,31 +24,48 @@ class SuperSubPanelMatchingService
     }
 
     /**
-     * After a user buys another $100 super sub panel — update binary upline carry and pay tabular milestones (10× sub-panel table).
+     * After a user buys another $100 super sub panel — walks the FULL binary upline
+     * chain crediting +1 carry to every ancestor's appropriate leg. Pays tier-based
+     * milestone (10× sub-panel table) when the counter reaches a milestone.
      */
     public function processSuperSubPanelPurchase(User $buyer): void
     {
-        $parentId = $buyer->binary_parent_id;
-        if ($parentId === null) {
+        if ($buyer->binary_parent_id === null) {
             return;
         }
 
-        $side = strtolower((string) $buyer->binary_side);
-        if (! in_array($side, ['left', 'right'], true)) {
-            return;
-        }
+        DB::transaction(function () use ($buyer) {
+            $touchedAncestorIds = [];
 
-        DB::transaction(function () use ($parentId, $side) {
-            /** @var User $earner */
-            $earner = User::whereKey($parentId)->lockForUpdate()->firstOrFail();
+            $childSide = strtolower((string) $buyer->binary_side);
+            $parentId = (int) $buyer->binary_parent_id;
 
-            if ($side === 'left') {
-                $earner->super_panel_match_carry_left = (int) $earner->super_panel_match_carry_left + 1;
-            } else {
-                $earner->super_panel_match_carry_right = (int) $earner->super_panel_match_carry_right + 1;
+            for ($depth = 0; $depth < self::MAX_UPLINE_WALK; $depth++) {
+                if ($parentId === 0) {
+                    break;
+                }
+                if (! in_array($childSide, ['left', 'right'], true)) {
+                    break;
+                }
+
+                /** @var User|null $ancestor */
+                $ancestor = User::whereKey($parentId)->lockForUpdate()->first();
+                if ($ancestor === null) {
+                    break;
+                }
+
+                if ($childSide === 'left') {
+                    $ancestor->super_panel_match_carry_left = (int) $ancestor->super_panel_match_carry_left + 1;
+                } else {
+                    $ancestor->super_panel_match_carry_right = (int) $ancestor->super_panel_match_carry_right + 1;
+                }
+                $ancestor->save();
+
+                $touchedAncestorIds[] = (int) $ancestor->id;
+
+                $childSide = strtolower((string) $ancestor->binary_side);
+                $parentId = (int) ($ancestor->binary_parent_id ?? 0);
             }
-
-            $earner->save();
 
             // Daily-closing source-of-truth for super-sub-panel scope: skip the
             // real-time pair-matching loop and let the midnight cron credit pairs.
@@ -53,38 +73,49 @@ class SuperSubPanelMatchingService
                 return;
             }
 
-            $left = (int) $earner->super_panel_match_carry_left;
-            $right = (int) $earner->super_panel_match_carry_right;
-
-            $cap = (string) config('super_sub_panel_matching.daily_cap_usd');
-
-            while (true) {
-                $avail = min($left, $right);
-                if ($avail <= 0) {
-                    break;
+            // Real-time fallback: try to match pairs at every ancestor we touched.
+            foreach ($touchedAncestorIds as $aid) {
+                $earner = User::whereKey($aid)->lockForUpdate()->first();
+                if ($earner !== null) {
+                    $this->matchPairsRealtime($earner);
                 }
-
-                $earned = $this->earnedToday($earner->id);
-                $eligible = $earner->qualifiesForSuperSubPanelMatchingIncome();
-                $canSuper = $eligible && bccomp($earned, $cap, 2) < 0;
-
-                if (! $canSuper) {
-                    break;
-                }
-
-                $left--;
-                $right--;
-
-                // Tier-based milestone counter is advanced by 1 pair; the
-                // actual payout only fires when the counter reaches the next
-                // milestone (handled inside applyMatchedPairs).
-                $this->applyMatchedPairs($earner, 1);
-
-                $earner->super_panel_match_carry_left = $left;
-                $earner->super_panel_match_carry_right = $right;
-                $earner->save();
             }
         });
+    }
+
+    /**
+     * Real-time pair matching for a single earner (used only when daily closing is disabled).
+     */
+    private function matchPairsRealtime(User $earner): void
+    {
+        $left = (int) $earner->super_panel_match_carry_left;
+        $right = (int) $earner->super_panel_match_carry_right;
+
+        $cap = (string) config('super_sub_panel_matching.daily_cap_usd');
+
+        while (true) {
+            $avail = min($left, $right);
+            if ($avail <= 0) {
+                break;
+            }
+
+            $earned = $this->earnedToday($earner->id);
+            $eligible = $earner->qualifiesForSuperSubPanelMatchingIncome();
+            $canSuper = $eligible && bccomp($earned, $cap, 2) < 0;
+
+            if (! $canSuper) {
+                break;
+            }
+
+            $left--;
+            $right--;
+
+            $this->applyMatchedPairs($earner, 1);
+
+            $earner->super_panel_match_carry_left = $left;
+            $earner->super_panel_match_carry_right = $right;
+            $earner->save();
+        }
     }
 
     /**
