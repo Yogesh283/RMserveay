@@ -195,6 +195,23 @@ class BinaryDailyClosingService
                 return null;
             }
 
+            // Eligibility-skip for sub / super scopes.
+            // If the earner has not qualified for this scope (e.g. sub_panel_count
+            // < required for panel, super_sub_panel_count < required for super),
+            // SKIP the closing entirely — do NOT consume carries, do NOT lapse,
+            // do NOT create an audit row. Their carries stay intact until they
+            // qualify; once they do, the next closing will pay on the full carry.
+            // Active-panel scope has no such gate (it pays $1/pair to anyone with
+            // a carry), so this only applies to milestone-driven scopes.
+            if ($scope === BinaryDailyClosing::SCOPE_PANEL
+                && ! $user->qualifiesForPanelMatchingIncome()) {
+                return null;
+            }
+            if ($scope === BinaryDailyClosing::SCOPE_SUPER
+                && ! $user->qualifiesForSuperSubPanelMatchingIncome()) {
+                return null;
+            }
+
             $pairsAvailable = min($leftIn, $rightIn);
             $pairsMatched = min($pairsAvailable, $maxPairs);
             $capHit = $pairsAvailable > $maxPairs;
