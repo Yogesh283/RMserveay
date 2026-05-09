@@ -362,12 +362,19 @@ function buildActiveLegRows(legs, t, activeMatching) {
     ];
 }
 
-function buildSubLegRows(legs, t) {
+function buildSubLegRows(legs, t, panelMatching, subMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
     }
     const L = legs.left;
     const R = legs.right;
+    const pm = panelMatching ?? {};
+    const sm = subMatching ?? {};
+    const carryL = Number(pm.carry_left ?? 0) | 0;
+    const carryR = Number(pm.carry_right ?? 0) | 0;
+    const pairsToday = Number(sm.cumulative_matched_panels_today ?? 0) | 0;
+    const lapsedToday = Number(sm.today_milestone_lapsed_pairs ?? 0) | 0;
+    const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     return [
         {
             label: t('member.team.rowTeamSubPanels'),
@@ -375,24 +382,40 @@ function buildSubLegRows(legs, t) {
             right: R.sub_panels,
         },
         {
-            label: t('member.team.rowMatchingSubToday'),
-            left: L.sub_matching_cumulative_today ?? 0,
-            right: R.sub_matching_cumulative_today ?? 0,
+            label: 'Sub carry forward',
+            left: carryL,
+            right: carryR,
         },
         {
-            label: t('member.team.rowCarryPanelLR'),
-            left: `${L.carry_panel_left} / ${L.carry_panel_right}`,
-            right: `${R.carry_panel_left} / ${R.carry_panel_right}`,
+            label: 'Matched pairs today',
+            left: pairsToday,
+            right: pairsToday,
+        },
+        {
+            label: 'Payout today',
+            left: fmtUsdShort(payoutToday),
+            right: fmtUsdShort(payoutToday),
+        },
+        {
+            label: 'Lapsed today',
+            left: lapsedToday,
+            right: lapsedToday,
         },
     ];
 }
 
-function buildSuperLegRows(legs, t) {
+function buildSuperLegRows(legs, t, superMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
     }
     const L = legs.left;
     const R = legs.right;
+    const sup = superMatching ?? {};
+    const carryL = Number(sup.carry_left ?? 0) | 0;
+    const carryR = Number(sup.carry_right ?? 0) | 0;
+    const pairsToday = Number(sup.cumulative_matched_panels_today ?? 0) | 0;
+    const lapsedToday = Number(sup.today_milestone_lapsed_pairs ?? 0) | 0;
+    const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     return [
         {
             label: t('member.team.rowTeamSuperSub'),
@@ -400,14 +423,24 @@ function buildSuperLegRows(legs, t) {
             right: R.super_sub_panels,
         },
         {
-            label: t('member.team.rowMatchingSuperToday'),
-            left: L.super_matching_cumulative_today ?? 0,
-            right: R.super_matching_cumulative_today ?? 0,
+            label: 'Super carry forward',
+            left: carryL,
+            right: carryR,
         },
         {
-            label: t('member.team.rowCarrySuperLR'),
-            left: `${L.carry_super_left} / ${L.carry_super_right}`,
-            right: `${R.carry_super_left} / ${R.carry_super_right}`,
+            label: 'Matched pairs today',
+            left: pairsToday,
+            right: pairsToday,
+        },
+        {
+            label: 'Payout today',
+            left: fmtUsdShort(payoutToday),
+            right: fmtUsdShort(payoutToday),
+        },
+        {
+            label: 'Lapsed today',
+            left: lapsedToday,
+            right: lapsedToday,
         },
     ];
 }
@@ -689,10 +722,19 @@ export default function MemberTeamPage() {
             return buildActiveLegRows(data.legs, t, data?.matching?.active_panel);
         }
         if (totalTeamTab === 'sub') {
-            return buildSubLegRows(data.legs, t);
+            return buildSubLegRows(data.legs, t, data?.matching?.panel, data?.matching?.sub_panel);
         }
-        return buildSuperLegRows(data.legs, t);
-    }, [data?.legs, data?.matching?.active_panel, totalTeamTab, t, i18n.resolvedLanguage]);
+        return buildSuperLegRows(data.legs, t, data?.matching?.super_sub_panel);
+    }, [
+        data?.legs,
+        data?.matching?.active_panel,
+        data?.matching?.panel,
+        data?.matching?.sub_panel,
+        data?.matching?.super_sub_panel,
+        totalTeamTab,
+        t,
+        i18n.resolvedLanguage,
+    ]);
 
     const tabBtn =
         'rounded-2xl border px-3 py-2 text-[12px] font-semibold transition sm:px-3 sm:text-sm';
