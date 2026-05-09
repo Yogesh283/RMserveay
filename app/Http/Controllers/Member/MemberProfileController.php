@@ -18,6 +18,7 @@ class MemberProfileController extends Controller
 {
     private const EMAIL_OTP_TTL_MINUTES = 10;
     private const PASSWORD_OTP_TTL_MINUTES = 10;
+    private const PHONE_OTP_TTL_MINUTES = 10;
 
     public function sendEmailChangeOtp(Request $request): JsonResponse
     {
@@ -53,6 +54,43 @@ class MemberProfileController extends Controller
 
         return response()->json([
             'message' => 'OTP sent to your current email.',
+        ]);
+    }
+
+    public function sendPhoneChangeOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:32'],
+        ]);
+
+        $user = $request->user();
+        $nextPhone = trim((string) $validated['phone']);
+
+        if ((string) $user->phone === $nextPhone) {
+            throw ValidationException::withMessages([
+                'phone' => ['This mobile number is already on your account.'],
+            ]);
+        }
+
+        $rateKey = 'otp-send:phone-change:'.$user->id.'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            throw ValidationException::withMessages([
+                'phone' => ['Too many OTP requests. Try again in a few minutes.'],
+            ]);
+        }
+        RateLimiter::hit($rateKey, 120);
+
+        $otp = (string) random_int(100000, 999999);
+        $cacheKey = OtpController::cacheKeyPhoneChangeUser((int) $user->id, $nextPhone);
+        Cache::put($cacheKey, [
+            'code' => $otp,
+            'expires_at' => now()->addMinutes(self::PHONE_OTP_TTL_MINUTES)->timestamp,
+        ], now()->addMinutes(self::PHONE_OTP_TTL_MINUTES));
+
+        Mail::to((string) $user->email)->send(new OtpMail($otp, 'Mobile change'));
+
+        return response()->json([
+            'message' => 'OTP sent to your registered email.',
         ]);
     }
 
@@ -120,10 +158,27 @@ class MemberProfileController extends Controller
             }
         }
 
+        $nextPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : null;
+        $currentPhone = (string) ($user->phone ?? '');
+        $phoneChanged = ($nextPhone ?? '') !== $currentPhone;
+        if ($phoneChanged && ! empty($nextPhone)) {
+            $phoneOtp = (string) ($validated['phone_otp'] ?? '');
+            if ($phoneOtp === '') {
+                throw ValidationException::withMessages([
+                    'phone_otp' => ['Enter the OTP sent to your current email.'],
+                ]);
+            }
+            if (! OtpController::verifyPhoneChangeUser((int) $user->id, $nextPhone, $phoneOtp)) {
+                throw ValidationException::withMessages([
+                    'phone_otp' => ['Invalid or expired OTP. Please request a new OTP.'],
+                ]);
+            }
+        }
+
         $user->fill([
             'name' => $validated['name'],
             'email' => $nextEmail,
-            'phone' => $validated['phone'] ?? null,
+            'phone' => $nextPhone,
             'profile' => $validated['profile'] ?? null,
             'survey_profile' => $validated['survey_profile'] ?? $user->survey_profile,
         ]);

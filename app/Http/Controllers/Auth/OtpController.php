@@ -192,6 +192,11 @@ class OtpController extends Controller
         return 'otp:password_change:user:'.$userId;
     }
 
+    public static function cacheKeyPhoneChangeUser(int $userId, string $newPhone): string
+    {
+        return 'otp:phone_change:user:'.$userId.':'.hash('sha256', strtolower(trim($newPhone)));
+    }
+
     public static function verify(string $purpose, string $email, string $submittedOtp): bool
     {
         return self::verifyWithKey(self::cacheKey($purpose, $email), $submittedOtp);
@@ -225,6 +230,11 @@ class OtpController extends Controller
     public static function verifyPasswordChangeUser(int $userId, string $submittedOtp): bool
     {
         return self::verifyWithKey(self::cacheKeyPasswordChangeUser($userId), $submittedOtp);
+    }
+
+    public static function verifyPhoneChangeUser(int $userId, string $newPhone, string $submittedOtp): bool
+    {
+        return self::verifyWithKey(self::cacheKeyPhoneChangeUser($userId, $newPhone), $submittedOtp);
     }
 
     private static function verifyWithKey(string $key, string $submittedOtp): bool

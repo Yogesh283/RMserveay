@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::patch('/user', [MemberProfileController::class, 'update']);
     Route::post('/member/profile/email-change-otp', [MemberProfileController::class, 'sendEmailChangeOtp'])->middleware('throttle:10,1');
+    Route::post('/member/profile/phone-change-otp', [MemberProfileController::class, 'sendPhoneChangeOtp'])->middleware('throttle:10,1');
     Route::post('/member/profile/password-change-otp', [MemberProfileController::class, 'sendPasswordChangeOtp'])->middleware('throttle:10,1');
 
     Route::get('/member/dashboard/summary', [MemberDashboardController::class, 'summary']);

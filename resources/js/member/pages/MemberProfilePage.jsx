@@ -257,17 +257,21 @@ export default function MemberProfilePage() {
                 </RmsCard>
             ) : null}
 
-            <form onSubmit={onSubmit} noValidate>
-                <RmsCard variant="elevated" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A0AEC0] sm:text-[10px]">Your details</p>
-                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">You can change these anytime.</p>
+            <form onSubmit={onSubmit} noValidate className="space-y-3 sm:space-y-4">
+                {(error || savedMsg) ? (
+                    <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl">
+                        {error ? (
+                            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-200 sm:text-sm">{error}</p>
+                        ) : null}
+                        {savedMsg ? (
+                            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-200 sm:text-sm">{savedMsg}</p>
+                        ) : null}
+                    </RmsCard>
+                ) : null}
 
-                    {error ? (
-                        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-200 sm:text-sm">{error}</p>
-                    ) : null}
-                    {savedMsg ? (
-                        <p className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-200 sm:text-sm">{savedMsg}</p>
-                    ) : null}
+                <RmsCard variant="elevated" className="!rounded-[20px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A0AEC0] sm:text-[10px]">Personal details</p>
+                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Name and short profile information.</p>
 
                     <div className="mt-3 space-y-3 sm:mt-4">
                         <div>
@@ -286,73 +290,6 @@ export default function MemberProfilePage() {
                             {fieldErrors.name?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.name[0]}</p> : null}
                         </div>
                         <div>
-                            <label className={labelCls} htmlFor="pf-email">
-                                Email
-                            </label>
-                            <input
-                                id="pf-email"
-                                type="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(ev) => {
-                                    const next = ev.target.value;
-                                    setEmail(next);
-                                    if (next.trim().toLowerCase() !== emailOtpSentFor) {
-                                        setEmailOtp('');
-                                    }
-                                }}
-                                className={inputCls}
-                                required
-                            />
-                            {isEmailChanged ? (
-                                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                    <RmsButton
-                                        type="button"
-                                        variant="ghost"
-                                        className="!w-auto !px-2.5 !py-1.5 text-[11px] sm:!px-3 sm:!py-2 sm:text-xs"
-                                        onClick={sendEmailOtp}
-                                        disabled={sendingEmailOtp}
-                                    >
-                                        {sendingEmailOtp ? 'Sending OTP…' : 'Send OTP'}
-                                    </RmsButton>
-                                    <p className="text-[11px] text-[#94A3B8]">
-                                        OTP will be sent to your current email before save.
-                                    </p>
-                                </div>
-                            ) : null}
-                            {fieldErrors.email?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.email[0]}</p> : null}
-                            {isEmailChanged ? (
-                                <div className="mt-2">
-                                    <label className={labelCls} htmlFor="pf-email-otp">
-                                        Email OTP
-                                    </label>
-                                    <input
-                                        id="pf-email-otp"
-                                        type="text"
-                                        inputMode="numeric"
-                                        autoComplete="one-time-code"
-                                        maxLength={6}
-                                        value={emailOtp}
-                                        onChange={(ev) => setEmailOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className={inputCls}
-                                        placeholder="6-digit OTP"
-                                        required={isEmailChanged}
-                                    />
-                                    {emailOtpSentFor === normalizedNextEmail ? (
-                                        <p className="mt-1 text-[11px] text-emerald-300/90">OTP sent to current email: {normalizedCurrentEmail}</p>
-                                    ) : (
-                                        <p className="mt-1 text-[11px] text-[#94A3B8]">Click “Send OTP” then enter the code.</p>
-                                    )}
-                                    {fieldErrors.email_otp?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.email_otp[0]}</p> : null}
-                                </div>
-                            ) : null}
-                        </div>
-                        <div className="[&_.PhoneInput]:mt-1 [&_.PhoneInput]:w-full [&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-lg [&_.PhoneInputInput]:border [&_.PhoneInputInput]:border-white/[0.1] [&_.PhoneInputInput]:bg-white/[0.06] [&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:py-2 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:text-white [&_.PhoneInputCountry]:mr-2">
-                            <label className={labelCls}>Mobile</label>
-                            <PhoneInput international defaultCountry="US" value={phone} onChange={setPhone} />
-                            {fieldErrors.phone?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.phone[0]}</p> : null}
-                        </div>
-                        <div>
                             <label className={labelCls} htmlFor="pf-profile">
                                 About you <span className="font-normal normal-case text-[#718096]">(optional)</span>
                             </label>
@@ -367,80 +304,164 @@ export default function MemberProfilePage() {
                             {fieldErrors.profile?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.profile[0]}</p> : null}
                         </div>
                     </div>
-
-                    <div className="mt-5 border-t border-white/10 pt-4 sm:mt-6 sm:pt-5">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A0AEC0] sm:text-[10px]">Change password</p>
-                        <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Leave blank to keep your current password.</p>
-                        <div className="mt-3 space-y-3 sm:mt-4">
-                            <PasswordField
-                                id="pf-current-pw"
-                                label="Current password"
-                                labelClassName={labelCls}
-                                value={currentPassword}
-                                onChange={(ev) => setCurrentPassword(ev.target.value)}
-                                inputClassName={inputCls}
-                                autoComplete="current-password"
-                                error={fieldErrors.current_password?.[0]}
-                            />
-                            <PasswordField
-                                id="pf-new-pw"
-                                label="New password"
-                                labelClassName={labelCls}
-                                value={newPassword}
-                                onChange={(ev) => setNewPassword(ev.target.value)}
-                                inputClassName={inputCls}
-                                autoComplete="new-password"
-                                error={fieldErrors.password?.[0]}
-                            />
-                            <PasswordField
-                                id="pf-new-pw2"
-                                label="Confirm new password"
-                                labelClassName={labelCls}
-                                value={newPasswordConfirmation}
-                                onChange={(ev) => setNewPasswordConfirmation(ev.target.value)}
-                                inputClassName={inputCls}
-                                autoComplete="new-password"
-                                error={fieldErrors.password_confirmation?.[0]}
-                            />
-                            {newPassword?.trim() ? (
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                        <RmsButton
-                                            type="button"
-                                            variant="ghost"
-                                            className="!w-auto !px-2.5 !py-1.5 text-[11px] sm:!px-3 sm:!py-2 sm:text-xs"
-                                            onClick={sendPasswordOtp}
-                                            disabled={sendingPasswordOtp}
-                                        >
-                                            {sendingPasswordOtp ? 'Sending OTP…' : passwordOtpSent ? 'Resend Password OTP' : 'Send Password OTP'}
-                                        </RmsButton>
-                                        <p className="text-[11px] text-[#94A3B8]">Required for password update.</p>
-                                    </div>
-                                    <label className={`${labelCls} mt-2`} htmlFor="pf-password-otp">
-                                        Password OTP
-                                    </label>
-                                    <input
-                                        id="pf-password-otp"
-                                        type="text"
-                                        inputMode="numeric"
-                                        autoComplete="one-time-code"
-                                        maxLength={6}
-                                        value={passwordOtp}
-                                        onChange={(ev) => setPasswordOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className={inputCls}
-                                        placeholder="6-digit OTP"
-                                        required={Boolean(newPassword?.trim())}
-                                    />
-                                    {fieldErrors.password_otp?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.password_otp[0]}</p> : null}
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    <RmsButton type="submit" variant="neon" className="mt-4 w-full sm:mt-5" disabled={saving}>
-                        {saving ? 'Saving…' : 'Save changes'}
-                    </RmsButton>
                 </RmsCard>
+
+                <RmsCard variant="elevated" className="!rounded-[20px] !border-cyan-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-cyan-200/90 sm:text-[10px]">Email update</p>
+                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">
+                        New email save karne se pehle OTP current email par verify hoga.
+                    </p>
+                    <p className="mt-2 truncate rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] text-[#A0AEC0]">
+                        Current email: <span className="font-medium text-white">{normalizedCurrentEmail || '—'}</span>
+                    </p>
+
+                    <div className="mt-3 sm:mt-4">
+                        <label className={labelCls} htmlFor="pf-email">
+                            New email
+                        </label>
+                        <input
+                            id="pf-email"
+                            type="email"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(ev) => {
+                                const next = ev.target.value;
+                                setEmail(next);
+                                if (next.trim().toLowerCase() !== emailOtpSentFor) {
+                                    setEmailOtp('');
+                                }
+                            }}
+                            className={inputCls}
+                            required
+                        />
+                        {isEmailChanged ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <RmsButton
+                                    type="button"
+                                    variant="ghost"
+                                    className="!w-auto !px-2.5 !py-1.5 text-[11px] sm:!px-3 sm:!py-2 sm:text-xs"
+                                    onClick={sendEmailOtp}
+                                    disabled={sendingEmailOtp}
+                                >
+                                    {sendingEmailOtp ? 'Sending OTP…' : 'Send OTP'}
+                                </RmsButton>
+                                <p className="text-[11px] text-[#94A3B8]">
+                                    OTP will be sent to your current email before save.
+                                </p>
+                            </div>
+                        ) : null}
+                        {fieldErrors.email?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.email[0]}</p> : null}
+                        {isEmailChanged ? (
+                            <div className="mt-2">
+                                <label className={labelCls} htmlFor="pf-email-otp">
+                                    Email OTP
+                                </label>
+                                <input
+                                    id="pf-email-otp"
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    maxLength={6}
+                                    value={emailOtp}
+                                    onChange={(ev) => setEmailOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className={inputCls}
+                                    placeholder="6-digit OTP"
+                                    required={isEmailChanged}
+                                />
+                                {emailOtpSentFor === normalizedNextEmail ? (
+                                    <p className="mt-1 text-[11px] text-emerald-300/90">OTP sent to current email: {normalizedCurrentEmail}</p>
+                                ) : (
+                                    <p className="mt-1 text-[11px] text-[#94A3B8]">Click “Send OTP” then enter the code.</p>
+                                )}
+                                {fieldErrors.email_otp?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.email_otp[0]}</p> : null}
+                            </div>
+                        ) : null}
+                    </div>
+                </RmsCard>
+
+                <RmsCard variant="elevated" className="!rounded-[20px] !border-emerald-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200/90 sm:text-[10px]">Mobile update</p>
+                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Mobile number ko alag section me update karein.</p>
+
+                    <div className="mt-3 [&_.PhoneInput]:mt-1 [&_.PhoneInput]:w-full [&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-lg [&_.PhoneInputInput]:border [&_.PhoneInputInput]:border-white/[0.1] [&_.PhoneInputInput]:bg-white/[0.06] [&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:py-2 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:text-white [&_.PhoneInputCountry]:mr-2 sm:mt-4">
+                        <label className={labelCls}>Mobile</label>
+                        <PhoneInput international defaultCountry="US" value={phone} onChange={setPhone} />
+                        {fieldErrors.phone?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.phone[0]}</p> : null}
+                    </div>
+                </RmsCard>
+
+                <RmsCard variant="elevated" className="!rounded-[20px] !border-amber-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-200/90 sm:text-[10px]">Password update</p>
+                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Password update ke liye OTP registered email par verify hoga.</p>
+                    <div className="mt-3 space-y-3 sm:mt-4">
+                        <PasswordField
+                            id="pf-current-pw"
+                            label="Current password"
+                            labelClassName={labelCls}
+                            value={currentPassword}
+                            onChange={(ev) => setCurrentPassword(ev.target.value)}
+                            inputClassName={inputCls}
+                            autoComplete="current-password"
+                            error={fieldErrors.current_password?.[0]}
+                        />
+                        <PasswordField
+                            id="pf-new-pw"
+                            label="New password"
+                            labelClassName={labelCls}
+                            value={newPassword}
+                            onChange={(ev) => setNewPassword(ev.target.value)}
+                            inputClassName={inputCls}
+                            autoComplete="new-password"
+                            error={fieldErrors.password?.[0]}
+                        />
+                        <PasswordField
+                            id="pf-new-pw2"
+                            label="Confirm new password"
+                            labelClassName={labelCls}
+                            value={newPasswordConfirmation}
+                            onChange={(ev) => setNewPasswordConfirmation(ev.target.value)}
+                            inputClassName={inputCls}
+                            autoComplete="new-password"
+                            error={fieldErrors.password_confirmation?.[0]}
+                        />
+                        {newPassword?.trim() ? (
+                            <div>
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                    <RmsButton
+                                        type="button"
+                                        variant="ghost"
+                                        className="!w-auto !px-2.5 !py-1.5 text-[11px] sm:!px-3 sm:!py-2 sm:text-xs"
+                                        onClick={sendPasswordOtp}
+                                        disabled={sendingPasswordOtp}
+                                    >
+                                        {sendingPasswordOtp ? 'Sending OTP…' : passwordOtpSent ? 'Resend Password OTP' : 'Send Password OTP'}
+                                    </RmsButton>
+                                    <p className="text-[11px] text-[#94A3B8]">Required for password update.</p>
+                                </div>
+                                <label className={`${labelCls} mt-2`} htmlFor="pf-password-otp">
+                                    Password OTP
+                                </label>
+                                <input
+                                    id="pf-password-otp"
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    maxLength={6}
+                                    value={passwordOtp}
+                                    onChange={(ev) => setPasswordOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className={inputCls}
+                                    placeholder="6-digit OTP"
+                                    required={Boolean(newPassword?.trim())}
+                                />
+                                {fieldErrors.password_otp?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.password_otp[0]}</p> : null}
+                            </div>
+                        ) : null}
+                    </div>
+                </RmsCard>
+
+                <RmsButton type="submit" variant="neon" className="w-full" disabled={saving}>
+                    {saving ? 'Saving…' : 'Save changes'}
+                </RmsButton>
             </form>
 
             <div className="space-y-1.5">
