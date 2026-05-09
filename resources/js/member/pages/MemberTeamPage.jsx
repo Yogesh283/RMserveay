@@ -960,12 +960,6 @@ export default function MemberTeamPage() {
                                 >
                                     {levelIncomeExpanded ? t('member.ui.hide') : t('member.ui.show')}
                                 </button>
-                                <Link
-                                    to="/member/level-income"
-                                    className="shrink-0 rounded-lg border border-[#8E6BFF]/40 bg-[#6C4CF1]/20 px-2.5 py-1 text-[12px] font-semibold text-white hover:bg-[#6C4CF1]/35"
-                                >
-                                    {t('member.ui.openArrow')}
-                                </Link>
                             </div>
                         </div>
                         {levelIncomeExpanded && lv ? (

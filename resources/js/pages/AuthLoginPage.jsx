@@ -68,11 +68,11 @@ export default function AuthLoginPage() {
         const uid = loginUid.trim();
         if (uid.length < 3) {
             buzzError();
-            setError('Enter your User ID first (at least 3 characters).');
+            setError(t('authLogin.errors.enterUserIdFirst'));
             return;
         }
         if (!window.axios?.post) {
-            setError('Page did not load fully. Refresh and try again.');
+            setError(t('authLogin.errors.pageNotLoaded'));
             return;
         }
         setOtpSending(true);
@@ -87,7 +87,7 @@ export default function AuthLoginPage() {
         } catch (err) {
             buzzError();
             const data = err.response?.data;
-            setError(data?.message ?? err.message ?? 'Could not send OTP.');
+            setError(data?.message ?? err.message ?? t('authLogin.errors.couldNotSendOtp'));
         } finally {
             setOtpSending(false);
         }
@@ -99,18 +99,18 @@ export default function AuthLoginPage() {
         setFieldErrors({});
         if (!window.axios?.post) {
             buzzError();
-            setError('Page did not load fully. Refresh and try again.');
+            setError(t('authLogin.errors.pageNotLoaded'));
             return;
         }
         const uid = loginUid.trim();
         if (uid.length < 3 || !password) {
             buzzError();
-            setError('Enter your User ID and password.');
+            setError(t('authLogin.errors.enterUserPassword'));
             return;
         }
         if (!otpBypass && otp.length !== 6) {
             buzzError();
-            setError('Enter the 6-digit email OTP.');
+            setError(t('authLogin.errors.enterOtp'));
             return;
         }
         buzz(12);
@@ -140,11 +140,11 @@ export default function AuthLoginPage() {
             if (!err.response) {
                 setError(describeAxiosNetworkError(err));
             } else if (status === 419) {
-                setError('Security token mismatch. Hard refresh (Ctrl+F5) and try again.');
+                setError(t('authLogin.errors.securityMismatch'));
             } else if (status === 404) {
-                setError('API not found. Use the same URL as APP_URL in .env, then php artisan config:clear.');
+                setError(t('authLogin.errors.apiNotFound'));
             } else {
-                setError(data?.message ?? err.message ?? 'Could not log in. Try again.');
+                setError(data?.message ?? err.message ?? t('authLogin.errors.couldNotLogin'));
             }
         } finally {
             setLoading(false);
@@ -157,8 +157,8 @@ export default function AuthLoginPage() {
     const inputCls =
         'mt-1 w-full rounded-md border border-white/[0.12] bg-black/30 px-2.5 py-2.5 text-sm leading-tight text-white placeholder:text-zinc-500 focus:border-[#7C3AED]/50 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/35 sm:mt-1.5 sm:rounded-lg sm:px-3 sm:py-3 sm:text-[15px]';
 
-    const pageTitle = loginUserType === 'publisher' ? 'Publisher login' : 'Sign in';
-    const pageEyebrow = loginUserType === 'publisher' ? 'Publisher account' : 'Member';
+    const pageTitle = loginUserType === 'publisher' ? t('authLogin.titlePublisher') : t('authLogin.titleMember');
+    const pageEyebrow = loginUserType === 'publisher' ? t('authLogin.eyebrowPublisher') : t('authLogin.eyebrowMember');
 
     const returnState = location.state?.from ? { from: location.state.from } : undefined;
 
@@ -173,12 +173,12 @@ export default function AuthLoginPage() {
             <p className="text-[10px] leading-tight text-slate-500 sm:text-[11px] sm:leading-snug">
                 {otpBypass ? (
                     <>
-                        <span className="text-amber-200/90">OTP bypass is on</span> (dev only). Password only.
+                        <span className="text-amber-200/90">{t('authLogin.otpBypassPrefix')}</span> {t('authLogin.otpBypassSuffix')}
                     </>
                 ) : (
                     <>
-                        Use your <span className="text-slate-400">User ID</span>, password, and email{' '}
-                        <span className="italic text-slate-500">OTP</span>.
+                        {t('authLogin.hintUse')} <span className="text-slate-400">{t('authLogin.userId')}</span>, {t('authLogin.hintPassword')}{' '}
+                        <span className="italic text-slate-500">{t('authLogin.hintOtp')}</span>.
                     </>
                 )}
             </p>
@@ -190,7 +190,7 @@ export default function AuthLoginPage() {
 
                 <div>
                     <label htmlFor="login-user-id" className={fieldLabelCls}>
-                        User ID
+                        {t('authLogin.userId')}
                     </label>
                     <input
                         id="login-user-id"
@@ -202,14 +202,14 @@ export default function AuthLoginPage() {
                         onChange={(ev) => setLoginUid(ev.target.value.replace(/\s/g, '').slice(0, 24))}
                         required
                         className={inputCls}
-                        placeholder="The ID you chose at registration"
+                        placeholder={t('authLogin.userIdPlaceholder')}
                     />
                     {fieldErrors.login_uid?.[0] && <p className="mt-0.5 text-xs text-red-400">{fieldErrors.login_uid[0]}</p>}
                 </div>
 
                 <PasswordField
                     id="login-password"
-                    label="Password"
+                    label={t('authLogin.password')}
                     labelClassName={fieldLabelCls}
                     value={password}
                     onChange={(ev) => setPassword(ev.target.value)}
@@ -231,8 +231,8 @@ export default function AuthLoginPage() {
                 {!otpBypass && (
                     <div>
                         <label htmlFor="login-otp" className={fieldLabelCls}>
-                            Email OTP{' '}
-                            <span className="hidden font-normal normal-case text-white/80 sm:inline">(required)</span>
+                            {t('authLogin.emailOtp')}{' '}
+                            <span className="hidden font-normal normal-case text-white/80 sm:inline">({t('authLogin.required')})</span>
                         </label>
                         <div className="mt-0.5 flex flex-col gap-1.5 sm:mt-1 sm:flex-row sm:gap-2">
                             <input
@@ -243,7 +243,7 @@ export default function AuthLoginPage() {
                                 value={otp}
                                 onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, '').slice(0, 6))}
                                 className={`${inputCls} flex-1 sm:mt-0`}
-                                placeholder="6-digit code"
+                                placeholder={t('authLogin.codePlaceholder')}
                             />
                             <button
                                 type="button"
@@ -251,7 +251,7 @@ export default function AuthLoginPage() {
                                 disabled={otpSending}
                                 className="shrink-0 rounded-md border border-[#7C3AED]/40 bg-[rgba(124,58,237,0.15)] px-2.5 py-2 text-[10px] font-semibold text-[#C4B5FD] hover:bg-[rgba(124,58,237,0.25)] disabled:opacity-50 sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-xs"
                             >
-                                {otpSending ? 'Sending…' : 'Send OTP'}
+                                {otpSending ? t('authLogin.sending') : t('authLogin.sendOtp')}
                             </button>
                         </div>
                         {fieldErrors.otp?.[0] && <p className="mt-0.5 text-xs text-red-400">{fieldErrors.otp[0]}</p>}
@@ -272,7 +272,7 @@ export default function AuthLoginPage() {
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/25 bg-black/40 text-[#7C3AED] focus:ring-[#7C3AED]/50 sm:mt-0"
                     />
                     <span className="min-w-0">
-                        <span className="block text-xs font-semibold text-white">Log in as Publisher</span>
+                        <span className="block text-xs font-semibold text-white">{t('authLogin.loginAsPublisher')}</span>
                     </span>
                 </label>
 
@@ -283,7 +283,7 @@ export default function AuthLoginPage() {
                         onChange={(ev) => setRemember(ev.target.checked)}
                         className="rounded border-white/20 bg-black/30 text-[#7C3AED] focus:ring-[#7C3AED]/50"
                     />
-                    Remember me
+                    {t('authLogin.rememberMe')}
                 </label>
 
                 <button
@@ -291,18 +291,18 @@ export default function AuthLoginPage() {
                     disabled={loading}
                     className="w-full rounded-md bg-gradient-to-r from-[#7C3AED] to-[#3B82F6] py-2 text-[13px] font-semibold text-white shadow-md shadow-purple-950/40 hover:brightness-110 disabled:opacity-60 sm:rounded-lg sm:py-2.5 sm:text-sm"
                 >
-                    {loading ? 'Signing in…' : 'Log in'}
+                    {loading ? t('authLogin.signingIn') : t('authLogin.logIn')}
                 </button>
             </form>
 
             <p className="mt-4 text-center text-sm leading-relaxed text-zinc-500 sm:mt-5 sm:text-base">
-                New?{' '}
+                {t('authLogin.newPrompt')}{' '}
                 <Link
                     to={homeRegisterLink}
                     state={returnState}
                     className="font-semibold text-[#93C5FD] underline decoration-[#93C5FD]/50 underline-offset-2 hover:text-white hover:decoration-white/50"
                 >
-                    Register
+                    {t('authLogin.register')}
                 </Link>
             </p>
         </PageShell>

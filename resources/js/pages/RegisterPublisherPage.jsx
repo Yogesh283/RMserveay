@@ -1,27 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import RegisterCard from '../components/RegisterCard';
 import AppLogo from '../components/AppLogo';
 import { prepareSanctum } from '../lib/auth';
-
-const features = [
-    {
-        title: 'Launch surveys in minutes',
-        text: 'Build, preview, and ship targeted surveys with a step-by-step studio.',
-    },
-    {
-        title: 'Reach the right audience',
-        text: 'Filter respondents by tier, geography, and behaviour to get the cleanest data.',
-    },
-    {
-        title: 'Real-time analytics',
-        text: 'Watch responses, completion rate, and spend update live on your dashboard.',
-    },
-    {
-        title: 'Secure crypto-ready payouts',
-        text: 'Top-up via NowPayments, withdraw to USDT BEP-20, with full audit trail.',
-    },
-];
 
 function FeatureIcon({ idx }) {
     const props = { className: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.8 };
@@ -54,7 +36,9 @@ function FeatureIcon({ idx }) {
 }
 
 export default function RegisterPublisherPage() {
+    const { t } = useTranslation();
     const [otpBypass, setOtpBypass] = useState(false);
+    const features = t('register.publisher.features', { returnObjects: true });
 
     useEffect(() => {
         let cancelled = false;
@@ -98,13 +82,13 @@ export default function RegisterPublisherPage() {
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
-                        Back to home
+                        {t('register.backHome')}
                     </Link>
                     <Link
                         to="/register/panelist"
                         className="inline-flex items-center gap-2 rounded-full border border-[#A78BFA]/35 bg-[rgba(124,58,237,0.12)] px-3 py-1.5 text-xs font-semibold text-[#C4B5FD] transition hover:border-[#A78BFA]/55 hover:bg-[rgba(124,58,237,0.22)] sm:text-sm"
                     >
-                        Switch to Panelist
+                        {t('register.switchToPanelist')}
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
@@ -121,8 +105,8 @@ export default function RegisterPublisherPage() {
                             <div className="rounded-[22px] border border-amber-300/35 bg-[#0B0F1A]/90 p-4 shadow-[0_18px_60px_rgba(2,6,23,0.6)] sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200 sm:text-[11px]">Publisher onboarding</p>
-                                        <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">Open a Publisher account</h2>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200 sm:text-[11px]">{t('register.publisher.onboarding')}</p>
+                                        <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">{t('register.publisher.openAccount')}</h2>
                                     </div>
                                     <span className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-[#F59E0B]/35 to-[#F97316]/20 text-amber-100 sm:inline-flex">
                                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
@@ -131,7 +115,7 @@ export default function RegisterPublisherPage() {
                                     </span>
                                 </div>
                                 <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                                    Publishers can create surveys, target respondents, and run analytics. Referral codes don’t apply for publisher accounts.
+                                    {t('register.publisher.onboardingDesc')}
                                 </p>
                                 <div className="mt-4 sm:mt-6">
                                     <RegisterCard
@@ -148,17 +132,17 @@ export default function RegisterPublisherPage() {
                     <div className="order-2 text-center lg:order-2 lg:text-left">
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-amber-300/35 bg-[rgba(245,158,11,0.16)] px-4 py-2 ring-1 ring-amber-300/20 lg:mx-0">
                             <AppLogo alt="" className="h-9 w-9 rounded-xl" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-100 sm:text-[11px]">Publisher</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-100 sm:text-[11px]">{t('register.publisher.badge')}</span>
                         </div>
 
                         <h1 className="mt-5 text-[1.9rem] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[2.6rem] md:text-[3.2rem] md:leading-[1.04]">
-                            Publish surveys.{' '}
+                            {t('register.publisher.heroLine')}{' '}
                             <span className="bg-gradient-to-r from-[#FDE68A] via-[#FBBF24] to-[#F87171] bg-clip-text text-transparent">
-                                Find your audience.
+                                {t('register.publisher.heroGradient')}
                             </span>
                         </h1>
                         <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base lg:mx-0">
-                            Run targeted surveys, top-up your wallet, and pay respondents only for verified responses — all from a single, transparent dashboard.
+                            {t('register.publisher.heroSub')}
                         </p>
 
                         <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -179,12 +163,12 @@ export default function RegisterPublisherPage() {
                         </div>
 
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-400 sm:text-xs lg:justify-start">
-                            <span>Already publishing?</span>
+                            <span>{t('register.publisher.alreadyPublishing')}</span>
                             <Link
                                 to="/login?user_type=publisher"
                                 className="rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1.5 font-semibold text-amber-100 hover:border-amber-300/55 hover:bg-amber-500/20"
                             >
-                                Log in to dashboard
+                                {t('register.publisher.loginDashboard')}
                             </Link>
                         </div>
                     </div>

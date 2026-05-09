@@ -9,24 +9,47 @@ function sortQuestions(questions) {
 }
 
 function normalizeQuestionType(type) {
-    if (type === 'single_choice' || type === 'dropdown') return 'single_choice';
-    if (type === 'multi_choice' || type === 'multiple_choice') return 'multi_choice';
-    if (type === 'textarea') return 'textarea';
-    if (type === 'email') return 'email';
-    if (type === 'number') return 'number';
-    return type;
+    const t = typeof type === 'string' ? type.toLowerCase().trim() : '';
+    if (t === 'single_choice' || t === 'single' || t === 'radio' || t === 'dropdown' || t === 'select') return 'single_choice';
+    if (t === 'multi_choice' || t === 'multiple_choice' || t === 'multi' || t === 'checkbox' || t === 'checkboxes') return 'multi_choice';
+    if (t === 'textarea' || t === 'long_text' || t === 'paragraph') return 'textarea';
+    if (t === 'email') return 'email';
+    if (t === 'number' || t === 'numeric') return 'number';
+    if (t === 'rating' || t === 'scale') return 'rating';
+    if (t === 'yes_no' || t === 'boolean') return 'yes_no';
+    if (t === 'text' || t === 'short_text' || t === 'string') return 'text';
+    return t;
 }
 
 function normalizeOptions(options) {
     if (Array.isArray(options)) return options;
+    if (options && typeof options === 'object') return Object.values(options);
     if (typeof options !== 'string' || options.trim() === '') return [];
 
     try {
         const parsed = JSON.parse(options);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed && typeof parsed === 'object') return Object.values(parsed);
         return [];
+    } catch {
+        return options
+            .split(/\r?\n|,/)
+            .map((s) => s.trim())
+            .filter(Boolean);
     }
+}
+
+/**
+ * Effective render type — if a text/email/number question accidentally has options
+ * (e.g. admin pasted choices but kept default type), render it as a single-choice
+ * picker instead of falling back to the "Your answer…" textbox.
+ */
+function effectiveQuestionType(rawType, options) {
+    const baseType = normalizeQuestionType(rawType);
+    const hasOptions = Array.isArray(options) && options.length > 0;
+    if (!hasOptions) return baseType;
+    if (baseType === 'single_choice' || baseType === 'multi_choice') return baseType;
+    return 'single_choice';
 }
 
 function optionLabel(option) {
@@ -76,13 +99,13 @@ export default function MemberSurveySessionPage() {
     const total = questions.length;
     const q = questions[step];
     const progress = useMemo(() => (total > 0 ? ((step + 1) / total) * 100 : 0), [step, total]);
-    const qType = normalizeQuestionType(q?.type);
     const qOptions = normalizeOptions(q?.options);
+    const qType = effectiveQuestionType(q?.type, qOptions);
 
     const canNext = useMemo(() => {
         if (!q) return false;
         const v = answers[q.key];
-        const type = normalizeQuestionType(q.type);
+        const type = effectiveQuestionType(q.type, qOptions);
         if (!q.required) return true;
         if (type === 'text' || type === 'textarea' || type === 'email') return String(v ?? '').trim().length > 0;
         if (type === 'number') return v !== '' && v != null && !Number.isNaN(Number(v));
@@ -90,7 +113,7 @@ export default function MemberSurveySessionPage() {
         if (type === 'yes_no') return v === true || v === false;
         if (type === 'multi_choice') return Array.isArray(v) && v.length > 0;
         return v != null && v !== '';
-    }, [q, answers]);
+    }, [q, answers, qOptions]);
 
     function setAnswer(val) {
         if (!q) return;

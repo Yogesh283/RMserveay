@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/member/programme/sub-panel-matching', [MemberProgrammeController::class, 'subPanelMatching']);
     Route::get('/member/programme/super-sub-panel-matching', [MemberProgrammeController::class, 'superSubPanelMatching']);
     Route::get('/member/programme/level-income', [MemberProgrammeController::class, 'levelIncome']);
+    Route::get('/member/programme/level-income/transactions', [MemberProgrammeController::class, 'levelIncomeTransactions']);
     Route::get('/member/programme/binary-closings', [MemberBinaryClosingController::class, 'index']);
     Route::get('/member/support-tickets', [MemberSupportTicketController::class, 'index']);
     Route::post('/member/support-tickets', [MemberSupportTicketController::class, 'store'])->middleware('throttle:20,1');

@@ -19,10 +19,19 @@ class MemberDashboardController extends Controller
     private const PROGRAMME_CREDIT_TYPES = [
         WalletTransaction::TYPE_SURVEY_CREDIT,
         WalletTransaction::TYPE_DIRECT_COMMISSION,
+        WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING,
         WalletTransaction::TYPE_PANEL_MATCHING,
         WalletTransaction::TYPE_SUB_PANEL_MATCHING,
         WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
         WalletTransaction::TYPE_SURVEY_LEVEL_INCOME,
+    ];
+
+    /** All matching wallet types — fed by `binary:daily-closing` (active/panel/super) + legacy sub_panel. */
+    private const MATCHING_CREDIT_TYPES = [
+        WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING,
+        WalletTransaction::TYPE_PANEL_MATCHING,
+        WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+        WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
     ];
 
     public function summary(Request $request): JsonResponse
@@ -56,11 +65,7 @@ class MemberDashboardController extends Controller
 
         $direct = $positiveTotal([WalletTransaction::TYPE_DIRECT_COMMISSION]);
         $level = $positiveTotal([WalletTransaction::TYPE_SURVEY_LEVEL_INCOME]);
-        $matching = $positiveTotal([
-            WalletTransaction::TYPE_PANEL_MATCHING,
-            WalletTransaction::TYPE_SUB_PANEL_MATCHING,
-            WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
-        ]);
+        $matching = $positiveTotal(self::MATCHING_CREDIT_TYPES);
         $surveyCredits = $positiveTotal([WalletTransaction::TYPE_SURVEY_CREDIT]);
 
         $totalProgramme = '0';
@@ -109,11 +114,7 @@ class MemberDashboardController extends Controller
 
         $todayDirect = $todaySum([WalletTransaction::TYPE_DIRECT_COMMISSION]);
         $todayLevel = $todaySum([WalletTransaction::TYPE_SURVEY_LEVEL_INCOME]);
-        $todayMatching = $todaySum([
-            WalletTransaction::TYPE_PANEL_MATCHING,
-            WalletTransaction::TYPE_SUB_PANEL_MATCHING,
-            WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
-        ]);
+        $todayMatching = $todaySum(self::MATCHING_CREDIT_TYPES);
         $todaySurvey = $todaySum([WalletTransaction::TYPE_SURVEY_CREDIT]);
         $todayTotal = bcadd(bcadd(bcadd($todayDirect, $todayLevel, 2), $todayMatching, 2), $todaySurvey, 2);
 

@@ -16,9 +16,9 @@ return [
 
     /*
     | Days after survey completion before respondent wallet credit runs.
-    | Default = 0 (instant credit on submit). Set RESPONDENT_SURVEY_PAYOUT_DELAY_DAYS=7
-    | in .env if you ever want to switch back to a delayed payout window.
+    | Default = 7 (delayed payout window). Set RESPONDENT_SURVEY_PAYOUT_DELAY_DAYS=0
+    | in .env to switch back to instant credit on submit.
     */
-    'respondent_payout_delay_days' => (int) env('RESPONDENT_SURVEY_PAYOUT_DELAY_DAYS', 0),
+    'respondent_payout_delay_days' => (int) env('RESPONDENT_SURVEY_PAYOUT_DELAY_DAYS', 7),
 
 ];

@@ -14,11 +14,9 @@ const INCOME_CARDS = [
     { to: '/member/super-sub-panels', cardKey: 'superSubPanels', active: true },
     { to: '/member/team', cardKey: 'team', active: true },
     { to: '/member/transactions', cardKey: 'transactions', active: true },
-    { to: '/member/direct-income', cardKey: 'directIncome', active: true },
     { to: '/member/panel-matching', cardKey: 'panelMatching', active: true },
     { to: '/member/sub-panel-matching', cardKey: 'subPanelMatching', active: true },
     { to: '/member/super-sub-panel-matching', cardKey: 'superSubPanelMatching', active: true },
-    { to: '/member/level-income', cardKey: 'levelIncome', active: true },
     { to: '/member/wallet', cardKey: 'wallet', active: true },
     { to: '/member/terms', cardKey: 'terms', active: true },
 ];

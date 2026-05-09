@@ -30,12 +30,10 @@ import MemberWalletHubPage from './member/pages/MemberWalletHubPage';
 import MemberProfilePage from './member/pages/MemberProfilePage';
 import MemberActivePanelsPage from './member/pages/MemberActivePanelsPage';
 import MemberSubPanelsPage from './member/pages/MemberSubPanelsPage';
-import MemberDirectIncomePage from './member/pages/MemberDirectIncomePage';
 import MemberPanelMatchingPage from './member/pages/MemberPanelMatchingPage';
 import MemberSubPanelMatchingPage from './member/pages/MemberSubPanelMatchingPage';
 import MemberSuperSubPanelPage from './member/pages/MemberSuperSubPanelPage';
 import MemberSuperSubPanelsPage from './member/pages/MemberSuperSubPanelsPage';
-import MemberLevelIncomePage from './member/pages/MemberLevelIncomePage';
 import MemberWalletInternalTransferPage from './member/pages/MemberWalletInternalTransferPage';
 import MemberWalletDepositPage from './member/pages/MemberWalletDepositPage';
 import MemberWalletWithdrawPage from './member/pages/MemberWalletWithdrawPage';
@@ -64,11 +62,11 @@ export default function Application() {
                         <Route path="active-panels" element={<MemberActivePanelsPage />} />
                         <Route path="sub-panels" element={<MemberSubPanelsPage />} />
                         <Route path="super-sub-panels" element={<MemberSuperSubPanelsPage />} />
-                        <Route path="direct-income" element={<MemberDirectIncomePage />} />
+                        <Route path="direct-income" element={<Navigate to="/member" replace />} />
                         <Route path="panel-matching" element={<MemberPanelMatchingPage />} />
                         <Route path="sub-panel-matching" element={<MemberSubPanelMatchingPage />} />
                         <Route path="super-sub-panel-matching" element={<MemberSuperSubPanelPage />} />
-                        <Route path="level-income" element={<MemberLevelIncomePage />} />
+                        <Route path="level-income" element={<Navigate to="/member" replace />} />
                         <Route path="deposit-withdrawal" element={<Navigate to="/member/wallet" replace />} />
                         <Route path="wallet/internal" element={<MemberWalletInternalTransferPage />} />
                         <Route path="wallet/deposit" element={<MemberWalletDepositPage />} />

@@ -16,10 +16,25 @@ function fmtUsd(s) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 }
 
+function fmtDateTime(iso) {
+    if (!iso) return '—';
+    try {
+        const d = new Date(iso);
+        const datePart = d.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return `${datePart} ${timePart}`;
+    } catch {
+        return '—';
+    }
+}
+
 export default function MemberLevelIncomePage() {
     const { dark } = useOutletContext();
     const [data, setData] = useState(null);
     const [loadError, setLoadError] = useState(null);
+    const [txData, setTxData] = useState(null);
+    const [txError, setTxError] = useState(null);
+    const [txLoading, setTxLoading] = useState(true);
 
     const load = useCallback(async () => {
         setLoadError(null);
@@ -31,9 +46,24 @@ export default function MemberLevelIncomePage() {
         }
     }, []);
 
+    const loadTransactions = useCallback(async () => {
+        setTxError(null);
+        setTxLoading(true);
+        try {
+            const { data: json } = await window.axios.get('api/member/programme/level-income/transactions?limit=100');
+            setTxData(json);
+        } catch (e) {
+            setTxError(e.response?.data?.message ?? e.message ?? 'Failed to load transactions');
+            setTxData(null);
+        } finally {
+            setTxLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         load();
-    }, [load]);
+        loadTransactions();
+    }, [load, loadTransactions]);
 
     const maxBar = useMemo(() => {
         if (!data?.levels?.length) return 1;
@@ -116,6 +146,113 @@ export default function MemberLevelIncomePage() {
                     </div>
                 </section>
             )}
+
+            {/* Recent level income transactions (live wallet credits) */}
+            <section className={card}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <MemberSubheading dark={dark}>Recent level income transactions</MemberSubheading>
+                    <div className="flex items-center gap-2">
+                        {txData ? (
+                            <span className={`text-sm font-medium tabular-nums ${dark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                Lifetime: {fmtUsd(txData.lifetime_total_usd)}
+                            </span>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={loadTransactions}
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                                dark
+                                    ? 'border-white/10 bg-white/[0.04] text-white hover:border-emerald-400/40'
+                                    : 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-400'
+                            }`}
+                            disabled={txLoading}
+                        >
+                            {txLoading ? 'Loading…' : 'Refresh'}
+                        </button>
+                    </div>
+                </div>
+                <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Aapke 10-level upline chain se mile har survey credit ka 1% commission. Last 100 entries dikh rahi hain.
+                </p>
+
+                {txError ? (
+                    <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${dark ? 'border-red-400/40 bg-red-950/40 text-red-200' : 'border-red-200 bg-red-50 text-red-800'}`}>
+                        {txError}
+                    </div>
+                ) : null}
+
+                {!txError && txData && txData.transactions.length === 0 ? (
+                    <div className={`mt-4 rounded-lg border px-4 py-6 text-center text-sm ${dark ? 'border-white/10 bg-white/[0.03] text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>
+                        Abhi tak koi level income credit nahi mila. Jab aapki team survey complete karegi, yahan rows dikhne lagengi.
+                    </div>
+                ) : null}
+
+                {!txError && txData && txData.transactions.length > 0 ? (
+                    <div className="mt-4 overflow-x-auto rounded-xl border border-white/5">
+                        <table className="w-full min-w-[640px] border-collapse text-sm">
+                            <thead>
+                                <tr className={dark ? 'bg-white/[0.04] text-emerald-300' : 'bg-emerald-50 text-emerald-700'}>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide">Date</th>
+                                    <th className="px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wide">Level</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide">From</th>
+                                    <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide">Base</th>
+                                    <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide">Rate</th>
+                                    <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide">Earned</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {txData.transactions.map((row) => (
+                                    <tr
+                                        key={row.id}
+                                        className={`border-t ${dark ? 'border-white/5 hover:bg-white/[0.03]' : 'border-gray-100 hover:bg-emerald-50/40'}`}
+                                    >
+                                        <td className={`px-3 py-2 tabular-nums text-[12px] ${dark ? 'text-gray-300' : 'text-gray-800'}`}>
+                                            {fmtDateTime(row.created_at)}
+                                        </td>
+                                        <td className="px-3 py-2 text-center">
+                                            <span
+                                                className={`inline-flex h-7 min-w-[2.25rem] items-center justify-center rounded-md px-1.5 text-xs font-bold ${
+                                                    dark
+                                                        ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30'
+                                                        : 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                                                }`}
+                                            >
+                                                L{row.level}
+                                            </span>
+                                        </td>
+                                        <td className={`px-3 py-2 ${dark ? 'text-gray-200' : 'text-gray-800'}`}>
+                                            <div className="flex flex-col">
+                                                <span className="text-[12px] font-semibold">Member</span>
+                                                {row.from_user_id ? (
+                                                    <span className={`text-[10px] ${dark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                                        #{row.from_user_id}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                        <td className={`px-3 py-2 text-right tabular-nums text-[12px] ${dark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            {fmtUsd(row.base_survey_usd)}
+                                        </td>
+                                        <td className={`px-3 py-2 text-right tabular-nums text-[12px] ${dark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            {row.rate_percent}%
+                                        </td>
+                                        <td className="px-3 py-2 text-right">
+                                            <span className={`tabular-nums text-sm font-bold ${dark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                                                {fmtUsd(row.amount_usd)}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {txData.total_count > txData.shown_count ? (
+                            <div className={`px-3 py-2 text-right text-[11px] ${dark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Showing latest {txData.shown_count} of {txData.total_count} entries
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+            </section>
 
             <section className={card}>
                 <MemberSubheading dark={dark}>Income structure</MemberSubheading>

@@ -1,24 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import RegisterCard from '../components/RegisterCard';
 import AppLogo from '../components/AppLogo';
 import { prepareSanctum } from '../lib/auth';
 import { readReferralParams } from '../lib/registerReferral';
-
-const benefits = [
-    {
-        title: 'Earn on every survey',
-        text: 'Get paid for each completed survey directly into your in-app wallet — withdraw when ready.',
-    },
-    {
-        title: '10% direct referral income',
-        text: 'Invite friends and earn a flat 10% on their qualifying activity, lifetime.',
-    },
-    {
-        title: 'Binary team rewards',
-        text: 'Build left + right legs and unlock matching, level, and panel income with daily payouts.',
-    },
-];
 
 function BenefitIcon({ idx }) {
     if (idx === 0) {
@@ -43,6 +29,7 @@ function BenefitIcon({ idx }) {
 }
 
 export default function RegisterPanelistPage() {
+    const { t, i18n } = useTranslation();
     const [searchParams] = useSearchParams();
     const [otpBypass, setOtpBypass] = useState(false);
 
@@ -65,6 +52,7 @@ export default function RegisterPanelistPage() {
     }, []);
 
     const referral = useMemo(() => readReferralParams(searchParams), [searchParams]);
+    const benefits = useMemo(() => t('register.panelist.benefits', { returnObjects: true }), [t, i18n.resolvedLanguage]);
 
     return (
         <section className="relative isolate overflow-hidden">
@@ -90,13 +78,13 @@ export default function RegisterPanelistPage() {
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
-                        Back to home
+                        {t('register.backHome')}
                     </Link>
                     <Link
                         to="/register/publisher"
                         className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:border-amber-300/55 hover:bg-amber-500/20 sm:text-sm"
                     >
-                        Switch to Publisher
+                        {t('register.switchToPublisher')}
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
@@ -108,18 +96,18 @@ export default function RegisterPanelistPage() {
                         <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-3xl border border-[#A78BFA]/30 bg-[rgba(124,58,237,0.18)] px-4 py-2 ring-1 ring-[#A78BFA]/20 lg:mx-0">
                             <AppLogo alt="" className="h-9 w-9 rounded-xl" />
                             <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#C4B5FD] sm:text-[11px]">
-                                Panelist user
+                                {t('register.panelist.eyebrow')}
                             </span>
                         </div>
 
                         <h1 className="mt-5 text-[1.9rem] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[2.6rem] md:text-[3.2rem] md:leading-[1.04]">
-                            Become a{' '}
+                            {t('register.panelist.becomePrefix')}{' '}
                             <span className="bg-gradient-to-r from-[#E9D5FF] via-[#60A5FA] to-[#34D399] bg-clip-text text-transparent">
-                                User Panelist
+                                {t('register.panelist.userPanelist')}
                             </span>
                         </h1>
                         <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base lg:mx-0">
-                            Earn rewards for every completed survey, build your binary team, and unlock multiple income streams. Activation is fast — you can start the same day.
+                            {t('register.panelist.heroSub')}
                         </p>
 
                         <div className="mt-6 grid gap-3 sm:grid-cols-1">
@@ -140,12 +128,12 @@ export default function RegisterPanelistPage() {
                         </div>
 
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-400 sm:text-xs lg:justify-start">
-                            <span>Already a member?</span>
+                            <span>{t('register.panelist.alreadyMember')}</span>
                             <Link
                                 to="/login?user_type=normal"
                                 className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 font-semibold text-[#C4B5FD] hover:border-[#A78BFA]/40 hover:text-white"
                             >
-                                Log in
+                                {t('register.login')}
                             </Link>
                         </div>
                     </div>
@@ -170,16 +158,18 @@ export default function RegisterPanelistPage() {
                             <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
                                 {referral.ref ? (
                                     <>
-                                        Joining via invite from <span className="font-mono font-semibold text-[#FDE68A]">{referral.ref.toUpperCase()}</span>
+                                        {t('register.panelist.inviteFrom')}{' '}
+                                        <span className="font-mono font-semibold text-[#FDE68A]">{referral.ref.toUpperCase()}</span>
                                         {referral.side ? (
                                             <>
-                                                {' '}— placement on{' '}
-                                                <span className="font-semibold text-[#FDE68A]">{referral.side === 'left' ? 'Left leg' : 'Right leg'}</span>.
+                                                {' '}
+                                                {t('register.panelist.invitePlacementOn')}{' '}
+                                                <span className="font-semibold text-[#FDE68A]">{referral.side === 'left' ? t('register.leftLeg') : t('register.rightLeg')}</span>.
                                             </>
                                         ) : null}
                                     </>
                                 ) : (
-                                    'We’ll set you up as a Panelist user. You can add a sponsor referral code below if you have one.'
+                                    t('register.panelist.noInviteInfo')
                                 )}
                             </p>
                             <div className="mt-4 sm:mt-6">

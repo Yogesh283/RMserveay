@@ -124,13 +124,13 @@ export default function MemberDashboardPage() {
             {
                 label: t('member.dashboard.earnDirect'),
                 value: fmtUsd(e.direct_income),
-                to: '/member/direct-income',
+                to: '/member/transactions',
                 hint: t('member.dashboard.earnDirectHint'),
             },
             {
                 label: t('member.dashboard.earnLevel'),
                 value: fmtUsd(e.level_income),
-                to: '/member/level-income',
+                to: '/member/transactions',
                 hint: t('member.dashboard.earnLevelHint'),
             },
             {
@@ -143,6 +143,17 @@ export default function MemberDashboardPage() {
     }, [summary, e, t, fmtUsd, i18n.resolvedLanguage]);
 
     function txLabel(type) {
+        const labelMap = {
+            active_panel_matching: 'Active Panel Matching',
+            panel_matching: 'Sub Panel Matching',
+            sub_panel_matching: 'Sub Panel Matching',
+            super_sub_panel_matching: 'Super Panel Matching',
+            sub_panel_fee: 'Sub Panel Fee',
+            super_sub_panel_fee: 'Super Panel Fee',
+            active_panel_fee: 'Active Panel Fee',
+        };
+        if (labelMap[type]) return labelMap[type];
+
         const key = `member.dashboard.tx.${type}`;
         return t(key, { defaultValue: String(type).replace(/_/g, ' ') });
     }
@@ -505,7 +516,7 @@ export default function MemberDashboardPage() {
             <div>
                 <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#A0AEC0]">Income Totals</p>
                 <div className="grid grid-cols-3 gap-2">
-                    <Link to="/member/direct-income" className="block">
+                    <Link to="/member/transactions" className="block">
                         <RmsCard
                             variant="inset"
                             className="!p-3 !rounded-[20px] !border-[#7C3AED]/35 !bg-gradient-to-br !from-[#1a1030]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(124,58,237,0.22)] transition active:scale-[0.99]"
@@ -525,7 +536,7 @@ export default function MemberDashboardPage() {
                             <p className="mt-0.5 text-[9px] text-slate-400">Lifetime total</p>
                         </RmsCard>
                     </Link>
-                    <Link to="/member/level-income" className="block">
+                    <Link to="/member/transactions" className="block">
                         <RmsCard
                             variant="inset"
                             className="!p-3 !rounded-[20px] !border-cyan-400/35 !bg-gradient-to-br !from-[#062131]/95 !to-[#0f162b]/95 shadow-[0_0_22px_rgba(34,211,238,0.18)] transition active:scale-[0.99]"
@@ -556,10 +567,10 @@ export default function MemberDashboardPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 8h8M8 12h8M8 16h5" />
                                     </svg>
                                 </span>
-                                <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-200">Sub+Super</p>
+                                <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-200">Matching</p>
                             </div>
                             <p className="mt-2 text-base font-bold tabular-nums text-white sm:text-lg">{fmtUsd(e?.matching_income ?? 0)}</p>
-                            <p className="mt-0.5 text-[9px] text-slate-400">Sub + super matching</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">Active + sub + super matching</p>
                         </RmsCard>
                     </Link>
                 </div>

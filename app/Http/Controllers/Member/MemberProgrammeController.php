@@ -31,6 +31,69 @@ class MemberProgrammeController extends Controller
         return response()->json($this->surveyLevelIncome->status($request->user()));
     }
 
+    /**
+     * Recent SURVEY_LEVEL_INCOME wallet transactions for the logged-in member,
+     * with sender (downline) name + survey reference for each row.
+     */
+    public function levelIncomeTransactions(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $limit = max(1, min(200, (int) $request->query('limit', 50)));
+
+        $rows = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', WalletTransaction::TYPE_SURVEY_LEVEL_INCOME)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get(['id', 'amount', 'balance_after', 'meta', 'created_at']);
+
+        $fromIds = $rows->pluck('meta.from_user_id')->filter()->unique()->values()->all();
+        $names = [];
+        if ($fromIds !== []) {
+            $names = \App\Models\User::query()
+                ->whereIn('id', $fromIds)
+                ->pluck('name', 'id')
+                ->all();
+        }
+
+        $items = $rows->map(function (WalletTransaction $t) use ($names): array {
+            $meta = $t->meta ?? [];
+            $fromUserId = $meta['from_user_id'] ?? null;
+
+            return [
+                'id' => $t->id,
+                'amount_usd' => (string) $t->amount,
+                'balance_after_usd' => (string) $t->balance_after,
+                'level' => (int) ($meta['level'] ?? 0),
+                'rate' => (string) ($meta['rate'] ?? '0'),
+                'rate_percent' => bcmul((string) ($meta['rate'] ?? '0'), '100', 2),
+                'base_survey_usd' => (string) ($meta['base_survey_usd'] ?? '0'),
+                'from_user_id' => $fromUserId,
+                'from_user_name' => $fromUserId !== null ? ($names[$fromUserId] ?? null) : null,
+                'trigger_survey_tx_id' => $meta['trigger_survey_tx_id'] ?? null,
+                'created_at' => $t->created_at?->toIso8601String(),
+            ];
+        })->values();
+
+        $totalCount = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', WalletTransaction::TYPE_SURVEY_LEVEL_INCOME)
+            ->count();
+
+        $sumAmount = (string) WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', WalletTransaction::TYPE_SURVEY_LEVEL_INCOME)
+            ->sum('amount');
+
+        return response()->json([
+            'transactions' => $items,
+            'total_count' => $totalCount,
+            'lifetime_total_usd' => bcadd($sumAmount, '0', 2),
+            'shown_count' => $items->count(),
+            'limit' => $limit,
+        ]);
+    }
+
     public function panelMatching(Request $request): JsonResponse
     {
         return response()->json($this->panelMatching->status($request->user()));

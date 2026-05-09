@@ -112,6 +112,138 @@
         "publisherDashboard": "Publisher dashboard",
         "memberIncomePanel": "Member income panel"
     },
+    "authLogin": {
+        "titlePublisher": "Publisher login",
+        "titleMember": "Sign in",
+        "eyebrowPublisher": "Publisher account",
+        "eyebrowMember": "Member",
+        "otpBypassPrefix": "OTP bypass is on",
+        "otpBypassSuffix": "(dev only). Password only.",
+        "hintUse": "Use your",
+        "hintPassword": "password, and email",
+        "hintOtp": "OTP",
+        "userId": "User ID",
+        "userIdPlaceholder": "The ID you chose at registration",
+        "password": "Password",
+        "emailOtp": "Email OTP",
+        "required": "required",
+        "codePlaceholder": "6-digit code",
+        "sending": "Sending…",
+        "sendOtp": "Send OTP",
+        "loginAsPublisher": "Log in as Publisher",
+        "rememberMe": "Remember me",
+        "signingIn": "Signing in…",
+        "logIn": "Log in",
+        "newPrompt": "New?",
+        "register": "Register",
+        "errors": {
+            "enterUserIdFirst": "Enter your User ID first (at least 3 characters).",
+            "pageNotLoaded": "Page did not load fully. Refresh and try again.",
+            "couldNotSendOtp": "Could not send OTP.",
+            "enterUserPassword": "Enter your User ID and password.",
+            "enterOtp": "Enter the 6-digit email OTP.",
+            "securityMismatch": "Security token mismatch. Hard refresh (Ctrl+F5) and try again.",
+            "apiNotFound": "API not found. Use the same URL as APP_URL in .env, then php artisan config:clear.",
+            "couldNotLogin": "Could not log in. Try again."
+        }
+    },
+    "register": {
+        "backHome": "Back to home",
+        "switchToPublisher": "Switch to Publisher",
+        "switchToPanelist": "Switch to Panelist",
+        "login": "Log in",
+        "leftLeg": "Left leg",
+        "rightLeg": "Right leg",
+        "panelist": {
+            "eyebrow": "Panelist user",
+            "becomePrefix": "Become a",
+            "userPanelist": "User Panelist",
+            "heroSub": "Earn rewards for every completed survey, build your team, and unlock multiple income streams. Activation is fast — you can start the same day.",
+            "alreadyMember": "Already a member?",
+            "inviteFrom": "Joining via invite from",
+            "invitePlacementOn": "— placement on",
+            "noInviteInfo": "We’ll set you up as a Panelist user. You can add a sponsor referral code below if you have one.",
+            "benefits": [
+                {
+                    "title": "Earn on every survey",
+                    "text": "Get paid for each completed survey directly into your in-app wallet — withdraw when ready."
+                },
+                {
+                    "title": "10% direct referral income",
+                    "text": "Invite friends and earn a flat 10% on their qualifying activity, lifetime."
+                },
+                {
+                    "title": "Team rewards",
+                    "text": "Build left + right legs and unlock matching, level, and panel income with daily payouts."
+                }
+            ]
+        },
+        "publisher": {
+            "onboarding": "Publisher onboarding",
+            "openAccount": "Open a Publisher account",
+            "onboardingDesc": "Publishers can create surveys, target respondents, and run analytics. Referral codes don’t apply for publisher accounts.",
+            "badge": "Publisher",
+            "heroLine": "Publish surveys.",
+            "heroGradient": "Find your audience.",
+            "heroSub": "Run targeted surveys, top-up your wallet, and pay respondents only for verified responses — all from a single, transparent dashboard.",
+            "alreadyPublishing": "Already publishing?",
+            "loginDashboard": "Log in to dashboard",
+            "features": [
+                { "title": "Launch surveys in minutes", "text": "Build, preview, and ship targeted surveys with a step-by-step studio." },
+                { "title": "Reach the right audience", "text": "Filter respondents by tier, geography, and behaviour to get the cleanest data." },
+                { "title": "Real-time analytics", "text": "Watch responses, completion rate, and spend update live on your dashboard." },
+                { "title": "Secure crypto-ready payouts", "text": "Top-up via NowPayments, withdraw to USDT BEP-20, with full audit trail." }
+            ]
+        },
+        "form": {
+            "accountCreated": "Account created",
+            "saveLoginDetails": "Save your login details",
+            "credentialsHelpPrefix": "You’ll need your",
+            "and": "and",
+            "credentialsHelpSuffix": "every time you sign in. This window closes automatically in",
+            "fiveSeconds": "5 seconds",
+            "userId": "User ID",
+            "password": "Password",
+            "copy": "Copy",
+            "continueToApp": "Continue to app",
+            "otpBypass": "OTP bypass is on (dev only) — email code not required.",
+            "uidChecking": "Checking availability…",
+            "uidAvailable": "This User ID is available.",
+            "uidTaken": "That User ID is already taken. Try another or pick a suggestion below.",
+            "uidShort": "Use at least 3 characters.",
+            "uidInvalid": "Only letters, numbers, underscore and hyphen.",
+            "uidError": "Could not verify availability. Check your connection.",
+            "email": "Email",
+            "sending": "Sending…",
+            "sendOtp": "Send OTP",
+            "emailOtp": "Email OTP",
+            "codePlaceholder": "6-digit code",
+            "fullName": "Full name",
+            "mobile": "Mobile (with country code)",
+            "sponsorReferralCode": "Sponsor referral code",
+            "fromInvite": "from invite",
+            "teamPlacement": "Team placement",
+            "placement": "Placement",
+            "under": "under",
+            "placementHint": "Set by your invite link (left or right); the system auto-fills the next empty slot in that leg.",
+            "referralCode": "Referral code",
+            "optional": "optional",
+            "sponsorPlaceholder": "Sponsor’s code if you have one",
+            "sponsorHint": "Optional — connects you to your sponsor when the code is valid.",
+            "confirmPassword": "Confirm password",
+            "creatingAccount": "Creating account…",
+            "createAccount": "Create account",
+            "errors": {
+                "enterEmailFirst": "Enter your email first.",
+                "pageNotLoaded": "Page did not load fully. Refresh and try again.",
+                "couldNotSendOtp": "Could not send OTP.",
+                "chooseAvailableUid": "Choose a unique User ID that is available (green check).",
+                "validMobile": "Enter a valid mobile number with country code.",
+                "enterOtp": "Enter the 6-digit email OTP.",
+                "registrationFailed": "Registration failed."
+            }
+        }
+    },
     "authForgot": {
         "eyebrow": "Account recovery",
         "title": "Reset password",

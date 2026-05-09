@@ -140,7 +140,7 @@ export default function HomePage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const mobileBanners = ['/images/Start%20Earn.png', '/images/Start%20Panel.png', '/images/Start%20Pub.png', '/images/Panel.png'];
+    const mobileBanners = ['/images/bann.png', '/images/Start%20Earn.png', '/images/Start%20Panel.png', '/images/Start%20Pub.png', '/images/Panel.png'];
     const [mobileSlide, setMobileSlide] = useState(0);
 
     /** Panelist signup — keeps invite `ref` / `side` from the URL. */
@@ -218,6 +218,21 @@ export default function HomePage() {
             />
 
             <div className="relative z-10">
+                {/* Desktop / tablet top banner */}
+                <section className="hidden border-b border-white/[0.06] md:block">
+                    <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0B0F1A] shadow-[0_22px_60px_rgba(0,0,0,0.45)]">
+                            <img
+                                src="/images/bann.png"
+                                alt="RM Survey featured banner"
+                                className="h-44 w-full object-cover sm:h-56 lg:h-64"
+                                loading="eager"
+                            />
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0B0F1A]/55 via-transparent to-transparent" />
+                        </div>
+                    </div>
+                </section>
+
                 {/* Mobile top banner slider */}
                 <section className="border-b border-white/[0.06] md:hidden">
                     <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6">

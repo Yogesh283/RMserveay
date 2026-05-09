@@ -7,11 +7,9 @@ import { fetchSessionUser, prepareSanctum } from '../lib/auth';
 import RmsPageBackdrop from './components/RmsPageBackdrop';
 
 const programmeNavConfig = [
-    { to: '/member/direct-income', labelKey: 'member.nav.directIncome', icon: IconUsers },
     { to: '/member/panel-matching', labelKey: 'member.nav.panelMatching', icon: IconScale },
     { to: '/member/sub-panel-matching', labelKey: 'member.nav.subPanelMatching', icon: IconGrid },
     { to: '/member/super-sub-panel-matching', labelKey: 'member.nav.superSubPanel', icon: IconStack },
-    { to: '/member/level-income', labelKey: 'member.nav.levelIncome', icon: IconLevels },
     { to: '/member/terms', labelKey: 'member.nav.terms', icon: IconDoc },
 ];
 
@@ -708,37 +706,93 @@ export default function MemberShell() {
             {referralPopupOpen ? (
                 <div className="fixed inset-0 z-[120] lg:hidden" role="dialog" aria-modal="true" aria-label="Referral links">
                     <button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setReferralPopupOpen(false)} aria-label={t('common.closeMenu')} />
-                    <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 rounded-2xl border border-violet-300/35 bg-[linear-gradient(160deg,rgba(124,58,237,0.18),rgba(59,130,246,0.10)_55%,rgba(11,16,32,0.92))] p-3 shadow-[0_22px_60px_rgba(0,0,0,0.68),0_0_0_1px_rgba(167,139,250,0.16)] backdrop-blur-xl">
-                        <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-white">Referral Links</p>
+                    <div className="absolute inset-x-3 top-1/2 max-h-[86vh] -translate-y-1/2 overflow-y-auto rounded-[26px] border border-white/10 bg-[linear-gradient(160deg,rgba(8,13,27,0.98),rgba(12,19,36,0.96)_52%,rgba(4,7,18,0.98))] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.72),0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+                        <div className="mb-3 flex items-center justify-between">
+                            <div>
+                                <p className="text-base font-bold text-white">Referral Links</p>
+                                <p className="mt-0.5 text-[10px] text-[#94A3B8]">Share your left or right placement link.</p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setReferralPopupOpen(false)}
-                                className="rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-white/80 transition hover:border-violet-300/35 hover:bg-white/[0.10] hover:text-white"
+                                className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/[0.10] hover:text-white"
                             >
                                 Close
                             </button>
                         </div>
 
                         {[
-                            { key: 'left', label: 'Left Link', url: referralInviteUrls.left },
-                            { key: 'right', label: 'Right Link', url: referralInviteUrls.right },
+                            {
+                                key: 'left',
+                                label: 'Left Link',
+                                chip: 'Primary',
+                                url: referralInviteUrls.left,
+                                card: 'border-emerald-400/35 bg-[linear-gradient(155deg,rgba(16,185,129,0.16),rgba(12,19,36,0.82)_48%,rgba(8,13,27,0.96))] shadow-[0_0_34px_rgba(16,185,129,0.10)]',
+                                icon: 'border-emerald-300/35 bg-emerald-500/12 text-emerald-200',
+                                chipClass: 'border-emerald-300/35 bg-emerald-400/15 text-emerald-100',
+                                urlRing: 'border-emerald-300/18',
+                                primaryButton: 'from-emerald-500 to-teal-500 shadow-[0_10px_24px_rgba(16,185,129,0.20)] hover:brightness-110',
+                            },
+                            {
+                                key: 'right',
+                                label: 'Right Link',
+                                chip: 'Secondary',
+                                url: referralInviteUrls.right,
+                                card: 'border-violet-400/40 bg-[linear-gradient(155deg,rgba(124,58,237,0.20),rgba(12,19,36,0.84)_48%,rgba(8,13,27,0.96))] shadow-[0_0_36px_rgba(124,58,237,0.14)]',
+                                icon: 'border-violet-300/35 bg-violet-500/15 text-violet-200',
+                                chipClass: 'border-violet-300/35 bg-violet-400/15 text-violet-100',
+                                urlRing: 'border-violet-300/18',
+                                primaryButton: 'from-[#7C3AED] to-fuchsia-500 shadow-[0_10px_24px_rgba(124,58,237,0.24)] hover:brightness-110',
+                            },
                         ].map((item) => (
-                            <div key={item.key} className="mb-2 rounded-lg border border-white/10 bg-black/20 p-2 last:mb-0 shadow-[0_0_26px_rgba(124,58,237,0.10)]">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/75">{item.label}</p>
-                                <p className="mt-1 truncate rounded-md border border-violet-300/18 bg-black/25 px-2 py-1 text-[10px] text-white/85">{item.url}</p>
-                                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                            <div key={item.key} className={`mb-2.5 rounded-2xl border p-3 last:mb-0 ${item.card}`}>
+                                <div className="mb-3 flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${item.icon}`}>
+                                            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-2 2a4 4 0 01-5.656-5.656l1.172-1.172m8.485 2.828l1.172-1.172a4 4 0 00-5.656-5.656l-2 2a4 4 0 000 5.656" />
+                                            </svg>
+                                        </span>
+                                        <div>
+                                            <p className="text-[13px] font-extrabold uppercase tracking-wide text-white">{item.label}</p>
+                                            <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${item.chipClass}`}>
+                                                • {item.chip}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${item.icon}`}>
+                                        <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M12 3.75l7.5 3v5.75c0 4.1-2.55 7.77-6.4 9.2a3.2 3.2 0 01-2.2 0c-3.85-1.43-6.4-5.1-6.4-9.2V6.75l7.5-3z" />
+                                        </svg>
+                                    </span>
+                                </div>
+
+                                <div className={`flex items-center gap-2 rounded-xl border bg-[#060B16]/70 px-3 py-2.5 ${item.urlRing}`}>
+                                    <p className="min-w-0 flex-1 break-all font-mono text-[11px] font-semibold leading-relaxed text-white/90">{item.url}</p>
                                     <button
                                         type="button"
                                         onClick={() => copyReferralLink(item.url, item.label)}
-                                        className="rounded-md border border-violet-300/25 bg-gradient-to-r from-[#7C3AED]/20 to-[#3B82F6]/15 px-2 py-1.5 text-[10px] font-semibold text-white transition hover:border-violet-300/55 hover:shadow-[0_0_26px_rgba(124,58,237,0.22)]"
+                                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-white/80 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white"
+                                        aria-label={`Copy ${item.label}`}
+                                    >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16.5H6.75A2.25 2.25 0 014.5 14.25v-7.5A2.25 2.25 0 016.75 4.5h7.5A2.25 2.25 0 0116.5 6.75V8M9.75 19.5h7.5a2.25 2.25 0 002.25-2.25v-7.5a2.25 2.25 0 00-2.25-2.25h-7.5A2.25 2.25 0 007.5 9.75v7.5A2.25 2.25 0 009.75 19.5z" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div className="mt-2 grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => copyReferralLink(item.url, item.label)}
+                                        className="rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2 text-xs font-bold text-white transition hover:border-white/25 hover:bg-white/[0.10]"
                                     >
                                         Copy
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => shareReferralLink(item.url, item.label)}
-                                        className="rounded-md border border-violet-300/25 bg-gradient-to-r from-[#7C3AED]/20 to-[#3B82F6]/15 px-2 py-1.5 text-[10px] font-semibold text-white transition hover:border-violet-300/55 hover:shadow-[0_0_26px_rgba(59,130,246,0.22)]"
+                                        className={`rounded-xl bg-gradient-to-r px-3 py-2 text-xs font-extrabold text-white transition active:scale-[0.98] ${item.primaryButton}`}
                                     >
                                         Share
                                     </button>
