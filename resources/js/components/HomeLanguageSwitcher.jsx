@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
 const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'hi', label: 'Hindi' },
-    { code: 'es', label: 'Spanish' },
-    { code: 'zh', label: 'Chinese' },
-    { code: 'fr', label: 'French' },
-    { code: 'de', label: 'German' },
+    { code: 'en', label: 'English', shortLabel: 'EN' },
+    { code: 'hi', label: 'Hindi', shortLabel: 'HI' },
+    { code: 'es', label: 'Spanish', shortLabel: 'ES' },
+    { code: 'zh', label: 'Chinese', shortLabel: 'ZH' },
+    { code: 'fr', label: 'French', shortLabel: 'FR' },
+    { code: 'de', label: 'German', shortLabel: 'DE' },
 ];
 
 function IconGlobeSmall() {
@@ -36,11 +36,11 @@ export default function HomeLanguageSwitcher({ variant = 'default', density = 'd
     if (variant === 'compact') {
         const tight = density === 'tight';
         const selectSize = tight
-            ? 'min-h-[32px] min-w-[100px] max-w-[min(100%,220px)] px-1.5 py-1 text-[11px]'
-            : 'min-h-[36px] min-w-[112px] max-w-[160px] shrink px-2 py-1.5 text-xs';
+            ? 'min-h-[26px] w-auto min-w-0 px-1 py-0 pr-5 text-[10px]'
+            : 'min-h-[28px] w-auto min-w-0 px-1.5 py-0 pr-5 text-[11px]';
         return (
             <label
-                className={`inline-flex min-w-0 items-center gap-1.5 ${tight ? 'w-full max-w-full justify-center py-0.5' : 'max-w-[min(100%,200px)]'}`}
+                className={`inline-flex min-w-0 items-center gap-1 ${tight ? 'w-auto justify-center' : ''}`}
             >
                 <span className="sr-only">{t('common.language')}</span>
                 <IconGlobeSmall />
@@ -49,10 +49,11 @@ export default function HomeLanguageSwitcher({ variant = 'default', density = 'd
                     onChange={(e) => i18n.changeLanguage(e.target.value)}
                     className={`${selectBase} ${selectSize}`}
                     aria-label={t('common.language')}
+                    title={LANGUAGES.find((l) => l.code === value)?.label}
                 >
-                    {LANGUAGES.map(({ code, label }) => (
-                        <option key={code} value={code}>
-                            {label}
+                    {LANGUAGES.map(({ code, shortLabel, label }) => (
+                        <option key={code} value={code} title={label}>
+                            {shortLabel}
                         </option>
                     ))}
                 </select>

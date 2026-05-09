@@ -660,13 +660,26 @@ export default function MemberShell() {
                             <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account & earnings</p>
                         </div>
                         {referralUrl ? (
-                            <div className="mx-2 mb-2">
+                            <div className="mx-2 mb-3">
                                 <button
                                     type="button"
                                     onClick={() => setReferralPopupOpen(true)}
-                                    className="w-full rounded-lg border border-violet-300/25 bg-violet-500/10 px-3 py-2 text-left text-[11px] font-semibold text-violet-100 backdrop-blur-xl transition hover:border-violet-300/45"
+                                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-violet-300/35 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/15 px-4 py-3.5 text-left text-sm font-semibold text-violet-50 shadow-[0_0_24px_rgba(139,92,246,0.18)] backdrop-blur-xl transition hover:border-violet-300/55 hover:from-violet-500/25 hover:to-fuchsia-500/20 active:scale-[0.99]"
                                 >
-                                    Open Referral Links
+                                    <span className="flex min-w-0 items-center gap-2.5">
+                                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-300/35 bg-violet-500/25 text-violet-100">
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 015.656 0l1.415 1.415a4 4 0 01-5.657 5.657l-1.06-1.061M10.172 13.828a4 4 0 01-5.656 0l-1.415-1.415a4 4 0 015.657-5.657l1.06 1.061" />
+                                            </svg>
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-[15px] font-bold leading-tight text-white">Open Referral Links</span>
+                                            <span className="block text-[11px] font-medium text-violet-200/80">Share left & right invites</span>
+                                        </span>
+                                    </span>
+                                    <svg className="h-4 w-4 shrink-0 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </button>
                             </div>
                         ) : null}

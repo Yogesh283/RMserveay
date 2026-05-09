@@ -13,6 +13,13 @@ export function MatchingIncomeTable({
     comfortable = false,
     /** Team page preview can hide milestone rows and show only carry-forward. */
     carryForwardOnly = false,
+    /**
+     * Render the full milestone table but hide "already paid" indicators (no
+     * green emerald row tint, no Paid pill). Used by the team-page preview so
+     * the table reads as a pure schedule + L/R carry view without revealing
+     * which tiers were already credited.
+     */
+    hideEarnedHighlight = false,
 }) {
     /** Team page already wraps in `RmsCard` — no second bordered box when embedded. */
     const card = embedded
@@ -149,7 +156,8 @@ export function MatchingIncomeTable({
             extraValue2: subData.today_milestone_lapsed_pairs ?? 0,
         };
         rows = tiers.map((row, idx) => {
-            const paid = tierPaid(mask, idx);
+            const rawPaid = tierPaid(mask, idx);
+            const paid = hideEarnedHighlight ? false : rawPaid;
             const stripe = idx % 2 === 1;
             const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (
@@ -186,7 +194,8 @@ export function MatchingIncomeTable({
             extraValue2: superData.today_milestone_lapsed_pairs ?? 0,
         };
         rows = tiers.map((row, idx) => {
-            const paid = tierPaid(mask, idx);
+            const rawPaid = tierPaid(mask, idx);
+            const paid = hideEarnedHighlight ? false : rawPaid;
             const stripe = idx % 2 === 1;
             const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (

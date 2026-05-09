@@ -1073,14 +1073,14 @@ export default function MemberTeamPage() {
                                     dark
                                     embedded
                                     comfortable
-                                    carryForwardOnly
+                                    hideEarnedHighlight
                                     variant="sub"
                                     panelData={panelMatchData}
                                     subData={subMatchData}
                                 />
                             ) : null}
                             {matchingIncomeTab === 'super' && superMatchData ? (
-                                <MatchingIncomeTable dark embedded comfortable carryForwardOnly variant="super" superData={superMatchData} />
+                                <MatchingIncomeTable dark embedded comfortable hideEarnedHighlight variant="super" superData={superMatchData} />
                             ) : null}
                             {matchingIncomeTab === 'sub' && (!panelMatchData || !subMatchData) ? (
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
