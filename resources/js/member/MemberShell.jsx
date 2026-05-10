@@ -32,15 +32,117 @@ const primaryNavMoreConfig = [
 const primaryNavMoreMobileExtraConfig = [];
 
 const moreMenuMetaByRoute = {
-    '/member/transactions': { subtitle: 'Wallet and earnings', glow: 'from-[#7C3AED]/28 to-[#3B82F6]/12', ring: 'ring-[#8B5CF6]/45' },
-    '/member/support-tickets': { subtitle: 'Help and issues', glow: 'from-[#6D28D9]/28 to-[#8B5CF6]/12', ring: 'ring-[#A78BFA]/40' },
-    '/member/active-panels': { subtitle: 'Activation status', glow: 'from-[#7C3AED]/28 to-[#4C1D95]/12', ring: 'ring-[#8B5CF6]/45' },
-    '/member/sub-panels': { subtitle: 'Sub panel management', glow: 'from-[#8B5CF6]/26 to-[#4C1D95]/10', ring: 'ring-[#A78BFA]/40' },
-    '/member/super-sub-panels': { subtitle: 'Super hierarchy', glow: 'from-[#9333EA]/26 to-[#6D28D9]/10', ring: 'ring-[#C4B5FD]/35' },
-    '/member/profile': { subtitle: 'Profile and security', glow: 'from-[#7C3AED]/26 to-[#A855F7]/10', ring: 'ring-[#C4B5FD]/35' },
-    '/member/panel-matching': { subtitle: 'Matching rewards', glow: 'from-[#5B21B6]/26 to-[#7C3AED]/10', ring: 'ring-[#8B5CF6]/40' },
-    '/member/sub-panel-matching': { subtitle: 'Sub matching analytics', glow: 'from-[#6D28D9]/26 to-[#3B82F6]/10', ring: 'ring-[#A78BFA]/35' },
-    '/member/super-sub-panel-matching': { subtitle: 'Super matching analytics', glow: 'from-[#7C3AED]/26 to-[#EC4899]/10', ring: 'ring-[#C4B5FD]/35' },
+    '/member/transactions': {
+        subtitle: 'Wallet and earnings',
+        glow: 'from-emerald-500/35 to-teal-500/15',
+        ring: 'ring-emerald-400/55',
+        border: 'border-emerald-400/35',
+        hoverBorder: 'hover:border-emerald-300/70',
+        iconWrap: 'border-emerald-300/50 bg-gradient-to-br from-emerald-500/35 via-teal-500/25 to-emerald-600/15 shadow-[0_0_18px_rgba(16,185,129,0.35)]',
+        title: 'text-emerald-100',
+        sub: 'text-emerald-200/75',
+        chevron: 'border-emerald-300/45 bg-emerald-500/18 text-emerald-100',
+    },
+    '/member/support-tickets': {
+        subtitle: 'Help and issues',
+        glow: 'from-cyan-500/35 to-sky-500/15',
+        ring: 'ring-cyan-400/55',
+        border: 'border-cyan-400/35',
+        hoverBorder: 'hover:border-cyan-300/70',
+        iconWrap: 'border-cyan-300/50 bg-gradient-to-br from-cyan-500/35 via-sky-500/25 to-blue-500/15 shadow-[0_0_18px_rgba(34,211,238,0.32)]',
+        title: 'text-cyan-100',
+        sub: 'text-cyan-200/75',
+        chevron: 'border-cyan-300/45 bg-cyan-500/18 text-cyan-100',
+    },
+    '/member/active-panels': {
+        subtitle: 'Activation status',
+        glow: 'from-amber-500/35 to-orange-500/15',
+        ring: 'ring-amber-400/55',
+        border: 'border-amber-400/35',
+        hoverBorder: 'hover:border-amber-300/70',
+        iconWrap: 'border-amber-300/50 bg-gradient-to-br from-amber-500/35 via-orange-500/25 to-yellow-500/15 shadow-[0_0_18px_rgba(245,158,11,0.32)]',
+        title: 'text-amber-100',
+        sub: 'text-amber-200/75',
+        chevron: 'border-amber-300/45 bg-amber-500/18 text-amber-100',
+    },
+    '/member/sub-panels': {
+        subtitle: 'Sub panel management',
+        glow: 'from-sky-500/35 to-blue-500/15',
+        ring: 'ring-sky-400/55',
+        border: 'border-sky-400/35',
+        hoverBorder: 'hover:border-sky-300/70',
+        iconWrap: 'border-sky-300/50 bg-gradient-to-br from-sky-500/35 via-blue-500/25 to-indigo-500/15 shadow-[0_0_18px_rgba(56,189,248,0.32)]',
+        title: 'text-sky-100',
+        sub: 'text-sky-200/75',
+        chevron: 'border-sky-300/45 bg-sky-500/18 text-sky-100',
+    },
+    '/member/super-sub-panels': {
+        subtitle: 'Super hierarchy',
+        glow: 'from-fuchsia-500/35 to-purple-500/15',
+        ring: 'ring-fuchsia-400/55',
+        border: 'border-fuchsia-400/35',
+        hoverBorder: 'hover:border-fuchsia-300/70',
+        iconWrap: 'border-fuchsia-300/50 bg-gradient-to-br from-fuchsia-500/35 via-purple-500/25 to-violet-500/15 shadow-[0_0_18px_rgba(217,70,239,0.32)]',
+        title: 'text-fuchsia-100',
+        sub: 'text-fuchsia-200/75',
+        chevron: 'border-fuchsia-300/45 bg-fuchsia-500/18 text-fuchsia-100',
+    },
+    '/member/profile': {
+        subtitle: 'Profile and security',
+        glow: 'from-violet-500/35 to-fuchsia-500/15',
+        ring: 'ring-violet-400/55',
+        border: 'border-violet-400/35',
+        hoverBorder: 'hover:border-violet-300/70',
+        iconWrap: 'border-violet-300/50 bg-gradient-to-br from-violet-500/35 via-fuchsia-500/25 to-pink-500/15 shadow-[0_0_18px_rgba(139,92,246,0.35)]',
+        title: 'text-violet-100',
+        sub: 'text-violet-200/75',
+        chevron: 'border-violet-300/45 bg-violet-500/18 text-violet-100',
+    },
+    '/member/panel-matching': {
+        subtitle: 'Matching rewards',
+        glow: 'from-rose-500/35 to-pink-500/15',
+        ring: 'ring-rose-400/55',
+        border: 'border-rose-400/35',
+        hoverBorder: 'hover:border-rose-300/70',
+        iconWrap: 'border-rose-300/50 bg-gradient-to-br from-rose-500/35 via-pink-500/25 to-red-500/15 shadow-[0_0_18px_rgba(244,63,94,0.32)]',
+        title: 'text-rose-100',
+        sub: 'text-rose-200/75',
+        chevron: 'border-rose-300/45 bg-rose-500/18 text-rose-100',
+    },
+    '/member/sub-panel-matching': {
+        subtitle: 'Sub matching analytics',
+        glow: 'from-indigo-500/35 to-blue-500/15',
+        ring: 'ring-indigo-400/55',
+        border: 'border-indigo-400/35',
+        hoverBorder: 'hover:border-indigo-300/70',
+        iconWrap: 'border-indigo-300/50 bg-gradient-to-br from-indigo-500/35 via-blue-500/25 to-cyan-500/15 shadow-[0_0_18px_rgba(99,102,241,0.32)]',
+        title: 'text-indigo-100',
+        sub: 'text-indigo-200/75',
+        chevron: 'border-indigo-300/45 bg-indigo-500/18 text-indigo-100',
+    },
+    '/member/super-sub-panel-matching': {
+        subtitle: 'Super matching analytics',
+        glow: 'from-orange-500/35 to-amber-500/15',
+        ring: 'ring-orange-400/55',
+        border: 'border-orange-400/35',
+        hoverBorder: 'hover:border-orange-300/70',
+        iconWrap: 'border-orange-300/50 bg-gradient-to-br from-orange-500/35 via-amber-500/25 to-yellow-500/15 shadow-[0_0_18px_rgba(249,115,22,0.32)]',
+        title: 'text-orange-100',
+        sub: 'text-orange-200/75',
+        chevron: 'border-orange-300/45 bg-orange-500/18 text-orange-100',
+    },
+};
+
+const DEFAULT_MORE_META = {
+    subtitle: 'Open section',
+    glow: 'from-violet-500/30 to-fuchsia-500/15',
+    ring: 'ring-violet-400/45',
+    border: 'border-violet-400/30',
+    hoverBorder: 'hover:border-violet-300/60',
+    iconWrap: 'border-violet-300/40 bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-purple-500/15 shadow-[0_0_16px_rgba(139,92,246,0.3)]',
+    title: 'text-violet-100',
+    sub: 'text-violet-200/75',
+    chevron: 'border-violet-300/40 bg-violet-500/18 text-violet-100',
 };
 
 const MORE_PATH_PREFIXES = [
@@ -664,20 +766,22 @@ export default function MemberShell() {
                                 <button
                                     type="button"
                                     onClick={() => setReferralPopupOpen(true)}
-                                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-violet-300/35 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/15 px-4 py-3.5 text-left text-sm font-semibold text-violet-50 shadow-[0_0_24px_rgba(139,92,246,0.18)] backdrop-blur-xl transition hover:border-violet-300/55 hover:from-violet-500/25 hover:to-fuchsia-500/20 active:scale-[0.99]"
+                                    className="group relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-violet-300/45 bg-gradient-to-r from-violet-500/30 via-fuchsia-500/25 to-pink-500/20 px-4 py-3.5 text-left text-sm font-semibold text-white shadow-[0_0_28px_rgba(139,92,246,0.32)] backdrop-blur-xl transition hover:border-violet-200/65 hover:shadow-[0_0_36px_rgba(139,92,246,0.45)] active:scale-[0.99]"
                                 >
-                                    <span className="flex min-w-0 items-center gap-2.5">
-                                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-300/35 bg-violet-500/25 text-violet-100">
-                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+                                    <span className="pointer-events-none absolute -left-6 top-1/2 h-20 w-20 -translate-y-1/2 rounded-full bg-fuchsia-400/35 blur-2xl" />
+                                    <span className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-violet-400/30 blur-2xl" />
+                                    <span className="relative flex min-w-0 items-center gap-2.5">
+                                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-fuchsia-200/45 bg-gradient-to-br from-violet-500/45 via-fuchsia-500/35 to-pink-500/25 text-white shadow-[0_0_14px_rgba(217,70,239,0.45)]">
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} aria-hidden>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 015.656 0l1.415 1.415a4 4 0 01-5.657 5.657l-1.06-1.061M10.172 13.828a4 4 0 01-5.656 0l-1.415-1.415a4 4 0 015.657-5.657l1.06 1.061" />
                                             </svg>
                                         </span>
                                         <span className="min-w-0">
                                             <span className="block text-[15px] font-bold leading-tight text-white">Open Referral Links</span>
-                                            <span className="block text-[11px] font-medium text-violet-200/80">Share left & right invites</span>
+                                            <span className="block text-[11px] font-medium text-fuchsia-100/85">Share left & right invites</span>
                                         </span>
                                     </span>
-                                    <svg className="h-4 w-4 shrink-0 text-violet-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                                    <svg className="relative h-4 w-4 shrink-0 text-fuchsia-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} aria-hidden>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
@@ -687,72 +791,80 @@ export default function MemberShell() {
                             <Link
                                 to="/login?user_type=publisher"
                                 onClick={() => setMoreSheetOpen(false)}
-                                className="group flex items-center justify-between gap-3 rounded-lg border border-amber-300/30 bg-gradient-to-r from-amber-500/15 to-orange-500/10 px-3 py-2.5 text-left text-[12px] font-semibold text-amber-100 shadow-[0_0_22px_rgba(245,158,11,0.12)] transition hover:border-amber-300/55 hover:bg-amber-500/20"
+                                className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-xl border border-amber-300/45 bg-gradient-to-r from-amber-500/30 via-orange-500/25 to-yellow-500/20 px-3 py-2.5 text-left text-[12px] font-semibold text-white shadow-[0_0_24px_rgba(245,158,11,0.28)] transition hover:border-amber-200/65 hover:shadow-[0_0_32px_rgba(245,158,11,0.42)]"
                             >
-                                <span className="flex min-w-0 items-center gap-2">
-                                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-300/35 bg-amber-400/15 text-amber-100">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                <span className="pointer-events-none absolute -left-6 top-1/2 h-16 w-16 -translate-y-1/2 rounded-full bg-orange-400/35 blur-2xl" />
+                                <span className="pointer-events-none absolute -right-2 -top-3 h-12 w-12 rounded-full bg-amber-300/30 blur-2xl" />
+                                <span className="relative flex min-w-0 items-center gap-2">
+                                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-200/45 bg-gradient-to-br from-amber-500/45 via-orange-500/35 to-yellow-500/25 text-white shadow-[0_0_14px_rgba(245,158,11,0.42)]">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M9 14h.01M9 18h.01M15 10h.01M15 14h.01M15 18h.01" />
                                         </svg>
                                     </span>
                                     <span className="min-w-0">
                                         <span className="block truncate text-sm font-bold text-white">Publisher Login</span>
-                                        <span className="block truncate text-[10px] font-medium text-amber-100/70">Open publisher account login</span>
+                                        <span className="block truncate text-[10px] font-medium text-amber-100/85">Open publisher account login</span>
                                     </span>
                                 </span>
-                                <svg className="h-4 w-4 shrink-0 text-amber-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg className="relative h-4 w-4 shrink-0 text-amber-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                 </svg>
                             </Link>
                         </div>
-                        <ul className="grid auto-rows-fr grid-cols-2 gap-1.5 px-2 pb-2.5">
+                        <ul className="grid auto-rows-fr grid-cols-2 gap-2 px-2 pb-2.5">
                             {primaryNavMoreItemsMobile.map(({ to, label, icon: Icon }, idx) => (
                                 <li key={to} className={idx === primaryNavMoreItemsMobile.length - 1 && primaryNavMoreItemsMobile.length % 2 === 1 ? 'col-span-2' : ''}>
                                     <NavLink
                                         to={to}
                                         onClick={() => setMoreSheetOpen(false)}
                                         className={({ isActive }) => {
-                                            const meta = moreMenuMetaByRoute[to] ?? {
-                                                subtitle: 'Open section',
-                                                glow: 'from-[#7C3AED]/20 to-[#3B82F6]/10',
-                                                ring: 'ring-[#8B5CF6]/35',
-                                            };
-                                            return (
-                                            [
-                                                'group relative flex h-full min-h-[70px] items-start overflow-hidden rounded-lg border px-2 py-2 text-left transition-all duration-300 backdrop-blur-xl',
-                                                'bg-[linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]',
+                                            const meta = moreMenuMetaByRoute[to] ?? DEFAULT_MORE_META;
+                                            return [
+                                                'group relative flex h-full min-h-[78px] items-start overflow-hidden rounded-xl border px-2.5 py-2.5 text-left transition-all duration-300 backdrop-blur-xl',
+                                                'bg-[linear-gradient(155deg,rgba(255,255,255,0.07),rgba(255,255,255,0.018))]',
+                                                meta.border,
+                                                meta.hoverBorder,
                                                 isActive
-                                                    ? `border-white/20 text-white ring-1 ${meta.ring} shadow-[0_12px_30px_rgba(0,0,0,0.48)]`
-                                                    : 'border-white/10 text-[#CBD5E1] hover:border-violet-300/35 hover:text-white hover:shadow-[0_10px_26px_rgba(0,0,0,0.35)]',
-                                            ].join(' ')
-                                            );
+                                                    ? `text-white ring-2 ${meta.ring} shadow-[0_14px_34px_rgba(0,0,0,0.52)]`
+                                                    : 'text-[#E2E8F0] shadow-[0_8px_22px_rgba(0,0,0,0.34)] hover:shadow-[0_14px_32px_rgba(0,0,0,0.45)]',
+                                            ].join(' ');
                                         }}
                                     >
                                         {({ isActive }) => {
-                                            const meta = moreMenuMetaByRoute[to] ?? { subtitle: 'Open section', glow: 'from-[#7C3AED]/20 to-[#3B82F6]/10' };
+                                            const meta = moreMenuMetaByRoute[to] ?? DEFAULT_MORE_META;
                                             return (
-                                            <>
-                                                <div className={`pointer-events-none absolute -left-8 top-1/2 h-20 w-20 -translate-y-1/2 rounded-full bg-gradient-to-r ${meta.glow} opacity-45 blur-2xl`} />
-                                                <div className="flex items-start gap-1.5">
-                                                    <span
-                                                        className={[
-                                                            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-white/[0.04] shadow-[0_0_14px_rgba(124,58,237,0.15)]',
-                                                            isActive ? 'border-white/25' : 'border-white/15',
-                                                        ].join(' ')}
-                                                    >
-                                                        <Icon active={isActive} />
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-[11px] font-semibold">{label}</p>
-                                                        <p className="mt-0.5 line-clamp-1 text-[9px] text-[#94A3B8]">{meta.subtitle}</p>
+                                                <>
+                                                    <div
+                                                        className={`pointer-events-none absolute -left-10 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-gradient-to-r ${meta.glow} opacity-60 blur-2xl transition group-hover:opacity-90`}
+                                                    />
+                                                    <div
+                                                        className={`pointer-events-none absolute -right-8 -top-6 h-16 w-16 rounded-full bg-gradient-to-br ${meta.glow} opacity-35 blur-2xl`}
+                                                    />
+                                                    <div className="relative flex w-full items-start gap-2">
+                                                        <span
+                                                            className={[
+                                                                'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border backdrop-blur-sm transition group-hover:scale-105',
+                                                                meta.iconWrap,
+                                                            ].join(' ')}
+                                                        >
+                                                            <Icon active />
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className={`truncate text-[12px] font-bold leading-tight ${isActive ? 'text-white' : meta.title}`}>{label}</p>
+                                                            <p className={`mt-0.5 line-clamp-1 text-[10px] font-medium leading-tight ${meta.sub}`}>{meta.subtitle}</p>
+                                                        </div>
+                                                        <span
+                                                            className={[
+                                                                'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition group-hover:translate-x-0.5',
+                                                                meta.chevron,
+                                                            ].join(' ')}
+                                                        >
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </span>
                                                     </div>
-                                                    <span className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border border-violet-300/20 bg-violet-500/10 text-[#A78BFA] transition group-hover:translate-x-0.5 group-hover:border-violet-300/45 group-hover:bg-violet-500/20">
-                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </span>
-                                                </div>
-                                            </>
+                                                </>
                                             );
                                         }}
                                     </NavLink>

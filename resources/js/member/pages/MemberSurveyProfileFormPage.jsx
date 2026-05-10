@@ -115,7 +115,13 @@ export default function MemberSurveyProfileFormPage() {
             await prepareSanctum();
             const payload = {
                 ...form,
-                age: form.age === '' ? null : Number(form.age),
+                age: form.age === '' || form.age === null ? null : Number(form.age),
+                email_id: typeof form.email_id === 'string' ? form.email_id.trim().toLowerCase() : form.email_id,
+                full_name: typeof form.full_name === 'string' ? form.full_name.trim() : form.full_name,
+                country: typeof form.country === 'string' ? form.country.trim() : form.country,
+                state: typeof form.state === 'string' ? form.state.trim() : form.state,
+                city: typeof form.city === 'string' ? form.city.trim() : form.city,
+                mobile_number: typeof form.mobile_number === 'string' ? form.mobile_number.trim() : form.mobile_number,
             };
             await window.axios.patch('api/user', {
                 name: user.name ?? '',
@@ -125,6 +131,7 @@ export default function MemberSurveyProfileFormPage() {
                 survey_profile: payload,
             });
             setMsg('Survey profile saved.');
+            setForm((prev) => ({ ...prev, ...payload }));
             if (isGate && isSurveyProfileComplete(payload)) {
                 navigate(fromPath || '/member/surveys', { replace: true });
                 return;
@@ -138,6 +145,13 @@ export default function MemberSurveyProfileFormPage() {
         } finally {
             setSaving(false);
         }
+    }
+
+    function errorFor(key) {
+        const k = `survey_profile.${key}`;
+        const list = fieldErrors[k] ?? fieldErrors[key];
+        if (!list) return null;
+        return Array.isArray(list) ? list[0] : String(list);
     }
 
     return (
@@ -166,35 +180,35 @@ export default function MemberSurveyProfileFormPage() {
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">1. Basic Information</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Full Name"><input className={inputCls} value={form.full_name} onChange={(e) => setField('full_name', e.target.value)} /></Field>
-                        <Field label="Gender">
-                            <select className={inputCls} value={form.gender} onChange={(e) => setField('gender', e.target.value)}>
+                        <Field label="Full Name" error={errorFor('full_name')}><input className={inputCls} value={form.full_name ?? ''} onChange={(e) => setField('full_name', e.target.value)} /></Field>
+                        <Field label="Gender" error={errorFor('gender')}>
+                            <select className={inputCls} value={form.gender ?? ''} onChange={(e) => setField('gender', e.target.value)}>
                                 <option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                             </select>
                         </Field>
-                        <Field label="Age"><input type="number" className={inputCls} value={form.age} onChange={(e) => setField('age', e.target.value)} /></Field>
-                        <Field label="Country"><input className={inputCls} value={form.country} onChange={(e) => setField('country', e.target.value)} /></Field>
-                        <Field label="State"><input className={inputCls} value={form.state} onChange={(e) => setField('state', e.target.value)} /></Field>
-                        <Field label="City"><input className={inputCls} value={form.city} onChange={(e) => setField('city', e.target.value)} /></Field>
+                        <Field label="Age (10-99)" error={errorFor('age')}><input type="number" min={10} max={99} className={inputCls} value={form.age ?? ''} onChange={(e) => setField('age', e.target.value)} /></Field>
+                        <Field label="Country" error={errorFor('country')}><input className={inputCls} value={form.country ?? ''} onChange={(e) => setField('country', e.target.value)} /></Field>
+                        <Field label="State" error={errorFor('state')}><input className={inputCls} value={form.state ?? ''} onChange={(e) => setField('state', e.target.value)} /></Field>
+                        <Field label="City" error={errorFor('city')}><input className={inputCls} value={form.city ?? ''} onChange={(e) => setField('city', e.target.value)} /></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">2. Contact Information</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Mobile Number"><input className={inputCls} value={form.mobile_number} onChange={(e) => setField('mobile_number', e.target.value)} /></Field>
-                        <Field label="Email ID"><input type="email" className={inputCls} value={form.email_id} onChange={(e) => setField('email_id', e.target.value)} /></Field>
+                        <Field label="Mobile Number" error={errorFor('mobile_number')}><input className={inputCls} value={form.mobile_number ?? ''} onChange={(e) => setField('mobile_number', e.target.value)} /></Field>
+                        <Field label="Email ID" error={errorFor('email_id')}><input type="email" className={inputCls} value={form.email_id ?? ''} onChange={(e) => setField('email_id', e.target.value)} /></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">3-5. Education, Work, Device</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Education Level"><select className={inputCls} value={form.education_level} onChange={(e) => setField('education_level', e.target.value)}><option value="">Select</option><option value="10th">10th</option><option value="12th">12th</option><option value="graduate">Graduate</option><option value="post_graduate">Post Graduate</option></select></Field>
-                        <Field label="Occupation"><select className={inputCls} value={form.occupation} onChange={(e) => setField('occupation', e.target.value)}><option value="">Select</option><option value="student">Student</option><option value="job">Job</option><option value="business">Business</option><option value="freelancer">Freelancer</option><option value="unemployed">Unemployed</option></select></Field>
-                        <Field label="Monthly Income Range"><select className={inputCls} value={form.monthly_income_range} onChange={(e) => setField('monthly_income_range', e.target.value)}><option value="">Select</option><option value="10k_25k">₹10k–25k</option><option value="25k_50k">₹25k–50k</option><option value="50k_plus">₹50k+</option></select></Field>
-                        <Field label="Device"><select className={inputCls} value={form.device_type} onChange={(e) => setField('device_type', e.target.value)}><option value="">Select</option><option value="android">Android</option><option value="iphone">iPhone</option></select></Field>
-                        <Field label="Internet Usage"><select className={inputCls} value={form.internet_usage} onChange={(e) => setField('internet_usage', e.target.value)}><option value="">Select</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></Field>
+                        <Field label="Education Level" error={errorFor('education_level')}><select className={inputCls} value={form.education_level ?? ''} onChange={(e) => setField('education_level', e.target.value)}><option value="">Select</option><option value="10th">10th</option><option value="12th">12th</option><option value="graduate">Graduate</option><option value="post_graduate">Post Graduate</option></select></Field>
+                        <Field label="Occupation" error={errorFor('occupation')}><select className={inputCls} value={form.occupation ?? ''} onChange={(e) => setField('occupation', e.target.value)}><option value="">Select</option><option value="student">Student</option><option value="job">Job</option><option value="business">Business</option><option value="freelancer">Freelancer</option><option value="unemployed">Unemployed</option></select></Field>
+                        <Field label="Monthly Income Range" error={errorFor('monthly_income_range')}><select className={inputCls} value={form.monthly_income_range ?? ''} onChange={(e) => setField('monthly_income_range', e.target.value)}><option value="">Select</option><option value="10k_25k">₹10k–25k</option><option value="25k_50k">₹25k–50k</option><option value="50k_plus">₹50k+</option></select></Field>
+                        <Field label="Device" error={errorFor('device_type')}><select className={inputCls} value={form.device_type ?? ''} onChange={(e) => setField('device_type', e.target.value)}><option value="">Select</option><option value="android">Android</option><option value="iphone">iPhone</option></select></Field>
+                        <Field label="Internet Usage" error={errorFor('internet_usage')}><select className={inputCls} value={form.internet_usage ?? ''} onChange={(e) => setField('internet_usage', e.target.value)}><option value="">Select</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></Field>
                     </div>
                 </RmsCard>
 
@@ -214,19 +228,30 @@ export default function MemberSurveyProfileFormPage() {
                         <YesNo label="Instagram User?" checked={form.instagram_user} onChange={(v) => setField('instagram_user', v)} />
                         <YesNo label="YouTube User?" checked={form.youtube_user} onChange={(v) => setField('youtube_user', v)} />
                         <YesNo label="Telegram User?" checked={form.telegram_user} onChange={(v) => setField('telegram_user', v)} />
-                        <Field label="Preferred Survey Language"><input className={inputCls} value={form.preferred_survey_language} onChange={(e) => setField('preferred_survey_language', e.target.value)} /></Field>
-                        <Field label="Preferred Survey Category"><input className={inputCls} value={form.preferred_survey_category} onChange={(e) => setField('preferred_survey_category', e.target.value)} /></Field>
+                        <Field label="Preferred Survey Language" error={errorFor('preferred_survey_language')}><input className={inputCls} value={form.preferred_survey_language ?? ''} onChange={(e) => setField('preferred_survey_language', e.target.value)} /></Field>
+                        <Field label="Preferred Survey Category" error={errorFor('preferred_survey_category')}><input className={inputCls} value={form.preferred_survey_category ?? ''} onChange={(e) => setField('preferred_survey_category', e.target.value)} /></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">Optional</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Married / Unmarried"><select className={inputCls} value={form.marital_status} onChange={(e) => setField('marital_status', e.target.value)}><option value="">Select</option><option value="married">Married</option><option value="unmarried">Unmarried</option></select></Field>
-                        <Field label="Car/Bike Owner"><select className={inputCls} value={form.vehicle_owner} onChange={(e) => setField('vehicle_owner', e.target.value)}><option value="">Select</option><option value="none">No</option><option value="bike">Bike</option><option value="car">Car</option><option value="both">Both</option></select></Field>
+                        <Field label="Married / Unmarried" error={errorFor('marital_status')}><select className={inputCls} value={form.marital_status ?? ''} onChange={(e) => setField('marital_status', e.target.value)}><option value="">Select</option><option value="married">Married</option><option value="unmarried">Unmarried</option></select></Field>
+                        <Field label="Car/Bike Owner" error={errorFor('vehicle_owner')}><select className={inputCls} value={form.vehicle_owner ?? ''} onChange={(e) => setField('vehicle_owner', e.target.value)}><option value="">Select</option><option value="none">No</option><option value="bike">Bike</option><option value="car">Car</option><option value="both">Both</option></select></Field>
                         <YesNo label="Online Shopping User?" checked={form.online_shopping_user} onChange={(v) => setField('online_shopping_user', v)} />
                     </div>
-                    {Object.keys(fieldErrors).length ? <p className="mt-2 text-xs text-red-400">Some fields are invalid. Please review and save again.</p> : null}
+                    {Object.keys(fieldErrors).length ? (
+                        <div className="mt-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-[11px] text-red-200">
+                            <p className="mb-1 font-semibold">Please fix the following:</p>
+                            <ul className="list-disc pl-4">
+                                {Object.entries(fieldErrors).map(([k, v]) => (
+                                    <li key={k}>
+                                        <span className="font-mono">{k.replace(/^survey_profile\./, '')}</span>: {Array.isArray(v) ? v[0] : String(v)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : null}
                 </RmsCard>
 
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -245,11 +270,12 @@ export default function MemberSurveyProfileFormPage() {
     );
 }
 
-function Field({ label, children }) {
+function Field({ label, children, error }) {
     return (
-        <label>
+        <label className="block">
             <span className={labelCls}>{label}</span>
             {children}
+            {error ? <span className="mt-1 block text-[10px] font-medium text-red-300">{error}</span> : null}
         </label>
     );
 }

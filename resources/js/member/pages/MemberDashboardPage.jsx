@@ -654,7 +654,7 @@ export default function MemberDashboardPage() {
                                 <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-200">Matching</p>
                             </div>
                             <p className="mt-2 text-base font-bold tabular-nums text-white sm:text-lg">{fmtUsd(e?.matching_income ?? 0)}</p>
-                            <p className="mt-0.5 text-[9px] text-slate-400">Active + sub + super matching</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">Active + sub + super</p>
                         </RmsCard>
                     </Link>
                 </div>

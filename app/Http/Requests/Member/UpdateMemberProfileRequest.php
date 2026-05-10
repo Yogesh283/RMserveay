@@ -70,5 +70,23 @@ class UpdateMemberProfileRequest extends FormRequest
         if (is_string($email)) {
             $this->merge(['email' => strtolower(trim($email))]);
         }
+
+        $surveyProfile = $this->input('survey_profile');
+        if (is_array($surveyProfile)) {
+            if (isset($surveyProfile['email_id']) && is_string($surveyProfile['email_id'])) {
+                $surveyProfile['email_id'] = strtolower(trim($surveyProfile['email_id']));
+            }
+            foreach (['full_name', 'country', 'state', 'city', 'mobile_number', 'preferred_survey_language', 'preferred_survey_category'] as $stringKey) {
+                if (isset($surveyProfile[$stringKey]) && is_string($surveyProfile[$stringKey])) {
+                    $surveyProfile[$stringKey] = trim($surveyProfile[$stringKey]);
+                }
+            }
+            foreach (['full_name', 'country', 'state', 'city', 'mobile_number', 'email_id', 'gender', 'education_level', 'occupation', 'monthly_income_range', 'device_type', 'internet_usage', 'marital_status', 'vehicle_owner', 'preferred_survey_language', 'preferred_survey_category'] as $emptyToNullKey) {
+                if (array_key_exists($emptyToNullKey, $surveyProfile) && $surveyProfile[$emptyToNullKey] === '') {
+                    $surveyProfile[$emptyToNullKey] = null;
+                }
+            }
+            $this->merge(['survey_profile' => $surveyProfile]);
+        }
     }
 }

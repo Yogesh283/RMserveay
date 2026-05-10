@@ -820,10 +820,13 @@ export default function MemberTeamPage() {
                                 {t('member.team.tapToExpandHint', { defaultValue: 'Click any node with a + badge to expand its branch.' })}
                             </p>
                             <div
-                                className="-mx-3 mt-3 max-h-[75vh] overflow-auto overscroll-contain px-3 pb-2 sm:-mx-4 sm:mt-6 sm:max-h-[80vh] sm:px-4"
+                                className="-mx-3 mt-3 overflow-x-auto overscroll-contain px-3 pb-6 sm:-mx-4 sm:mt-6 sm:max-h-[80vh] sm:overflow-auto sm:pb-3 sm:px-4"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
                             >
-                                <div className="mx-auto w-max">
+                                <div
+                                    className="flex min-w-full"
+                                    style={{ justifyContent: 'safe center' }}
+                                >
                                     <TreeNode
                                         node={tree}
                                         expandedIds={expandedIds}

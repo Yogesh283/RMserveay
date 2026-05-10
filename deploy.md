@@ -249,14 +249,47 @@ php artisan migrate
 
 
 
+# === LIVE: Binary closing — sab scopes (active + sub + super) ===
+
+# Aaj ki closing (sab 3 scopes ek saath)
+php artisan binary:daily-closing --date=today
+
+# Yesterday ki (default cron behaviour, scopes=all)
+php artisan binary:daily-closing
+
+
+# === Scope-specific runs ===
+
+# Sirf active panel ($1/pair, max 20/day)
+php artisan binary:daily-closing --scope=active_panel --date=today
+
+# Sirf sub panel (milestone tier $2/$4/$8/$16/...; excess LAPSE)
+php artisan binary:daily-closing --scope=panel --date=today
+
+# Sirf super sub panel (milestone × 10: $20/$40/$80/$160/...; excess LAPSE)
+php artisan binary:daily-closing --scope=super --date=today
+
+
+# === Specific date ===
+php artisan binary:daily-closing --date=2026-05-08
+php artisan binary:daily-closing --scope=active_panel --date=2026-05-08
+
+
+# === Sirf report dekhna (no work, just the audit table) ===
+php artisan binary:daily-closing --date=today --report
+php artisan binary:daily-closing --scope=active_panel --date=today --report
 
 
 
 
 
 
-
-
+# Sub aur super carries change kiye, dobara closing chala — simple
+php artisan binary:daily-closing --scope=panel --date=today
+# Carries adjust kiye, fir
+php artisan binary:daily-closing --scope=panel --date=today      # phir chal jayega
+php artisan binary:daily-closing --scope=super --date=today
+php artisan binary:daily-closing --scope=active_panel --date=today
 
 
 
