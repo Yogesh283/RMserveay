@@ -565,10 +565,10 @@ function LegLabel({ side }) {
 }
 
 /**
- * Click-to-expand binary tree. Each node renders just its chip until clicked.
- * On click of a node with children, its direct under-members appear inline.
+ * Focus-on-click binary tree. Clicking any node re-roots the viewer on that user
+ * and shows their 2-level subtree (= 7 members in left-to-right order).
  */
-function TreeNode({ node, expandedIds, loadingIds, onToggle, isRoot = false }) {
+function TreeNode({ node, expandedIds, loadingIds, onFocus, isRoot = false }) {
     if (!node) {
         return <EmptyNodeSlot />;
     }
@@ -581,7 +581,7 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle, isRoot = false }) {
         <div className="flex flex-col items-center">
             <NodeChip
                 node={node}
-                onClick={hasChildren ? () => onToggle(node) : undefined}
+                onClick={() => onFocus(node)}
                 isLoading={isLoading}
                 isExpanded={isExpanded}
                 hasChildren={hasChildren}
@@ -595,7 +595,7 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle, isRoot = false }) {
                             <LegLabel side="left" />
                             {node.has_left ? (
                                 node.left ? (
-                                    <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                    <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onFocus={onFocus} />
                                 ) : (
                                     <LoadingNodeSlot side="left" />
                                 )
@@ -607,7 +607,7 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle, isRoot = false }) {
                             <LegLabel side="right" />
                             {node.has_right ? (
                                 node.right ? (
-                                    <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                    <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onFocus={onFocus} />
                                 ) : (
                                     <LoadingNodeSlot side="right" />
                                 )
@@ -683,72 +683,56 @@ export default function MemberTeamPage() {
         }
     }, [t]);
 
-    /** Replace one node anywhere in the tree with a freshly-fetched version (which carries its left/right children). */
-    const replaceTreeNode = useCallback((root, nodeId, replacement) => {
-        if (!root) {
-            return root;
+    /**
+     * Returns the set of IDs to keep "expanded" so the rendered tree shows the focused
+     * user plus their direct left/right plus those legs' direct left/right (total = 7 nodes,
+     * arranged left-to-right). i.e. expand the root and its immediate children only.
+     */
+    const buildExpandedIdsForFocus = useCallback((root) => {
+        const ids = new Set();
+        if (!root?.id) {
+            return ids;
         }
-        if (root.id === nodeId) {
-            return { ...root, ...replacement };
+        ids.add(root.id);
+        if (root.left?.id) {
+            ids.add(root.left.id);
         }
-        return {
-            ...root,
-            left: root.left ? replaceTreeNode(root.left, nodeId, replacement) : root.left,
-            right: root.right ? replaceTreeNode(root.right, nodeId, replacement) : root.right,
-        };
+        if (root.right?.id) {
+            ids.add(root.right.id);
+        }
+        return ids;
     }, []);
 
-    /** Initial load: only the root chip — children appear when the user clicks. */
+    /** Initial load: show the current user + 2 levels below (= up to 7 nodes total). */
     const loadTree = useCallback(async () => {
         setTreeErr(null);
         try {
             await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 1 } });
-            setTree(json.tree);
-            setShowTree(true);
-            setTreePreviewExpanded(true);
-            setIsFocusedView(false);
-            setExpandedIds(new Set());
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 2 } });
+            if (json?.tree) {
+                setTree(json.tree);
+                setShowTree(true);
+                setTreePreviewExpanded(true);
+                setIsFocusedView(false);
+                setExpandedIds(buildExpandedIdsForFocus(json.tree));
+            }
             setLoadingIds(new Set());
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
         }
-    }, [t]);
+    }, [buildExpandedIdsForFocus, t]);
 
     /**
-     * Toggle a node: if collapsed, fetch its direct children once (and cache by mutating the tree),
-     * then mark expanded. If already expanded, simply collapse it (no refetch).
+     * Click any user chip → re-root the viewer on that user and fetch their tree to a depth
+     * of 2 (= 1 + 2 + 4 = 7 members visible in left-to-right order). If the clicked node is
+     * already the focused root, this is a cheap no-op.
      */
-    const toggleNode = useCallback(
+    const focusNode = useCallback(
         async (node) => {
             if (!node?.id) {
                 return;
             }
-            const alreadyExpanded = expandedIds.has(node.id);
-            if (alreadyExpanded) {
-                setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(node.id);
-                    return next;
-                });
-                return;
-            }
-
-            /**
-             * Children are *truly* loaded only when each existing leg has a populated object.
-             * Server returns `null` for legs that exist but were below the requested depth,
-             * so a `null` value should be treated as "not yet loaded", not "loaded but empty".
-             */
-            const leftReady = !node.has_left || Boolean(node.left);
-            const rightReady = !node.has_right || Boolean(node.right);
-            const childrenAlreadyLoaded = leftReady && rightReady;
-
-            if (childrenAlreadyLoaded) {
-                setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    next.add(node.id);
-                    return next;
-                });
+            if (tree && tree.id === node.id) {
                 return;
             }
 
@@ -762,15 +746,14 @@ export default function MemberTeamPage() {
             try {
                 await prepareSanctum();
                 const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                    params: { node_id: node.id, depth: 1 },
+                    params: { node_id: node.id, depth: 2 },
                 });
                 if (json?.tree) {
-                    setTree((prev) => replaceTreeNode(prev, node.id, json.tree));
-                    setExpandedIds((prev) => {
-                        const next = new Set(prev);
-                        next.add(node.id);
-                        return next;
-                    });
+                    setTree(json.tree);
+                    setExpandedIds(buildExpandedIdsForFocus(json.tree));
+                    setIsFocusedView(true);
+                    setShowTree(true);
+                    setTreePreviewExpanded(true);
                 }
             } catch (e) {
                 setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
@@ -782,10 +765,11 @@ export default function MemberTeamPage() {
                 });
             }
         },
-        [expandedIds, replaceTreeNode, t],
+        [tree, buildExpandedIdsForFocus, t],
     );
 
-    /** Search by login_uid — re-roots the viewer on that member (still inside your binary subtree). */
+    /** Search by login_uid — re-roots the viewer on that member (still inside your binary subtree)
+     *  and shows their 2-level subtree (= up to 7 members). */
     const searchByUid = useCallback(async () => {
         const q = uidQuery.trim();
         if (q === '') {
@@ -796,14 +780,14 @@ export default function MemberTeamPage() {
         try {
             await prepareSanctum();
             const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                params: { uid: q, depth: 1 },
+                params: { uid: q, depth: 2 },
             });
             if (json?.tree) {
                 setTree(json.tree);
                 setIsFocusedView(true);
                 setShowTree(true);
                 setTreePreviewExpanded(true);
-                setExpandedIds(new Set());
+                setExpandedIds(buildExpandedIdsForFocus(json.tree));
                 setLoadingIds(new Set());
             }
         } catch (e) {
@@ -811,7 +795,7 @@ export default function MemberTeamPage() {
         } finally {
             setUidSearching(false);
         }
-    }, [uidQuery, t]);
+    }, [uidQuery, buildExpandedIdsForFocus, t]);
 
     useEffect(() => {
         load();
@@ -954,7 +938,7 @@ export default function MemberTeamPage() {
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Tap your User ID to reveal direct members. Keep clicking left or right to explore deeper.
+                                Tap any User ID to view that user with the next two levels — total 7 members shown in left‑to‑right order.
                             </p>
                             <div
                                 className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
@@ -970,7 +954,7 @@ export default function MemberTeamPage() {
                                         node={tree}
                                         expandedIds={expandedIds}
                                         loadingIds={loadingIds}
-                                        onToggle={toggleNode}
+                                        onFocus={focusNode}
                                         isRoot
                                     />
                                 </div>
