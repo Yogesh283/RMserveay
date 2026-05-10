@@ -639,8 +639,10 @@ export default function MemberTeamPage() {
     const [showTree, setShowTree] = useState(false);
     const [err, setErr] = useState(null);
     const [treeErr, setTreeErr] = useState(null);
-    /** Click-to-expand state for the binary tree. Each node fetches its direct children on click. */
-    const [expandedIds, setExpandedIds] = useState(() => new Set());
+    /** Tree navigation state. The full subtree is fetched once (depth 100) and stored
+     *  in `tree`; the renderer only ever shows 7 nodes at a time around `focusedNodeId`. */
+    const [rootId, setRootId] = useState(null);
+    const [focusedNodeId, setFocusedNodeId] = useState(null);
     const [loadingIds, setLoadingIds] = useState(() => new Set());
     const [isFocusedView, setIsFocusedView] = useState(false);
     const [uidQuery, setUidQuery] = useState('');
@@ -679,36 +681,40 @@ export default function MemberTeamPage() {
         }
     }, [t]);
 
-    /**
-     * Walk the fetched tree and collect IDs of every node whose direct children
-     * objects are populated. We only expand "ancestor" nodes whose left/right are
-     * actually loaded, never leaf placeholders — otherwise the renderer would show
-     * a loading spinner for unfetched depths.
-     */
-    const collectExpandedIds = useCallback((root) => {
-        const ids = new Set();
-        const walk = (n) => {
-            if (!n?.id) {
-                return;
+    /** Find a node anywhere in the loaded tree by its DB id. Returns the node object or null. */
+    const findNodeById = useCallback((root, id) => {
+        if (!root || id == null) {
+            return null;
+        }
+        if (root.id === id) {
+            return root;
+        }
+        return findNodeById(root.left, id) || findNodeById(root.right, id);
+    }, []);
+
+    /** Find a node anywhere in the loaded tree by login_uid (case-insensitive). */
+    const findNodeByLoginUid = useCallback((root, uid) => {
+        if (!root || !uid) {
+            return null;
+        }
+        const target = String(uid).trim().toLowerCase();
+        const dive = (n) => {
+            if (!n) {
+                return null;
             }
-            const hasLoadedChild = Boolean(n.left || n.right);
-            if (hasLoadedChild) {
-                ids.add(n.id);
+            if (String(n.login_uid ?? '').toLowerCase() === target) {
+                return n;
             }
-            if (n.left) {
-                walk(n.left);
-            }
-            if (n.right) {
-                walk(n.right);
-            }
+            return dive(n.left) || dive(n.right);
         };
-        walk(root);
-        return ids;
+        return dive(root);
     }, []);
 
     /**
-     * Initial load: show the current user + 2 levels below (= up to 7 members total,
-     * arranged left-to-right). Deeper levels are reachable by clicking any node.
+     * Initial load: fetch the *entire* binary subtree once (depth 100) so all
+     * navigation afterwards is instant — no further API calls needed for clicks.
+     * Display, however, is intentionally limited to 7 nodes at a time
+     * (focused user + their direct L/R + grandchildren).
      */
     const loadTree = useCallback(async () => {
         setTreeErr(null);
@@ -717,70 +723,52 @@ export default function MemberTeamPage() {
             const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 100 } });
             if (json?.tree) {
                 setTree(json.tree);
+                setRootId(json.tree.id);
+                setFocusedNodeId(json.tree.id);
                 setShowTree(true);
                 setTreePreviewExpanded(true);
                 setIsFocusedView(false);
-                setExpandedIds(collectExpandedIds(json.tree));
             }
             setLoadingIds(new Set());
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
         }
-    }, [collectExpandedIds, t]);
+    }, [t]);
 
     /**
-     * Click any user chip → re-root the viewer on that user and fetch their tree to
-     * a depth of 2 (= 1 + 2 + 4 = 7 members visible in left-to-right order).
+     * Click any visible chip → just shift the focused window to that node within
+     * the already-loaded tree. No API call, instant.
      */
     const focusNode = useCallback(
-        async (node) => {
+        (node) => {
             if (!node?.id) {
                 return;
             }
-            if (tree && tree.id === node.id) {
-                return;
-            }
-
-            setTreeErr(null);
-            setLoadingIds((prev) => {
-                const next = new Set(prev);
-                next.add(node.id);
-                return next;
-            });
-
-            try {
-                await prepareSanctum();
-                const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                    params: { node_id: node.id, depth: 100 },
-                });
-                if (json?.tree) {
-                    setTree(json.tree);
-                    setExpandedIds(collectExpandedIds(json.tree));
-                    setIsFocusedView(true);
-                    setShowTree(true);
-                    setTreePreviewExpanded(true);
-                }
-            } catch (e) {
-                setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
-            } finally {
-                setLoadingIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(node.id);
-                    return next;
-                });
-            }
+            setFocusedNodeId(node.id);
+            setIsFocusedView(rootId !== null && node.id !== rootId);
         },
-        [tree, collectExpandedIds, t],
+        [rootId],
     );
 
-    /** Search by login_uid — re-roots the viewer on that member (still inside your binary subtree)
-     *  and shows their 2-level subtree (= up to 7 members). */
+    /**
+     * Search by login_uid. First tries the cached tree (instant — no network).
+     * Falls back to a fresh API request if the UID isn't in the loaded subtree
+     * (rare, only for very deep teams beyond depth 100).
+     */
     const searchByUid = useCallback(async () => {
         const q = uidQuery.trim();
         if (q === '') {
             return;
         }
         setTreeErr(null);
+
+        const local = findNodeByLoginUid(tree, q);
+        if (local) {
+            setFocusedNodeId(local.id);
+            setIsFocusedView(local.id !== rootId);
+            return;
+        }
+
         setUidSearching(true);
         try {
             await prepareSanctum();
@@ -789,10 +777,11 @@ export default function MemberTeamPage() {
             });
             if (json?.tree) {
                 setTree(json.tree);
+                setRootId(json.tree.id);
+                setFocusedNodeId(json.tree.id);
                 setIsFocusedView(true);
                 setShowTree(true);
                 setTreePreviewExpanded(true);
-                setExpandedIds(collectExpandedIds(json.tree));
                 setLoadingIds(new Set());
             }
         } catch (e) {
@@ -800,7 +789,44 @@ export default function MemberTeamPage() {
         } finally {
             setUidSearching(false);
         }
-    }, [uidQuery, collectExpandedIds, t]);
+    }, [uidQuery, tree, rootId, findNodeByLoginUid, t]);
+
+    /** Returns the node currently in focus; falls back to the actual root. */
+    const focusedNode = useMemo(() => {
+        if (!tree) {
+            return null;
+        }
+        if (focusedNodeId == null) {
+            return tree;
+        }
+        return findNodeById(tree, focusedNodeId) || tree;
+    }, [tree, focusedNodeId, findNodeById]);
+
+    /** IDs that should be expanded in the renderer to keep the visible window at 7 nodes:
+     *  the focused node + its immediate left + immediate right. Grandchildren show inside
+     *  those children's slot (not as their own expanded subtree). */
+    const visibleExpandedIds = useMemo(() => {
+        const ids = new Set();
+        if (!focusedNode?.id) {
+            return ids;
+        }
+        ids.add(focusedNode.id);
+        if (focusedNode.left?.id) {
+            ids.add(focusedNode.left.id);
+        }
+        if (focusedNode.right?.id) {
+            ids.add(focusedNode.right.id);
+        }
+        return ids;
+    }, [focusedNode]);
+
+    /** Reset focus back to the original root user (the page owner). */
+    const resetFocusToRoot = useCallback(() => {
+        if (rootId != null) {
+            setFocusedNodeId(rootId);
+            setIsFocusedView(false);
+        }
+    }, [rootId]);
 
     useEffect(() => {
         load();
@@ -964,7 +990,7 @@ export default function MemberTeamPage() {
                                     {isFocusedView ? (
                                         <button
                                             type="button"
-                                            onClick={() => loadTree()}
+                                            onClick={() => resetFocusToRoot()}
                                             className="shrink-0 rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-3 py-2 text-[12px] font-semibold text-emerald-100 transition hover:border-emerald-300/60 hover:bg-emerald-500/25"
                                         >
                                             ← Back to my tree
@@ -978,7 +1004,7 @@ export default function MemberTeamPage() {
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Showing your full binary team — every level. Tap any User ID to focus on that member’s subtree.
+                                Showing 7 members at a time (you + L/R + their L/R). Full team data is loaded — tap any User ID to instantly focus on that member.
                             </p>
                             <div
                                 className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
@@ -991,8 +1017,8 @@ export default function MemberTeamPage() {
                                     style={{ justifyContent: 'safe center' }}
                                 >
                                     <TreeNode
-                                        node={tree}
-                                        expandedIds={expandedIds}
+                                        node={focusedNode}
+                                        expandedIds={visibleExpandedIds}
                                         loadingIds={loadingIds}
                                         onFocus={focusNode}
                                         isRoot
