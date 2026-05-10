@@ -44,7 +44,7 @@ const moreMenuMetaByRoute = {
         chevron: 'border-emerald-300/45 bg-emerald-500/18 text-emerald-100',
     },
     '/member/support-tickets': {
-        subtitle: 'Help and issues',
+        subtitle: 'Help and queries',
         glow: 'from-cyan-500/35 to-sky-500/15',
         ring: 'ring-cyan-400/55',
         border: 'border-cyan-400/35',
@@ -66,7 +66,7 @@ const moreMenuMetaByRoute = {
         chevron: 'border-amber-300/45 bg-amber-500/18 text-amber-100',
     },
     '/member/sub-panels': {
-        subtitle: 'Sub panel management',
+        subtitle: 'Manage sub-panels',
         glow: 'from-sky-500/35 to-blue-500/15',
         ring: 'ring-sky-400/55',
         border: 'border-sky-400/35',
@@ -77,7 +77,7 @@ const moreMenuMetaByRoute = {
         chevron: 'border-sky-300/45 bg-sky-500/18 text-sky-100',
     },
     '/member/super-sub-panels': {
-        subtitle: 'Super hierarchy',
+        subtitle: 'Manage super panels',
         glow: 'from-fuchsia-500/35 to-purple-500/15',
         ring: 'ring-fuchsia-400/55',
         border: 'border-fuchsia-400/35',
@@ -110,7 +110,7 @@ const moreMenuMetaByRoute = {
         chevron: 'border-rose-300/45 bg-rose-500/18 text-rose-100',
     },
     '/member/sub-panel-matching': {
-        subtitle: 'Sub matching analytics',
+        subtitle: 'Sub-panel matching analytics',
         glow: 'from-indigo-500/35 to-blue-500/15',
         ring: 'ring-indigo-400/55',
         border: 'border-indigo-400/35',
@@ -121,7 +121,7 @@ const moreMenuMetaByRoute = {
         chevron: 'border-indigo-300/45 bg-indigo-500/18 text-indigo-100',
     },
     '/member/super-sub-panel-matching': {
-        subtitle: 'Super matching analytics',
+        subtitle: 'Super-panel matching analytics',
         glow: 'from-orange-500/35 to-amber-500/15',
         ring: 'ring-orange-400/55',
         border: 'border-orange-400/35',
@@ -758,8 +758,8 @@ export default function MemberShell() {
                             </button>
                             <div className="pointer-events-none absolute left-6 top-2 h-2 w-2 rounded-full bg-[#8B5CF6]/70 blur-[1px]" />
                             <div className="pointer-events-none absolute right-8 top-6 h-1.5 w-1.5 rounded-full bg-cyan-300/70 blur-[1px]" />
-                            <p className="text-[14px] font-bold tracking-tight text-white">More Options</p>
-                            <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account & earnings</p>
+                            <p className="text-[14px] font-bold tracking-tight text-white">More options</p>
+                            <p className="mt-0.5 text-[10px] text-[#94A3B8]">Manage your account and earnings</p>
                         </div>
                         {referralUrl ? (
                             <div className="mx-2 mb-3">
@@ -777,8 +777,8 @@ export default function MemberShell() {
                                             </svg>
                                         </span>
                                         <span className="min-w-0">
-                                            <span className="block text-[15px] font-bold leading-tight text-white">Open Referral Links</span>
-                                            <span className="block text-[11px] font-medium text-fuchsia-100/85">Share left & right invites</span>
+                                            <span className="block text-[15px] font-bold leading-tight text-white">Open referral links</span>
+                                            <span className="block text-[11px] font-medium text-fuchsia-100/85">Share your left and right invite links</span>
                                         </span>
                                     </span>
                                     <svg className="relative h-4 w-4 shrink-0 text-fuchsia-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} aria-hidden>
@@ -802,8 +802,8 @@ export default function MemberShell() {
                                         </svg>
                                     </span>
                                     <span className="min-w-0">
-                                        <span className="block truncate text-sm font-bold text-white">Publisher Login</span>
-                                        <span className="block truncate text-[10px] font-medium text-amber-100/85">Open publisher account login</span>
+                                        <span className="block truncate text-sm font-bold text-white">Publisher login</span>
+                                        <span className="block truncate text-[10px] font-medium text-amber-100/85">Sign in to your publisher account</span>
                                     </span>
                                 </span>
                                 <svg className="relative h-4 w-4 shrink-0 text-amber-100 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>

@@ -68,7 +68,7 @@ export default function MemberSurveyProfileFormPage() {
                 });
             } catch {
                 if (!cancelled) {
-                    setErr('Could not load profile form.');
+                    setErr('Unable to load profile form. Please refresh and try again.');
                 }
             }
         })();
@@ -104,7 +104,7 @@ export default function MemberSurveyProfileFormPage() {
         e.preventDefault();
         if (!user) return;
         if (isGate && missingRequired.length > 0) {
-            setErr('Please fill all required fields before continuing to surveys.');
+            setErr('Please complete all required fields before continuing to surveys.');
             return;
         }
         setSaving(true);
@@ -130,7 +130,7 @@ export default function MemberSurveyProfileFormPage() {
                 profile: user.profile ?? null,
                 survey_profile: payload,
             });
-            setMsg('Survey profile saved.');
+            setMsg('Survey profile saved successfully.');
             setForm((prev) => ({ ...prev, ...payload }));
             if (isGate && isSurveyProfileComplete(payload)) {
                 navigate(fromPath || '/member/surveys', { replace: true });
@@ -141,7 +141,7 @@ export default function MemberSurveyProfileFormPage() {
             if (e2.response?.data?.errors) {
                 setFieldErrors(e2.response.data.errors);
             }
-            setErr(e2.response?.data?.message ?? e2.message ?? 'Could not save form.');
+            setErr(e2.response?.data?.message ?? e2.message ?? 'Unable to save the form. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -158,13 +158,13 @@ export default function MemberSurveyProfileFormPage() {
         <div className="mx-auto max-w-3xl space-y-2.5">
             <header className="rounded-2xl border border-violet-300/15 bg-[#0b1020]/60 px-3 py-2.5 backdrop-blur-xl">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C4B5FD]">RM Survey</p>
-                <h1 className="mt-1 text-xl font-bold text-white">Short User Profile Form</h1>
-                <p className="mt-1 text-xs text-white">Fill this once to improve survey targeting and rewards relevance.</p>
+                <h1 className="mt-1 text-xl font-bold text-white">Survey profile</h1>
+                <p className="mt-1 text-xs text-white">Complete this once to improve survey targeting and reward relevance.</p>
             </header>
 
             {isGate ? (
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-100">
-                    <p className="text-xs font-semibold">Profile required before surveys</p>
+                    <p className="text-xs font-semibold">Please complete your profile to access surveys</p>
                     {missingRequired.length > 0 ? (
                         <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-100">
                             {missingRequired.length} pending
@@ -178,7 +178,7 @@ export default function MemberSurveyProfileFormPage() {
 
             <form onSubmit={onSubmit} className="space-y-2.5">
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">1. Basic Information</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">1. Basic information</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
                         <Field label="Full Name" error={errorFor('full_name')}><input className={inputCls} value={form.full_name ?? ''} onChange={(e) => setField('full_name', e.target.value)} /></Field>
                         <Field label="Gender" error={errorFor('gender')}>
@@ -194,28 +194,28 @@ export default function MemberSurveyProfileFormPage() {
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">2. Contact Information</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">2. Contact information</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Mobile Number" error={errorFor('mobile_number')}><input className={inputCls} value={form.mobile_number ?? ''} onChange={(e) => setField('mobile_number', e.target.value)} /></Field>
-                        <Field label="Email ID" error={errorFor('email_id')}><input type="email" className={inputCls} value={form.email_id ?? ''} onChange={(e) => setField('email_id', e.target.value)} /></Field>
+                        <Field label="Mobile number" error={errorFor('mobile_number')}><input className={inputCls} value={form.mobile_number ?? ''} onChange={(e) => setField('mobile_number', e.target.value)} /></Field>
+                        <Field label="Email address" error={errorFor('email_id')}><input type="email" className={inputCls} value={form.email_id ?? ''} onChange={(e) => setField('email_id', e.target.value)} /></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">3-5. Education, Work, Device</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">3. Education, work & device</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Education Level" error={errorFor('education_level')}><select className={inputCls} value={form.education_level ?? ''} onChange={(e) => setField('education_level', e.target.value)}><option value="">Select</option><option value="10th">10th</option><option value="12th">12th</option><option value="graduate">Graduate</option><option value="post_graduate">Post Graduate</option></select></Field>
-                        <Field label="Occupation" error={errorFor('occupation')}><select className={inputCls} value={form.occupation ?? ''} onChange={(e) => setField('occupation', e.target.value)}><option value="">Select</option><option value="student">Student</option><option value="job">Job</option><option value="business">Business</option><option value="freelancer">Freelancer</option><option value="unemployed">Unemployed</option></select></Field>
-                        <Field label="Monthly Income Range" error={errorFor('monthly_income_range')}><select className={inputCls} value={form.monthly_income_range ?? ''} onChange={(e) => setField('monthly_income_range', e.target.value)}><option value="">Select</option><option value="10k_25k">₹10k–25k</option><option value="25k_50k">₹25k–50k</option><option value="50k_plus">₹50k+</option></select></Field>
-                        <Field label="Device" error={errorFor('device_type')}><select className={inputCls} value={form.device_type ?? ''} onChange={(e) => setField('device_type', e.target.value)}><option value="">Select</option><option value="android">Android</option><option value="iphone">iPhone</option></select></Field>
-                        <Field label="Internet Usage" error={errorFor('internet_usage')}><select className={inputCls} value={form.internet_usage ?? ''} onChange={(e) => setField('internet_usage', e.target.value)}><option value="">Select</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></Field>
+                        <Field label="Education level" error={errorFor('education_level')}><select className={inputCls} value={form.education_level ?? ''} onChange={(e) => setField('education_level', e.target.value)}><option value="">Select</option><option value="10th">10th</option><option value="12th">12th</option><option value="graduate">Graduate</option><option value="post_graduate">Post-graduate</option></select></Field>
+                        <Field label="Occupation" error={errorFor('occupation')}><select className={inputCls} value={form.occupation ?? ''} onChange={(e) => setField('occupation', e.target.value)}><option value="">Select</option><option value="student">Student</option><option value="job">Salaried</option><option value="business">Business</option><option value="freelancer">Freelancer</option><option value="unemployed">Unemployed</option></select></Field>
+                        <Field label="Monthly income range" error={errorFor('monthly_income_range')}><select className={inputCls} value={form.monthly_income_range ?? ''} onChange={(e) => setField('monthly_income_range', e.target.value)}><option value="">Select</option><option value="10k_25k">₹10k–25k</option><option value="25k_50k">₹25k–50k</option><option value="50k_plus">₹50k+</option></select></Field>
+                        <Field label="Device type" error={errorFor('device_type')}><select className={inputCls} value={form.device_type ?? ''} onChange={(e) => setField('device_type', e.target.value)}><option value="">Select</option><option value="android">Android</option><option value="iphone">iPhone</option></select></Field>
+                        <Field label="Internet usage" error={errorFor('internet_usage')}><select className={inputCls} value={form.internet_usage ?? ''} onChange={(e) => setField('internet_usage', e.target.value)}><option value="">Select</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">6-8. Interests, Social, Preferences</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">4. Interests, social & preferences</p>
                     <div className="mt-2.5">
-                        <p className={labelCls}>Interests (Multi Select)</p>
+                        <p className={labelCls}>Interests (select multiple)</p>
                         <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                             {interestOptions.map((x) => (
                                 <button key={x} type="button" onClick={() => toggleInterest(x)} className={`rounded-lg border px-2 py-1 text-[11px] ${form.interests.includes(x) ? 'border-violet-300/55 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/[0.04] text-white'}`}>
@@ -225,20 +225,20 @@ export default function MemberSurveyProfileFormPage() {
                         </div>
                     </div>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <YesNo label="Instagram User?" checked={form.instagram_user} onChange={(v) => setField('instagram_user', v)} />
-                        <YesNo label="YouTube User?" checked={form.youtube_user} onChange={(v) => setField('youtube_user', v)} />
-                        <YesNo label="Telegram User?" checked={form.telegram_user} onChange={(v) => setField('telegram_user', v)} />
-                        <Field label="Preferred Survey Language" error={errorFor('preferred_survey_language')}><input className={inputCls} value={form.preferred_survey_language ?? ''} onChange={(e) => setField('preferred_survey_language', e.target.value)} /></Field>
-                        <Field label="Preferred Survey Category" error={errorFor('preferred_survey_category')}><input className={inputCls} value={form.preferred_survey_category ?? ''} onChange={(e) => setField('preferred_survey_category', e.target.value)} /></Field>
+                        <YesNo label="Active on Instagram?" checked={form.instagram_user} onChange={(v) => setField('instagram_user', v)} />
+                        <YesNo label="Active on YouTube?" checked={form.youtube_user} onChange={(v) => setField('youtube_user', v)} />
+                        <YesNo label="Active on Telegram?" checked={form.telegram_user} onChange={(v) => setField('telegram_user', v)} />
+                        <Field label="Preferred survey language" error={errorFor('preferred_survey_language')}><input className={inputCls} value={form.preferred_survey_language ?? ''} onChange={(e) => setField('preferred_survey_language', e.target.value)} /></Field>
+                        <Field label="Preferred survey category" error={errorFor('preferred_survey_category')}><input className={inputCls} value={form.preferred_survey_category ?? ''} onChange={(e) => setField('preferred_survey_category', e.target.value)} /></Field>
                     </div>
                 </RmsCard>
 
                 <RmsCard variant="elevated" className="!rounded-[18px] !border-violet-300/20 !bg-[#0b1020]/75 !p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">Optional</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">5. Optional details</p>
                     <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        <Field label="Married / Unmarried" error={errorFor('marital_status')}><select className={inputCls} value={form.marital_status ?? ''} onChange={(e) => setField('marital_status', e.target.value)}><option value="">Select</option><option value="married">Married</option><option value="unmarried">Unmarried</option></select></Field>
-                        <Field label="Car/Bike Owner" error={errorFor('vehicle_owner')}><select className={inputCls} value={form.vehicle_owner ?? ''} onChange={(e) => setField('vehicle_owner', e.target.value)}><option value="">Select</option><option value="none">No</option><option value="bike">Bike</option><option value="car">Car</option><option value="both">Both</option></select></Field>
-                        <YesNo label="Online Shopping User?" checked={form.online_shopping_user} onChange={(v) => setField('online_shopping_user', v)} />
+                        <Field label="Marital status" error={errorFor('marital_status')}><select className={inputCls} value={form.marital_status ?? ''} onChange={(e) => setField('marital_status', e.target.value)}><option value="">Select</option><option value="married">Married</option><option value="unmarried">Unmarried</option></select></Field>
+                        <Field label="Vehicle ownership" error={errorFor('vehicle_owner')}><select className={inputCls} value={form.vehicle_owner ?? ''} onChange={(e) => setField('vehicle_owner', e.target.value)}><option value="">Select</option><option value="none">None</option><option value="bike">Bike</option><option value="car">Car</option><option value="both">Both</option></select></Field>
+                        <YesNo label="Shop online regularly?" checked={form.online_shopping_user} onChange={(v) => setField('online_shopping_user', v)} />
                     </div>
                     {Object.keys(fieldErrors).length ? (
                         <div className="mt-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-[11px] text-red-200">
@@ -256,7 +256,7 @@ export default function MemberSurveyProfileFormPage() {
 
                 <div className="flex flex-wrap items-center gap-1.5">
                     <RmsButton type="submit" variant="neon" disabled={!canSave || (isGate && missingRequired.length > 0)}>
-                        {saving ? 'Saving…' : isGate ? 'Save & continue to surveys' : 'Save form'}
+                        {saving ? 'Saving…' : isGate ? 'Save and continue to surveys' : 'Save profile'}
                     </RmsButton>
                     <Link
                         to={isGate ? (fromPath || '/member') : '/member/profile'}
