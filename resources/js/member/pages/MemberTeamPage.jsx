@@ -182,16 +182,41 @@ function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChi
     const { t } = useTranslation();
     const superN = node.super_sub_panel_count > 0;
     const subOnly = !superN && node.sub_panel_count > 0;
-    const ring = node.is_active ? 'ring-1 ring-emerald-400/65 sm:ring-2 sm:ring-emerald-400/70' : '';
+    const isActive = Boolean(node.is_active);
 
-    const tierStyle = superN
-        ? 'border-amber-400/50 bg-amber-500/10 text-amber-50'
+    /** Tier-coded vivid gradient + glow. Active gets an emerald halo on top. */
+    const tier = superN
+        ? {
+              bg: 'bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.45),rgba(245,158,11,0.18)_45%,rgba(120,53,15,0.35)_100%)]',
+              border: 'border-amber-300/60',
+              text: 'text-amber-50',
+              glow: 'shadow-[0_8px_24px_rgba(245,158,11,0.35),inset_0_0_18px_rgba(251,191,36,0.18)]',
+          }
         : subOnly
-          ? 'border-sky-400/45 bg-sky-500/10 text-sky-50'
-          : 'border-white/15 bg-white/[0.06] text-white';
+          ? {
+                bg: 'bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.45),rgba(14,165,233,0.18)_45%,rgba(12,74,110,0.35)_100%)]',
+                border: 'border-sky-300/60',
+                text: 'text-sky-50',
+                glow: 'shadow-[0_8px_24px_rgba(56,189,248,0.32),inset_0_0_18px_rgba(56,189,248,0.18)]',
+            }
+          : isActive
+            ? {
+                  bg: 'bg-[radial-gradient(circle_at_30%_20%,rgba(167,139,250,0.45),rgba(139,92,246,0.2)_45%,rgba(76,29,149,0.4)_100%)]',
+                  border: 'border-violet-300/55',
+                  text: 'text-violet-50',
+                  glow: 'shadow-[0_8px_24px_rgba(139,92,246,0.32),inset_0_0_16px_rgba(167,139,250,0.16)]',
+              }
+            : {
+                  bg: 'bg-[radial-gradient(circle_at_30%_20%,rgba(148,163,184,0.28),rgba(71,85,105,0.18)_50%,rgba(15,23,42,0.45)_100%)]',
+                  border: 'border-slate-400/30',
+                  text: 'text-slate-100',
+                  glow: 'shadow-[0_6px_18px_rgba(0,0,0,0.5)]',
+              };
+
+    const activeRing = isActive ? 'ring-2 ring-emerald-400/55 sm:ring-2 sm:ring-emerald-400/70' : 'ring-1 ring-white/10';
 
     const interactive = typeof onClick === 'function' && hasChildren;
-    const cursorCls = interactive ? 'cursor-pointer hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
+    const cursorCls = interactive ? 'cursor-pointer hover:brightness-115 active:scale-[0.96]' : 'cursor-default';
 
     const Wrapper = interactive ? 'button' : 'div';
     const wrapperProps = interactive
@@ -206,41 +231,45 @@ function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChi
     return (
         <Wrapper
             {...wrapperProps}
-            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.34)] ring-offset-1 ring-offset-[#0b0f1a] transition sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_8px_28px_rgba(0,0,0,0.38)] sm:ring-offset-2 ${tierStyle} ${ring} ${cursorCls}`}
+            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px overflow-hidden rounded-full border px-1.5 py-1 text-center backdrop-blur-md ring-offset-1 ring-offset-[#0b0f1a] transition duration-200 sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:ring-offset-2 ${tier.bg} ${tier.border} ${tier.text} ${tier.glow} ${activeRing} ${cursorCls}`}
         >
-            <p className="max-w-[92%] truncate text-[9px] font-semibold leading-none sm:text-[11px] sm:leading-tight">
+            <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.18),transparent_60%)]"
+            />
+            <p className="relative z-10 max-w-[92%] truncate text-[9px] font-bold leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] sm:text-[11px] sm:leading-tight">
                 {node.login_uid || node.name || t('member.ui.dash')}
             </p>
-            <div className="flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
-                {node.is_active ? (
-                    <span className="rounded-full bg-emerald-500/20 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-emerald-300 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+            <div className="relative z-10 flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
+                {isActive ? (
+                    <span className="rounded-full border border-emerald-300/50 bg-emerald-500/30 px-0.5 py-px text-[8px] font-bold uppercase leading-none text-emerald-50 shadow-[0_0_8px_rgba(16,185,129,0.5)] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.active')}
                     </span>
                 ) : (
-                    <span className="rounded-full bg-white/10 px-0.5 py-px text-[8px] uppercase leading-none text-[#94A3B8] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full border border-white/15 bg-slate-500/30 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-slate-200 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.inactive')}
                     </span>
                 )}
                 {superN ? (
-                    <span className="rounded-full bg-amber-500/25 px-0.5 py-px text-[8px] leading-none text-amber-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full border border-amber-300/55 bg-amber-500/35 px-0.5 py-px text-[8px] font-bold leading-none text-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.45)] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.super')}
                     </span>
                 ) : null}
                 {subOnly ? (
-                    <span className="rounded-full bg-sky-500/25 px-0.5 py-px text-[8px] leading-none text-sky-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full border border-sky-300/55 bg-sky-500/35 px-0.5 py-px text-[8px] font-bold leading-none text-sky-50 shadow-[0_0_8px_rgba(56,189,248,0.45)] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.sub')}
                     </span>
                 ) : null}
             </div>
-            <p className="max-w-[94%] truncate text-[8px] leading-none text-white/55 sm:text-[10px] sm:leading-tight">
+            <p className="relative z-10 max-w-[94%] truncate text-[8px] font-semibold leading-none text-white/80 tabular-nums sm:text-[10px] sm:leading-tight">
                 {t('member.team.nodeSubSuper', { sub: node.sub_panel_count, super: node.super_sub_panel_count })}
             </p>
             {hasChildren ? (
                 <span
-                    className={`absolute -bottom-1 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold leading-none shadow-[0_4px_10px_rgba(0,0,0,0.4)] sm:-bottom-1.5 sm:right-1.5 sm:h-6 sm:w-6 sm:text-[12px] ${
+                    className={`absolute -bottom-1 right-1 z-20 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-extrabold leading-none shadow-[0_4px_12px_rgba(0,0,0,0.55)] sm:-bottom-1.5 sm:right-1.5 sm:h-6 sm:w-6 sm:text-[12px] ${
                         isExpanded
-                            ? 'border-emerald-300/55 bg-emerald-500/85 text-white'
-                            : 'border-violet-300/55 bg-violet-500/85 text-white'
+                            ? 'border-emerald-200/70 bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_14px_rgba(16,185,129,0.65)]'
+                            : 'border-fuchsia-200/70 bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-[0_0_14px_rgba(217,70,239,0.6)]'
                     }`}
                     aria-hidden
                 >
@@ -501,7 +530,7 @@ function buildTreeLegMatchingRows(legs, t, activeMatching) {
 function EmptyNodeSlot() {
     const { t } = useTranslation();
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[9px] text-[#64748B] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-slate-400/30 bg-[radial-gradient(circle_at_50%_50%,rgba(148,163,184,0.08),transparent_70%)] text-[9px] font-medium text-slate-400/80 sm:h-[118px] sm:w-[118px] sm:text-[11px]">
             {t('member.ui.empty')}
         </div>
     );
@@ -509,7 +538,7 @@ function EmptyNodeSlot() {
 
 function LoadingNodeSlot() {
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/45 bg-violet-500/[0.06] text-[9px] text-violet-200/85 sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/50 bg-[radial-gradient(circle_at_50%_50%,rgba(167,139,250,0.18),transparent_70%)] text-[9px] text-violet-200 shadow-[0_0_16px_rgba(139,92,246,0.25)] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
                 <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
             </svg>
@@ -517,7 +546,38 @@ function LoadingNodeSlot() {
     );
 }
 
-function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
+/** Vertical connector descending from a parent node into the L/R split bar. */
+function TrunkConnector() {
+    return (
+        <span
+            aria-hidden
+            className="block h-3 w-[2px] rounded-full bg-gradient-to-b from-violet-400/80 via-fuchsia-400/55 to-transparent shadow-[0_0_8px_rgba(167,139,250,0.45)] sm:h-5"
+        />
+    );
+}
+
+/** Top horizontal+vertical "elbow" connector for each child column.
+ *  side: 'left' | 'right'. Colors: left=cyan, right=fuchsia. */
+function ElbowConnector({ side }) {
+    const isLeft = side === 'left';
+    const horizontal = isLeft
+        ? 'right-1/2 bg-gradient-to-l from-cyan-400/75 via-cyan-400/50 to-cyan-400/15'
+        : 'left-1/2 bg-gradient-to-r from-fuchsia-400/75 via-fuchsia-400/50 to-fuchsia-400/15';
+    const verticalColor = isLeft
+        ? 'bg-gradient-to-b from-cyan-400/75 to-cyan-400/15 shadow-[0_0_6px_rgba(34,211,238,0.5)]'
+        : 'bg-gradient-to-b from-fuchsia-400/75 to-fuchsia-400/15 shadow-[0_0_6px_rgba(217,70,239,0.5)]';
+    return (
+        <span aria-hidden className="relative block h-4 w-full sm:h-6">
+            <span className={`absolute top-0 h-[2px] w-1/2 rounded-full ${horizontal}`} />
+            <span
+                className={`absolute top-0 h-full w-[2px] rounded-full ${verticalColor}`}
+                style={{ left: 'calc(50% - 1px)' }}
+            />
+        </span>
+    );
+}
+
+function TreeNode({ node, expandedIds, loadingIds, onToggle, depth = 0 }) {
     const { t } = useTranslation();
     if (!node) {
         return <EmptyNodeSlot />;
@@ -528,7 +588,7 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
     const isLoading = loadingIds.has(node.id);
 
     return (
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2.5">
+        <div className="flex flex-col items-center">
             <NodeChip
                 node={node}
                 onClick={hasChildren ? () => onToggle(node) : undefined}
@@ -537,32 +597,45 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
                 hasChildren={hasChildren}
             />
             {hasChildren && isExpanded ? (
-                <div className="flex gap-2.5 border-t border-white/[0.12] pt-2 sm:gap-10 sm:pt-4">
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-sky-300/95 sm:text-[10px]">{t('member.ui.left')}</span>
-                        {node.has_left ? (
-                            node.left ? (
-                                <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
-                            ) : (
-                                <LoadingNodeSlot />
-                            )
-                        ) : (
-                            <EmptyNodeSlot />
-                        )}
+                <>
+                    <TrunkConnector />
+                    <div className="flex items-stretch gap-3 sm:gap-12">
+                        <div className="relative flex w-[86px] flex-col items-center sm:w-[118px]">
+                            <ElbowConnector side="left" />
+                            <span className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-cyan-400/45 bg-cyan-500/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-cyan-100 shadow-[0_0_8px_rgba(34,211,238,0.3)] sm:text-[10px]">
+                                <span className="h-1 w-1 rounded-full bg-cyan-300" /> {t('member.ui.left')}
+                            </span>
+                            <div className="mt-1.5 sm:mt-2">
+                                {node.has_left ? (
+                                    node.left ? (
+                                        <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} depth={depth + 1} />
+                                    ) : (
+                                        <LoadingNodeSlot />
+                                    )
+                                ) : (
+                                    <EmptyNodeSlot />
+                                )}
+                            </div>
+                        </div>
+                        <div className="relative flex w-[86px] flex-col items-center sm:w-[118px]">
+                            <ElbowConnector side="right" />
+                            <span className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-fuchsia-400/45 bg-fuchsia-500/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-fuchsia-100 shadow-[0_0_8px_rgba(217,70,239,0.3)] sm:text-[10px]">
+                                <span className="h-1 w-1 rounded-full bg-fuchsia-300" /> {t('member.ui.right')}
+                            </span>
+                            <div className="mt-1.5 sm:mt-2">
+                                {node.has_right ? (
+                                    node.right ? (
+                                        <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} depth={depth + 1} />
+                                    ) : (
+                                        <LoadingNodeSlot />
+                                    )
+                                ) : (
+                                    <EmptyNodeSlot />
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-300/95 sm:text-[10px]">{t('member.ui.right')}</span>
-                        {node.has_right ? (
-                            node.right ? (
-                                <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
-                            ) : (
-                                <LoadingNodeSlot />
-                            )
-                        ) : (
-                            <EmptyNodeSlot />
-                        )}
-                    </div>
-                </div>
+                </>
             ) : null}
         </div>
     );
@@ -608,6 +681,8 @@ export default function MemberTeamPage() {
     /** Per-node expanded / fetch state for click-to-open binary tree. */
     const [expandedIds, setExpandedIds] = useState(() => new Set());
     const [loadingIds, setLoadingIds] = useState(() => new Set());
+    /** Tree zoom level for fit-to-screen on mobile (0.55–1.25). */
+    const [treeZoom, setTreeZoom] = useState(1);
     const [totalTeamTab, setTotalTeamTab] = useState('active');
     const [directExpanded, setDirectExpanded] = useState(false);
     const [treePreviewExpanded, setTreePreviewExpanded] = useState(true);
@@ -816,23 +891,66 @@ export default function MemberTeamPage() {
                                 <span className="rounded-full border border-sky-400/40 bg-sky-500/12 px-1.5 py-0.5 font-medium text-sky-100 sm:px-2">{t('member.ui.sub')}</span>
                                 <span className="rounded-full border border-amber-400/45 bg-amber-500/12 px-1.5 py-0.5 font-medium text-amber-100 sm:px-2">{t('member.ui.super')}</span>
                             </div>
-                            <p className="mt-3 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                {t('member.team.tapToExpandHint', { defaultValue: 'Click any node with a + badge to expand its branch.' })}
-                            </p>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-[10px] text-[#94A3B8] sm:text-[11px]">
+                                    {t('member.team.tapToExpandHint', { defaultValue: 'Tap any node with a + badge to expand its branch.' })}
+                                </p>
+                                <div className="inline-flex items-center gap-1 rounded-full border border-violet-300/25 bg-[#0b1020]/70 p-0.5 shadow-[0_0_18px_rgba(124,58,237,0.18)] backdrop-blur">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTreeZoom((z) => Math.max(0.55, +(z - 0.1).toFixed(2)))}
+                                        disabled={treeZoom <= 0.55}
+                                        aria-label="Zoom out"
+                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-500/15 text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-40 sm:h-7 sm:w-7"
+                                    >
+                                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M5 12h14" /></svg>
+                                    </button>
+                                    <span className="min-w-[2.6rem] text-center text-[10px] font-bold tabular-nums text-violet-100 sm:text-[11px]">
+                                        {Math.round(treeZoom * 100)}%
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTreeZoom((z) => Math.min(1.25, +(z + 0.1).toFixed(2)))}
+                                        disabled={treeZoom >= 1.25}
+                                        aria-label="Zoom in"
+                                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-fuchsia-400/40 bg-fuchsia-500/15 text-fuchsia-100 transition hover:border-fuchsia-300/70 hover:bg-fuchsia-500/30 disabled:cursor-not-allowed disabled:opacity-40 sm:h-7 sm:w-7"
+                                    >
+                                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M12 5v14M5 12h14" /></svg>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTreeZoom(1)}
+                                        aria-label="Reset zoom"
+                                        className="ml-0.5 inline-flex h-6 items-center justify-center rounded-full border border-violet-400/40 bg-violet-500/15 px-2 text-[10px] font-bold text-violet-100 transition hover:border-violet-300/70 hover:bg-violet-500/30 sm:h-7 sm:text-[11px]"
+                                    >
+                                        Fit
+                                    </button>
+                                </div>
+                            </div>
                             <div
-                                className="-mx-3 mt-3 overflow-x-auto overscroll-contain px-3 pb-6 sm:-mx-4 sm:mt-6 sm:max-h-[80vh] sm:overflow-auto sm:pb-3 sm:px-4"
+                                className="relative -mx-3 mt-3 overflow-x-auto overscroll-contain rounded-2xl border border-violet-300/15 bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.12),transparent_60%),radial-gradient(circle_at_50%_100%,rgba(34,211,238,0.08),transparent_60%)] px-3 pb-8 pt-4 sm:-mx-4 sm:mt-6 sm:max-h-[82vh] sm:overflow-auto sm:pb-4 sm:pt-6"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
                             >
+                                <span aria-hidden className="pointer-events-none absolute -left-12 top-8 h-32 w-32 rounded-full bg-violet-500/15 blur-3xl" />
+                                <span aria-hidden className="pointer-events-none absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-cyan-500/12 blur-3xl" />
                                 <div
-                                    className="flex min-w-full"
+                                    className="relative flex min-w-full"
                                     style={{ justifyContent: 'safe center' }}
                                 >
-                                    <TreeNode
-                                        node={tree}
-                                        expandedIds={expandedIds}
-                                        loadingIds={loadingIds}
-                                        onToggle={toggleTreeNode}
-                                    />
+                                    <div
+                                        style={{
+                                            transform: `scale(${treeZoom})`,
+                                            transformOrigin: 'top center',
+                                            transition: 'transform 180ms ease',
+                                        }}
+                                    >
+                                        <TreeNode
+                                            node={tree}
+                                            expandedIds={expandedIds}
+                                            loadingIds={loadingIds}
+                                            onToggle={toggleTreeNode}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
