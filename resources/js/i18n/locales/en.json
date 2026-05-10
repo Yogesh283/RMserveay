@@ -515,6 +515,7 @@
             "directReferrals": "Direct referrals",
             "bySponsorHint": "Grouped by sponsor (not binary placement).",
             "thName": "Name",
+            "thUserId": "User ID",
             "thCode": "Code",
             "thActShort": "Active",
             "levelIncome": "Level income",

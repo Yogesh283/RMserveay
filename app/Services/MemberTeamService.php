@@ -212,7 +212,7 @@ class MemberTeamService
             ->excludeDummy()
             ->orderBy('id')
             ->get([
-                'id', 'name', 'email', 'referral_code', 'created_at',
+                'id', 'name', 'email', 'login_uid', 'referral_code', 'created_at',
                 'activation_fee_paid_at', 'minimum_panel_fee_paid_at',
             ]);
 
@@ -221,6 +221,7 @@ class MemberTeamService
                 'id' => $d->id,
                 'name' => $d->name,
                 'email' => $d->email,
+                'login_uid' => $d->login_uid,
                 'referral_code' => $d->referral_code,
                 'joined_at' => $d->created_at?->toIso8601String(),
                 'is_active' => $d->qualifiesActivePanelistIncome(),

@@ -24,19 +24,29 @@ class MemberTeamController extends Controller
         $validated = $request->validate([
             'depth' => ['sometimes', 'integer', 'min:1', 'max:8'],
             'node_id' => ['sometimes', 'integer', 'min:1'],
+            'uid' => ['sometimes', 'string', 'max:64'],
         ]);
 
         $depth = (int) ($validated['depth'] ?? 4);
         $user = $request->user();
         $startUser = $user;
 
-        /** When client requests a descendant subtree (lazy expand), verify the chain. */
-        if (! empty($validated['node_id']) && (int) $validated['node_id'] !== (int) $user->id) {
+        /** Search by login_uid: only members within the current user's binary subtree. */
+        $candidate = null;
+        if (! empty($validated['uid'])) {
+            $candidate = User::query()->where('login_uid', trim((string) $validated['uid']))->first();
+            if (! $candidate) {
+                return response()->json(['message' => 'No member found with this User ID in your team.'], 404);
+            }
+        } elseif (! empty($validated['node_id']) && (int) $validated['node_id'] !== (int) $user->id) {
             $candidate = User::find((int) $validated['node_id']);
             if (! $candidate) {
                 abort(404);
             }
+        }
 
+        /** When client requests a descendant subtree (lazy expand or UID search), verify the chain. */
+        if ($candidate !== null && (int) $candidate->id !== (int) $user->id) {
             $cursor = $candidate;
             $hops = 0;
             while ($cursor !== null && (int) $cursor->id !== (int) $user->id && $hops < 64) {
@@ -45,6 +55,9 @@ class MemberTeamController extends Controller
             }
 
             if ($cursor === null || (int) $cursor->id !== (int) $user->id) {
+                if (! empty($validated['uid'])) {
+                    return response()->json(['message' => 'This User ID is not part of your binary team.'], 403);
+                }
                 abort(403);
             }
 

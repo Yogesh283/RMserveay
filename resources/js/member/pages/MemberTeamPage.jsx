@@ -178,11 +178,12 @@ function StatCard({ label, value, hint, tone = 'neutral' }) {
     );
 }
 
-function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChildren = false }) {
+function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChildren = false, isFocused = false }) {
     const { t } = useTranslation();
     const superN = node.super_sub_panel_count > 0;
     const subOnly = !superN && node.sub_panel_count > 0;
-    const ring = node.is_active ? 'ring-1 ring-emerald-400/65 sm:ring-2 sm:ring-emerald-400/70' : '';
+    const ring = node.is_active ? 'ring-1 ring-emerald-400/65' : '';
+    const focusRing = isFocused ? 'ring-2 ring-fuchsia-400/80 shadow-[0_0_14px_rgba(217,70,239,0.45)]' : '';
 
     const tierStyle = superN
         ? 'border-amber-400/50 bg-amber-500/10 text-amber-50'
@@ -190,7 +191,7 @@ function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChi
           ? 'border-sky-400/45 bg-sky-500/10 text-sky-50'
           : 'border-white/15 bg-white/[0.06] text-white';
 
-    const interactive = typeof onClick === 'function' && hasChildren;
+    const interactive = typeof onClick === 'function';
     const cursorCls = interactive ? 'cursor-pointer hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
 
     const Wrapper = interactive ? 'button' : 'div';
@@ -198,46 +199,46 @@ function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChi
         ? {
               type: 'button',
               onClick,
-              'aria-expanded': isExpanded,
-              'aria-label': isExpanded ? `Collapse ${node.login_uid || node.name}` : `Expand ${node.login_uid || node.name}`,
+              'aria-expanded': hasChildren ? isExpanded : undefined,
+              'aria-label': `Open ${node.login_uid || node.name}`,
           }
         : {};
 
     return (
         <Wrapper
             {...wrapperProps}
-            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.34)] ring-offset-1 ring-offset-[#0b0f1a] transition sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_8px_28px_rgba(0,0,0,0.38)] sm:ring-offset-2 ${tierStyle} ${ring} ${cursorCls}`}
+            className={`relative flex h-[64px] w-[64px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1 py-0.5 text-center shadow-[0_4px_14px_rgba(0,0,0,0.35)] ring-offset-1 ring-offset-[#0b0f1a] transition sm:h-[88px] sm:w-[88px] sm:gap-px sm:px-1.5 sm:py-1 sm:shadow-[0_6px_20px_rgba(0,0,0,0.4)] ${tierStyle} ${ring} ${focusRing} ${cursorCls}`}
         >
-            <p className="max-w-[92%] truncate text-[9px] font-semibold leading-none sm:text-[11px] sm:leading-tight">
+            <p className="max-w-[94%] truncate text-[8px] font-semibold leading-none sm:text-[10px]">
                 {node.login_uid || node.name || t('member.ui.dash')}
             </p>
-            <div className="flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
+            <div className="flex max-w-full flex-wrap justify-center gap-px">
                 {node.is_active ? (
-                    <span className="rounded-full bg-emerald-500/20 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-emerald-300 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-emerald-500/20 px-0.5 py-px text-[7px] font-semibold uppercase leading-none text-emerald-300 sm:px-1 sm:text-[8px]">
                         {t('member.ui.active')}
                     </span>
                 ) : (
-                    <span className="rounded-full bg-white/10 px-0.5 py-px text-[8px] uppercase leading-none text-[#94A3B8] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-white/10 px-0.5 py-px text-[7px] uppercase leading-none text-[#94A3B8] sm:px-1 sm:text-[8px]">
                         {t('member.ui.inactive')}
                     </span>
                 )}
                 {superN ? (
-                    <span className="rounded-full bg-amber-500/25 px-0.5 py-px text-[8px] leading-none text-amber-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-amber-500/25 px-0.5 py-px text-[7px] leading-none text-amber-100 sm:px-1 sm:text-[8px]">
                         {t('member.ui.super')}
                     </span>
                 ) : null}
                 {subOnly ? (
-                    <span className="rounded-full bg-sky-500/25 px-0.5 py-px text-[8px] leading-none text-sky-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-sky-500/25 px-0.5 py-px text-[7px] leading-none text-sky-100 sm:px-1 sm:text-[8px]">
                         {t('member.ui.sub')}
                     </span>
                 ) : null}
             </div>
-            <p className="max-w-[94%] truncate text-[8px] leading-none text-white/55 sm:text-[10px] sm:leading-tight">
-                {t('member.team.nodeSubSuper', { sub: node.sub_panel_count, super: node.super_sub_panel_count })}
+            <p className="max-w-[94%] truncate text-[7px] leading-none tabular-nums text-white/60 sm:text-[9px]">
+                {node.sub_panel_count}/{node.super_sub_panel_count}
             </p>
             {hasChildren ? (
                 <span
-                    className={`absolute -bottom-1 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold leading-none shadow-[0_4px_10px_rgba(0,0,0,0.4)] sm:-bottom-1.5 sm:right-1.5 sm:h-6 sm:w-6 sm:text-[12px] ${
+                    className={`absolute -bottom-0.5 right-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border text-[9px] font-bold leading-none shadow-[0_2px_6px_rgba(0,0,0,0.45)] sm:-bottom-1 sm:right-1 sm:h-4 sm:w-4 sm:text-[10px] ${
                         isExpanded
                             ? 'border-emerald-300/55 bg-emerald-500/85 text-white'
                             : 'border-violet-300/55 bg-violet-500/85 text-white'
@@ -245,7 +246,7 @@ function NodeChip({ node, onClick, isExpanded = false, isLoading = false, hasChi
                     aria-hidden
                 >
                     {isLoading ? (
-                        <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <svg className="h-2 w-2 animate-spin sm:h-2.5 sm:w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                             <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
                         </svg>
                     ) : isExpanded ? (
@@ -501,7 +502,7 @@ function buildTreeLegMatchingRows(legs, t, activeMatching) {
 function EmptyNodeSlot() {
     const { t } = useTranslation();
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[9px] text-[#64748B] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+        <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[8px] text-[#64748B] sm:h-[88px] sm:w-[88px] sm:text-[10px]">
             {t('member.ui.empty')}
         </div>
     );
@@ -509,15 +510,15 @@ function EmptyNodeSlot() {
 
 function LoadingNodeSlot() {
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/45 bg-violet-500/[0.06] text-[9px] text-violet-200/85 sm:h-[118px] sm:w-[118px] sm:text-[11px]">
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+        <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/45 bg-violet-500/[0.06] text-[8px] text-violet-200/85 sm:h-[88px] sm:w-[88px] sm:text-[10px]">
+            <svg className="h-3 w-3 animate-spin sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
                 <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
             </svg>
         </div>
     );
 }
 
-function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
+function TreeNode({ node, expandedIds, loadingIds, onToggle, focusedId, onFocus }) {
     const { t } = useTranslation();
     if (!node) {
         return <EmptyNodeSlot />;
@@ -526,23 +527,25 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
     const hasChildren = Boolean(node.has_left || node.has_right);
     const isExpanded = hasChildren && expandedIds.has(node.id);
     const isLoading = loadingIds.has(node.id);
+    const isFocused = focusedId === node.id;
 
     return (
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2.5">
+        <div className="flex flex-col items-center gap-1 sm:gap-1.5">
             <NodeChip
                 node={node}
-                onClick={hasChildren ? () => onToggle(node) : undefined}
+                onClick={() => onToggle(node)}
                 isExpanded={isExpanded}
                 isLoading={isLoading}
                 hasChildren={hasChildren}
+                isFocused={isFocused}
             />
             {hasChildren && isExpanded ? (
-                <div className="flex gap-2.5 border-t border-white/[0.12] pt-2 sm:gap-10 sm:pt-4">
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-sky-300/95 sm:text-[10px]">{t('member.ui.left')}</span>
+                <div className="flex gap-1.5 border-t border-white/[0.12] pt-1 sm:gap-6 sm:pt-2">
+                    <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                        <span className="text-[8px] font-semibold uppercase tracking-wide text-sky-300/95 sm:text-[9px]">{t('member.ui.left')}</span>
                         {node.has_left ? (
                             node.left ? (
-                                <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} focusedId={focusedId} onFocus={onFocus} />
                             ) : (
                                 <LoadingNodeSlot />
                             )
@@ -550,11 +553,11 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
                             <EmptyNodeSlot />
                         )}
                     </div>
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-300/95 sm:text-[10px]">{t('member.ui.right')}</span>
+                    <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                        <span className="text-[8px] font-semibold uppercase tracking-wide text-violet-300/95 sm:text-[9px]">{t('member.ui.right')}</span>
                         {node.has_right ? (
                             node.right ? (
-                                <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} focusedId={focusedId} onFocus={onFocus} />
                             ) : (
                                 <LoadingNodeSlot />
                             )
@@ -566,22 +569,6 @@ function TreeNode({ node, expandedIds, loadingIds, onToggle }) {
             ) : null}
         </div>
     );
-}
-
-/** Replace a node in the tree with a fresh subtree (immutable). */
-function replaceTreeNode(root, id, replacement) {
-    if (!root) {
-        return root;
-    }
-    if (root.id === id) {
-        return replacement;
-    }
-    const nextLeft = replaceTreeNode(root.left, id, replacement);
-    const nextRight = replaceTreeNode(root.right, id, replacement);
-    if (nextLeft === root.left && nextRight === root.right) {
-        return root;
-    }
-    return { ...root, left: nextLeft, right: nextRight };
 }
 
 function totalTeamTableCaption(tab, t) {
@@ -608,6 +595,11 @@ export default function MemberTeamPage() {
     /** Per-node expanded / fetch state for click-to-open binary tree. */
     const [expandedIds, setExpandedIds] = useState(() => new Set());
     const [loadingIds, setLoadingIds] = useState(() => new Set());
+    /** Search & focus state for the binary tree. */
+    const [uidQuery, setUidQuery] = useState('');
+    const [uidSearching, setUidSearching] = useState(false);
+    const [focusedId, setFocusedId] = useState(null);
+    const [isFocusedView, setIsFocusedView] = useState(false);
     const [totalTeamTab, setTotalTeamTab] = useState('active');
     const [directExpanded, setDirectExpanded] = useState(false);
     const [treePreviewExpanded, setTreePreviewExpanded] = useState(true);
@@ -653,12 +645,16 @@ export default function MemberTeamPage() {
             setLoadingIds(new Set());
             setShowTree(true);
             setTreePreviewExpanded(true);
+            setFocusedId(null);
+            setIsFocusedView(false);
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
         }
     }, [depth, t]);
 
-    const fetchSubtree = useCallback(async (nodeId) => {
+    /** Focus on a single user — re-roots the tree on that user so only their L/R subtree shows. */
+    const focusOnNode = useCallback(async (nodeId) => {
+        setTreeErr(null);
         setLoadingIds((prev) => {
             const next = new Set(prev);
             next.add(nodeId);
@@ -670,7 +666,12 @@ export default function MemberTeamPage() {
                 params: { node_id: nodeId, depth: 2 },
             });
             if (json?.tree) {
-                setTree((prev) => replaceTreeNode(prev, nodeId, json.tree));
+                setTree(json.tree);
+                setExpandedIds(new Set([json.tree.id]));
+                setFocusedId(json.tree.id);
+                setIsFocusedView(true);
+                setShowTree(true);
+                setTreePreviewExpanded(true);
             }
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
@@ -683,36 +684,44 @@ export default function MemberTeamPage() {
         }
     }, [t]);
 
+    /** Search by login_uid (User ID). Only returns members inside the current user's binary subtree. */
+    const searchByUid = useCallback(async () => {
+        const q = uidQuery.trim();
+        if (q === '') {
+            return;
+        }
+        setTreeErr(null);
+        setUidSearching(true);
+        try {
+            await prepareSanctum();
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', {
+                params: { uid: q, depth: 2 },
+            });
+            if (json?.tree) {
+                setTree(json.tree);
+                setExpandedIds(new Set([json.tree.id]));
+                setLoadingIds(new Set());
+                setFocusedId(json.tree.id);
+                setIsFocusedView(true);
+                setShowTree(true);
+                setTreePreviewExpanded(true);
+            }
+        } catch (e) {
+            setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
+        } finally {
+            setUidSearching(false);
+        }
+    }, [uidQuery, t]);
+
+    /** Every click re-roots (focuses) the tree on that user so only their left + right show. */
     const toggleTreeNode = useCallback(
         (node) => {
             if (!node) {
                 return;
             }
-            const id = node.id;
-            const hasChildren = Boolean(node.has_left || node.has_right);
-            if (!hasChildren) {
-                return;
-            }
-
-            setExpandedIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(id)) {
-                    next.delete(id);
-                } else {
-                    next.add(id);
-                }
-                return next;
-            });
-
-            /** First-time expand: pull this subtree if its children weren't fetched yet. */
-            const needsFetch = (node.has_left && !node.left) || (node.has_right && !node.right);
-            const alreadyExpanded = expandedIds.has(id);
-            const alreadyLoading = loadingIds.has(id);
-            if (!alreadyExpanded && needsFetch && !alreadyLoading) {
-                fetchSubtree(id);
-            }
+            focusOnNode(node.id);
         },
-        [expandedIds, loadingIds, fetchSubtree],
+        [focusOnNode],
     );
 
     useEffect(() => {
@@ -816,11 +825,50 @@ export default function MemberTeamPage() {
                                 <span className="rounded-full border border-sky-400/40 bg-sky-500/12 px-1.5 py-0.5 font-medium text-sky-100 sm:px-2">{t('member.ui.sub')}</span>
                                 <span className="rounded-full border border-amber-400/45 bg-amber-500/12 px-1.5 py-0.5 font-medium text-amber-100 sm:px-2">{t('member.ui.super')}</span>
                             </div>
-                            <p className="mt-3 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                {t('member.team.tapToExpandHint', { defaultValue: 'Tap any node with a + badge to expand its branch.' })}
+                            <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+                                <form
+                                    className="flex min-w-0 flex-1 items-center gap-1.5"
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        searchByUid();
+                                    }}
+                                >
+                                    <div className="relative flex-1">
+                                        <svg className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            value={uidQuery}
+                                            onChange={(e) => setUidQuery(e.target.value)}
+                                            placeholder="Search by User ID…"
+                                            className="w-full rounded-lg border border-white/15 bg-[#0b1020] py-1.5 pl-8 pr-2 text-[12px] text-white placeholder:text-white/45 focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-1 focus:ring-[#8E6BFF]/30"
+                                            aria-label="Search by User ID"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={uidSearching || uidQuery.trim() === ''}
+                                        className="shrink-0 rounded-lg border border-violet-300/35 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {uidSearching ? '…' : 'Search'}
+                                    </button>
+                                </form>
+                                {isFocusedView ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => loadTree()}
+                                        className="shrink-0 rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-100 transition hover:border-emerald-300/60 hover:bg-emerald-500/25"
+                                    >
+                                        ← Back to my tree
+                                    </button>
+                                ) : null}
+                            </div>
+                            <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
+                                Tap any node to view that user’s left & right.
                             </p>
                             <div
-                                className="-mx-3 mt-3 overflow-x-auto overscroll-contain px-3 pb-6 sm:-mx-4 sm:mt-6 sm:max-h-[80vh] sm:overflow-auto sm:pb-3 sm:px-4"
+                                className="-mx-3 mt-2 overflow-x-auto overscroll-contain px-3 pb-6 sm:-mx-4 sm:mt-3 sm:max-h-[80vh] sm:overflow-auto sm:pb-3 sm:px-4"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
                             >
                                 <div
@@ -832,6 +880,7 @@ export default function MemberTeamPage() {
                                         expandedIds={expandedIds}
                                         loadingIds={loadingIds}
                                         onToggle={toggleTreeNode}
+                                        focusedId={focusedId}
                                     />
                                 </div>
                             </div>
@@ -940,7 +989,7 @@ export default function MemberTeamPage() {
                                     <table className="w-full text-left text-[12px]">
                                         <thead className="sticky top-0 bg-[#0f172a] text-[11px] text-[#94A3B8]">
                                             <tr>
-                                                <th className="px-2 py-1.5">{t('member.team.thName')}</th>
+                                                <th className="px-2 py-1.5">{t('member.team.thUserId')}</th>
                                                 <th className="px-2 py-1.5">{t('member.team.thCode')}</th>
                                                 <th className="px-2 py-1.5">{t('member.team.thActShort')}</th>
                                             </tr>
@@ -948,7 +997,7 @@ export default function MemberTeamPage() {
                                         <tbody>
                                             {data.direct.members.map((m) => (
                                                 <tr key={m.id} className="border-t border-white/[0.06]">
-                                                    <td className="px-2 py-1.5 text-white">{m.name}</td>
+                                                    <td className="px-2 py-1.5 font-mono text-[12px] text-white">{m.login_uid || t('member.ui.dash')}</td>
                                                     <td className="px-2 py-1.5 font-mono text-[11px] text-[#8E6BFF]">{m.referral_code}</td>
                                                     <td className="px-2 py-1.5">{m.is_active ? t('member.ui.yes') : t('member.ui.dash')}</td>
                                                 </tr>
