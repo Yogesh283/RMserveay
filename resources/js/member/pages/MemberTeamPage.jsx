@@ -178,42 +178,49 @@ function StatCard({ label, value, hint, tone = 'neutral' }) {
     );
 }
 
-function NodeChip({ node, onClick, isLoading = false, isFocused = false }) {
+/** Premium chip used for every binary-tree node. Click expands/collapses its direct under-members. */
+function NodeChip({ node, onClick, isLoading = false, isExpanded = false, hasChildren = false, isRoot = false }) {
     const { t } = useTranslation();
     const superN = node.super_sub_panel_count > 0;
     const subOnly = !superN && node.sub_panel_count > 0;
     const ring = node.is_active ? 'ring-1 ring-emerald-400/65 sm:ring-2 sm:ring-emerald-400/70' : '';
-    const focusRing = isFocused ? 'ring-2 ring-fuchsia-400/80 shadow-[0_0_14px_rgba(217,70,239,0.45)]' : '';
+    const expandedRing = isExpanded ? 'ring-2 ring-violet-400/70 shadow-[0_0_16px_rgba(167,139,250,0.45)]' : '';
+    const rootBadge = isRoot ? 'ring-2 ring-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.35)]' : '';
 
-    const tierStyle = superN
-        ? 'border-amber-400/50 bg-amber-500/10 text-amber-50'
+    const tierGradient = superN
+        ? 'border-amber-400/55 bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-amber-700/20 text-amber-50'
         : subOnly
-          ? 'border-sky-400/45 bg-sky-500/10 text-sky-50'
-          : 'border-white/15 bg-white/[0.06] text-white';
+          ? 'border-sky-400/50 bg-gradient-to-br from-sky-500/25 via-cyan-500/15 to-blue-600/20 text-sky-50'
+          : 'border-white/15 bg-gradient-to-br from-white/[0.10] via-white/[0.05] to-white/[0.02] text-white';
 
     const interactive = typeof onClick === 'function';
-    const cursorCls = interactive ? 'cursor-pointer hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
+    const cursorCls = interactive ? 'cursor-pointer hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
 
     const Wrapper = interactive ? 'button' : 'div';
     const wrapperProps = interactive
         ? {
               type: 'button',
               onClick,
-              'aria-label': `Open ${node.login_uid || node.name}`,
+              'aria-expanded': hasChildren ? isExpanded : undefined,
+              'aria-label': isExpanded
+                  ? `Collapse ${node.login_uid || node.name}`
+                  : `Expand ${node.login_uid || node.name}`,
           }
         : {};
 
     return (
         <Wrapper
             {...wrapperProps}
-            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.34)] ring-offset-1 ring-offset-[#0b0f1a] transition sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_8px_28px_rgba(0,0,0,0.38)] sm:ring-offset-2 ${tierStyle} ${ring} ${focusRing} ${cursorCls}`}
+            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.4)] ring-offset-1 ring-offset-[#0b0f1a] backdrop-blur-sm transition-all duration-200 sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_10px_30px_rgba(0,0,0,0.45)] sm:ring-offset-2 ${tierGradient} ${ring} ${expandedRing} ${rootBadge} ${cursorCls}`}
         >
-            <p className="max-w-[92%] truncate text-[9px] font-semibold leading-none sm:text-[11px] sm:leading-tight">
+            {/** Subtle inner highlight for premium look */}
+            <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.08] via-transparent to-black/[0.18]" aria-hidden />
+            <p className="relative max-w-[92%] truncate text-[9px] font-semibold leading-none tracking-tight sm:text-[11px] sm:leading-tight">
                 {node.login_uid || node.name || t('member.ui.dash')}
             </p>
-            <div className="flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
+            <div className="relative flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
                 {node.is_active ? (
-                    <span className="rounded-full bg-emerald-500/20 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-emerald-300 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-emerald-500/25 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-emerald-200 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.active')}
                     </span>
                 ) : (
@@ -222,24 +229,37 @@ function NodeChip({ node, onClick, isLoading = false, isFocused = false }) {
                     </span>
                 )}
                 {superN ? (
-                    <span className="rounded-full bg-amber-500/25 px-0.5 py-px text-[8px] leading-none text-amber-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-amber-500/30 px-0.5 py-px text-[8px] leading-none text-amber-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.super')}
                     </span>
                 ) : null}
                 {subOnly ? (
-                    <span className="rounded-full bg-sky-500/25 px-0.5 py-px text-[8px] leading-none text-sky-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-sky-500/30 px-0.5 py-px text-[8px] leading-none text-sky-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
                         {t('member.ui.sub')}
                     </span>
                 ) : null}
             </div>
-            <p className="max-w-[94%] truncate text-[8px] leading-none text-white/55 sm:text-[10px] sm:leading-tight">
+            <p className="relative max-w-[94%] truncate text-[8px] leading-none text-white/60 sm:text-[10px] sm:leading-tight">
                 {t('member.team.nodeSubSuper', { sub: node.sub_panel_count, super: node.super_sub_panel_count })}
             </p>
-            {isLoading ? (
-                <span className="absolute -bottom-1 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-violet-300/55 bg-violet-500/85 text-white shadow-[0_4px_10px_rgba(0,0,0,0.4)] sm:-bottom-1.5 sm:right-1.5 sm:h-6 sm:w-6" aria-hidden>
-                    <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
-                    </svg>
+            {hasChildren ? (
+                <span
+                    className={`absolute -bottom-1.5 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold leading-none shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all sm:-bottom-2 sm:right-2 sm:h-6 sm:w-6 sm:text-[12px] ${
+                        isExpanded
+                            ? 'border-emerald-300/60 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white'
+                            : 'border-violet-300/60 bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white'
+                    }`}
+                    aria-hidden
+                >
+                    {isLoading ? (
+                        <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
+                        </svg>
+                    ) : isExpanded ? (
+                        '−'
+                    ) : (
+                        '+'
+                    )}
                 </span>
             ) : null}
         </Wrapper>
@@ -485,18 +505,26 @@ function buildTreeLegMatchingRows(legs, t, activeMatching) {
     ];
 }
 
-function EmptyNodeSlot() {
+function EmptyNodeSlot({ side = 'left' }) {
     const { t } = useTranslation();
+    const tone =
+        side === 'left'
+            ? 'border-cyan-400/25 bg-cyan-500/[0.04] text-cyan-200/55'
+            : 'border-fuchsia-400/25 bg-fuchsia-500/[0.04] text-fuchsia-200/55';
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.04] text-[9px] text-[#64748B] sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+        <div className={`flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed text-[9px] sm:h-[118px] sm:w-[118px] sm:text-[11px] ${tone}`}>
             {t('member.ui.empty')}
         </div>
     );
 }
 
-function LoadingNodeSlot() {
+function LoadingNodeSlot({ side = 'left' }) {
+    const tone =
+        side === 'left'
+            ? 'border-cyan-400/45 bg-cyan-500/[0.07] text-cyan-200/85'
+            : 'border-fuchsia-400/45 bg-fuchsia-500/[0.07] text-fuchsia-200/85';
     return (
-        <div className="flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed border-violet-400/45 bg-violet-500/[0.06] text-[9px] text-violet-200/85 sm:h-[118px] sm:w-[118px] sm:text-[11px]">
+        <div className={`flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed text-[9px] sm:h-[118px] sm:w-[118px] sm:text-[11px] ${tone}`}>
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
                 <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
             </svg>
@@ -504,48 +532,89 @@ function LoadingNodeSlot() {
     );
 }
 
-function TreeNode({ node, loadingIds, onFocus, focusedId }) {
+/**
+ * Premium connector lines that sit between a parent and its left+right children.
+ * Cyan → for the left arm, Fuchsia → for the right arm. Pure CSS / SVG (no extra deps).
+ */
+function ConnectorBracket() {
+    return (
+        <div className="relative h-5 w-full sm:h-7" aria-hidden>
+            {/** Vertical drop from parent */}
+            <span className="absolute left-1/2 top-0 h-2 w-px -translate-x-1/2 bg-gradient-to-b from-white/40 to-white/10 sm:h-3" />
+            {/** Horizontal beam — left half cyan, right half fuchsia */}
+            <span className="absolute left-0 right-1/2 top-2 h-px bg-gradient-to-r from-cyan-400/10 via-cyan-400/55 to-cyan-300/80 sm:top-3" />
+            <span className="absolute left-1/2 right-0 top-2 h-px bg-gradient-to-r from-fuchsia-300/80 via-fuchsia-400/55 to-fuchsia-400/10 sm:top-3" />
+            {/** Vertical drops down to each child */}
+            <span className="absolute left-[calc(25%-0.5px)] top-2 h-3 w-px bg-gradient-to-b from-cyan-300/80 to-cyan-400/30 sm:top-3 sm:h-4" />
+            <span className="absolute right-[calc(25%-0.5px)] top-2 h-3 w-px bg-gradient-to-b from-fuchsia-300/80 to-fuchsia-400/30 sm:top-3 sm:h-4" />
+        </div>
+    );
+}
+
+function LegLabel({ side }) {
     const { t } = useTranslation();
+    const tone =
+        side === 'left'
+            ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-100'
+            : 'border-fuchsia-400/40 bg-fuchsia-500/15 text-fuchsia-100';
+    return (
+        <span className={`rounded-full border px-1.5 py-px text-[8px] font-semibold uppercase tracking-[0.16em] sm:px-2 sm:py-0.5 sm:text-[9px] ${tone}`}>
+            {t(side === 'left' ? 'member.ui.left' : 'member.ui.right')}
+        </span>
+    );
+}
+
+/**
+ * Click-to-expand binary tree. Each node renders just its chip until clicked.
+ * On click of a node with children, its direct under-members appear inline.
+ */
+function TreeNode({ node, expandedIds, loadingIds, onToggle, isRoot = false }) {
     if (!node) {
         return <EmptyNodeSlot />;
     }
 
+    const hasChildren = Boolean(node.has_left || node.has_right);
+    const isExpanded = hasChildren && expandedIds.has(node.id);
     const isLoading = loadingIds.has(node.id);
-    const isFocused = focusedId === node.id;
 
     return (
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2.5">
+        <div className="flex flex-col items-center">
             <NodeChip
                 node={node}
-                onClick={() => onFocus(node)}
+                onClick={hasChildren ? () => onToggle(node) : undefined}
                 isLoading={isLoading}
-                isFocused={isFocused}
+                isExpanded={isExpanded}
+                hasChildren={hasChildren}
+                isRoot={isRoot}
             />
-            {node.left || node.right ? (
-                <div className="flex gap-2.5 border-t border-white/[0.12] pt-2 sm:gap-10 sm:pt-4">
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-sky-300/95 sm:text-[10px]">{t('member.ui.left')}</span>
-                        {node.has_left ? (
-                            node.left ? (
-                                <TreeNode node={node.left} loadingIds={loadingIds} onFocus={onFocus} focusedId={focusedId} />
+            {isExpanded ? (
+                <div className="flex w-full flex-col items-center">
+                    <ConnectorBracket />
+                    <div className="flex gap-3 sm:gap-12">
+                        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                            <LegLabel side="left" />
+                            {node.has_left ? (
+                                node.left ? (
+                                    <TreeNode node={node.left} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                ) : (
+                                    <LoadingNodeSlot side="left" />
+                                )
                             ) : (
-                                <LoadingNodeSlot />
-                            )
-                        ) : (
-                            <EmptyNodeSlot />
-                        )}
-                    </div>
-                    <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-300/95 sm:text-[10px]">{t('member.ui.right')}</span>
-                        {node.has_right ? (
-                            node.right ? (
-                                <TreeNode node={node.right} loadingIds={loadingIds} onFocus={onFocus} focusedId={focusedId} />
+                                <EmptyNodeSlot side="left" />
+                            )}
+                        </div>
+                        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                            <LegLabel side="right" />
+                            {node.has_right ? (
+                                node.right ? (
+                                    <TreeNode node={node.right} expandedIds={expandedIds} loadingIds={loadingIds} onToggle={onToggle} />
+                                ) : (
+                                    <LoadingNodeSlot side="right" />
+                                )
                             ) : (
-                                <LoadingNodeSlot />
-                            )
-                        ) : (
-                            <EmptyNodeSlot />
-                        )}
+                                <EmptyNodeSlot side="right" />
+                            )}
+                        </div>
                     </div>
                 </div>
             ) : null}
@@ -574,9 +643,9 @@ export default function MemberTeamPage() {
     const [showTree, setShowTree] = useState(false);
     const [err, setErr] = useState(null);
     const [treeErr, setTreeErr] = useState(null);
-    /** Lazy-load state and search/focus state for the binary tree. */
+    /** Click-to-expand state for the binary tree. Each node fetches its direct children on click. */
+    const [expandedIds, setExpandedIds] = useState(() => new Set());
     const [loadingIds, setLoadingIds] = useState(() => new Set());
-    const [focusedId, setFocusedId] = useState(null);
     const [isFocusedView, setIsFocusedView] = useState(false);
     const [uidQuery, setUidQuery] = useState('');
     const [uidSearching, setUidSearching] = useState(false);
@@ -614,57 +683,103 @@ export default function MemberTeamPage() {
         }
     }, [t]);
 
+    /** Replace one node anywhere in the tree with a freshly-fetched version (which carries its left/right children). */
+    const replaceTreeNode = useCallback((root, nodeId, replacement) => {
+        if (!root) {
+            return root;
+        }
+        if (root.id === nodeId) {
+            return { ...root, ...replacement };
+        }
+        return {
+            ...root,
+            left: root.left ? replaceTreeNode(root.left, nodeId, replacement) : root.left,
+            right: root.right ? replaceTreeNode(root.right, nodeId, replacement) : root.right,
+        };
+    }, []);
+
+    /** Initial load: only the root chip — children appear when the user clicks. */
     const loadTree = useCallback(async () => {
         setTreeErr(null);
         try {
             await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth } });
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 1 } });
             setTree(json.tree);
             setShowTree(true);
             setTreePreviewExpanded(true);
-            setFocusedId(null);
             setIsFocusedView(false);
+            setExpandedIds(new Set());
             setLoadingIds(new Set());
         } catch (e) {
             setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
         }
-    }, [depth, t]);
+    }, [t]);
 
-    /** Re-root the tree on a clicked user — show that user's full left & right subtree. */
-    const focusOnNode = useCallback(async (node) => {
-        if (!node?.id) {
-            return;
-        }
-        setTreeErr(null);
-        setLoadingIds((prev) => {
-            const next = new Set(prev);
-            next.add(node.id);
-            return next;
-        });
-        try {
-            await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                params: { node_id: node.id, depth },
-            });
-            if (json?.tree) {
-                setTree(json.tree);
-                setFocusedId(json.tree.id);
-                setIsFocusedView(true);
-                setShowTree(true);
-                setTreePreviewExpanded(true);
+    /**
+     * Toggle a node: if collapsed, fetch its direct children once (and cache by mutating the tree),
+     * then mark expanded. If already expanded, simply collapse it (no refetch).
+     */
+    const toggleNode = useCallback(
+        async (node) => {
+            if (!node?.id) {
+                return;
             }
-        } catch (e) {
-            setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
-        } finally {
+            const alreadyExpanded = expandedIds.has(node.id);
+            if (alreadyExpanded) {
+                setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(node.id);
+                    return next;
+                });
+                return;
+            }
+
+            const childrenAlreadyLoaded =
+                (node.has_left && node.left !== undefined) || (node.has_right && node.right !== undefined) || (!node.has_left && !node.has_right);
+
+            if (childrenAlreadyLoaded) {
+                setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    next.add(node.id);
+                    return next;
+                });
+                return;
+            }
+
+            setTreeErr(null);
             setLoadingIds((prev) => {
                 const next = new Set(prev);
-                next.delete(node.id);
+                next.add(node.id);
                 return next;
             });
-        }
-    }, [depth, t]);
 
-    /** Search by login_uid — only members within the current user's binary subtree. */
+            try {
+                await prepareSanctum();
+                const { data: json } = await window.axios.get('api/member/team/binary-tree', {
+                    params: { node_id: node.id, depth: 1 },
+                });
+                if (json?.tree) {
+                    setTree((prev) => replaceTreeNode(prev, node.id, json.tree));
+                    setExpandedIds((prev) => {
+                        const next = new Set(prev);
+                        next.add(node.id);
+                        return next;
+                    });
+                }
+            } catch (e) {
+                setTreeErr(e.response?.data?.message ?? e.message ?? t('member.team.loadTreeFailed'));
+            } finally {
+                setLoadingIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(node.id);
+                    return next;
+                });
+            }
+        },
+        [expandedIds, replaceTreeNode, t],
+    );
+
+    /** Search by login_uid — re-roots the viewer on that member (still inside your binary subtree). */
     const searchByUid = useCallback(async () => {
         const q = uidQuery.trim();
         if (q === '') {
@@ -675,14 +790,14 @@ export default function MemberTeamPage() {
         try {
             await prepareSanctum();
             const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                params: { uid: q, depth },
+                params: { uid: q, depth: 1 },
             });
             if (json?.tree) {
                 setTree(json.tree);
-                setFocusedId(json.tree.id);
                 setIsFocusedView(true);
                 setShowTree(true);
                 setTreePreviewExpanded(true);
+                setExpandedIds(new Set());
                 setLoadingIds(new Set());
             }
         } catch (e) {
@@ -690,7 +805,7 @@ export default function MemberTeamPage() {
         } finally {
             setUidSearching(false);
         }
-    }, [uidQuery, depth, t]);
+    }, [uidQuery, t]);
 
     useEffect(() => {
         load();
@@ -833,21 +948,24 @@ export default function MemberTeamPage() {
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Tap any node to open that user’s full left & right tree.
+                                Tap your User ID to reveal direct members. Keep clicking left or right to explore deeper.
                             </p>
                             <div
-                                className="-mx-3 mt-2 max-h-[70vh] overflow-auto overscroll-contain rounded-lg border border-white/[0.06] bg-black/10 px-3 py-3 sm:-mx-4 sm:mt-3 sm:max-h-[80vh] sm:px-4 sm:py-4"
+                                className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
                             >
+                                <div className="pointer-events-none absolute -left-10 top-10 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl" aria-hidden />
+                                <div className="pointer-events-none absolute -right-10 bottom-10 h-32 w-32 rounded-full bg-fuchsia-500/10 blur-3xl" aria-hidden />
                                 <div
-                                    className="inline-flex w-max min-w-full"
+                                    className="relative inline-flex w-max min-w-full"
                                     style={{ justifyContent: 'safe center' }}
                                 >
                                     <TreeNode
                                         node={tree}
+                                        expandedIds={expandedIds}
                                         loadingIds={loadingIds}
-                                        onFocus={focusOnNode}
-                                        focusedId={focusedId}
+                                        onToggle={toggleNode}
+                                        isRoot
                                     />
                                 </div>
                             </div>
