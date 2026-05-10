@@ -707,15 +707,14 @@ export default function MemberTeamPage() {
     }, []);
 
     /**
-     * Initial load: pull a wide subtree (up to 4 levels = ~31 nodes) so the user
-     * can see most of their direct team at once without clicking. Deeper levels
-     * remain reachable by clicking any leaf node.
+     * Initial load: show the current user + 2 levels below (= up to 7 members total,
+     * arranged left-to-right). Deeper levels are reachable by clicking any node.
      */
     const loadTree = useCallback(async () => {
         setTreeErr(null);
         try {
             await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 4 } });
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 2 } });
             if (json?.tree) {
                 setTree(json.tree);
                 setShowTree(true);
@@ -730,9 +729,8 @@ export default function MemberTeamPage() {
     }, [collectExpandedIds, t]);
 
     /**
-     * Click any user chip → re-root the viewer on that user and fetch up to 4 levels
-     * of their subtree (~31 members visible at once). All loaded internal nodes are
-     * auto-expanded so the full subtree renders inline.
+     * Click any user chip → re-root the viewer on that user and fetch their tree to
+     * a depth of 2 (= 1 + 2 + 4 = 7 members visible in left-to-right order).
      */
     const focusNode = useCallback(
         async (node) => {
@@ -753,7 +751,7 @@ export default function MemberTeamPage() {
             try {
                 await prepareSanctum();
                 const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                    params: { node_id: node.id, depth: 4 },
+                    params: { node_id: node.id, depth: 2 },
                 });
                 if (json?.tree) {
                     setTree(json.tree);
@@ -787,7 +785,7 @@ export default function MemberTeamPage() {
         try {
             await prepareSanctum();
             const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                params: { uid: q, depth: 4 },
+                params: { uid: q, depth: 2 },
             });
             if (json?.tree) {
                 setTree(json.tree);
@@ -980,7 +978,7 @@ export default function MemberTeamPage() {
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Showing up to 4 levels (~31 members). Tap any User ID to drill deeper into that member’s team — no level limit.
+                                Showing 7 members (you + 2 levels below). Tap any User ID to open that user’s 7-member tree — no level limit.
                             </p>
                             <div
                                 className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
