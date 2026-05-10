@@ -27,9 +27,14 @@ class UpdateMemberProfileRequest extends FormRequest
         $currentPhone = (string) ($this->user()?->phone ?? '');
         $phoneChanged = $nextPhone !== '' && $nextPhone !== $currentPhone;
 
+        $emailRules = ['required', 'string', 'lowercase', 'email', 'max:255'];
+        if ($emailChanged) {
+            $emailRules[] = Rule::unique('users', 'email')->ignore($this->user()?->id);
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user()?->id)],
+            'email' => $emailRules,
             'phone' => ['nullable', 'string', 'max:32'],
             'profile' => ['nullable', 'string', 'max:5000'],
             'survey_profile' => ['nullable', 'array'],
