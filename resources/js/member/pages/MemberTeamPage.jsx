@@ -178,20 +178,27 @@ function StatCard({ label, value, hint, tone = 'neutral' }) {
     );
 }
 
-/** Premium chip used for every binary-tree node. Click expands/collapses its direct under-members. */
-function NodeChip({ node, onClick, isLoading = false, isExpanded = false, hasChildren = false, isRoot = false }) {
+/** Premium chip used for every binary-tree node. Clicking re-roots the tree on this user. */
+function NodeChip({ node, onClick, isLoading = false, hasChildren = false, isRoot = false }) {
     const { t } = useTranslation();
     const superN = node.super_sub_panel_count > 0;
     const subOnly = !superN && node.sub_panel_count > 0;
-    const ring = node.is_active ? 'ring-1 ring-emerald-400/65 sm:ring-2 sm:ring-emerald-400/70' : '';
-    const expandedRing = isExpanded ? 'ring-2 ring-violet-400/70 shadow-[0_0_16px_rgba(167,139,250,0.45)]' : '';
-    const rootBadge = isRoot ? 'ring-2 ring-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.35)]' : '';
+    const isActive = Boolean(node.is_active) && !superN && !subOnly;
 
+    /**
+     * Tier-coloured chip. Priority: Super (gold) > Sub (light blue) > Active (full green) > default.
+     * Each tier uses a strong gradient so the colour is unmistakable on small chips.
+     */
     const tierGradient = superN
-        ? 'border-amber-400/55 bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-amber-700/20 text-amber-50'
+        ? 'border-amber-300/75 bg-gradient-to-br from-yellow-300/55 via-amber-400/45 to-yellow-600/55 text-amber-50 shadow-[0_8px_22px_rgba(234,179,8,0.35)]'
         : subOnly
-          ? 'border-sky-400/50 bg-gradient-to-br from-sky-500/25 via-cyan-500/15 to-blue-600/20 text-sky-50'
-          : 'border-white/15 bg-gradient-to-br from-white/[0.10] via-white/[0.05] to-white/[0.02] text-white';
+          ? 'border-sky-300/65 bg-gradient-to-br from-sky-300/55 via-cyan-300/40 to-sky-400/55 text-sky-50 shadow-[0_8px_22px_rgba(56,189,248,0.3)]'
+          : isActive
+            ? 'border-emerald-300/75 bg-gradient-to-br from-emerald-400/65 via-emerald-500/55 to-emerald-700/65 text-emerald-50 shadow-[0_8px_22px_rgba(16,185,129,0.35)]'
+            : 'border-white/20 bg-gradient-to-br from-slate-700/70 via-slate-800/60 to-slate-900/70 text-slate-100';
+
+    const ring = node.is_active && !superN && !subOnly ? 'ring-2 ring-emerald-300/70' : '';
+    const rootBadge = isRoot ? 'ring-2 ring-cyan-300/80 shadow-[0_0_22px_rgba(34,211,238,0.45)]' : '';
 
     const interactive = typeof onClick === 'function';
     const cursorCls = interactive ? 'cursor-pointer hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]' : 'cursor-default';
@@ -201,64 +208,53 @@ function NodeChip({ node, onClick, isLoading = false, isExpanded = false, hasChi
         ? {
               type: 'button',
               onClick,
-              'aria-expanded': hasChildren ? isExpanded : undefined,
-              'aria-label': isExpanded
-                  ? `Collapse ${node.login_uid || node.name}`
-                  : `Expand ${node.login_uid || node.name}`,
+              'aria-label': `View tree from ${node.login_uid || node.name}`,
           }
         : {};
 
     return (
         <Wrapper
             {...wrapperProps}
-            className={`relative flex h-[86px] w-[86px] shrink-0 flex-col items-center justify-center gap-px rounded-full border px-1.5 py-1 text-center shadow-[0_6px_18px_rgba(0,0,0,0.4)] ring-offset-1 ring-offset-[#0b0f1a] backdrop-blur-sm transition-all duration-200 sm:h-[118px] sm:w-[118px] sm:gap-1 sm:px-2.5 sm:py-2 sm:shadow-[0_10px_30px_rgba(0,0,0,0.45)] sm:ring-offset-2 ${tierGradient} ${ring} ${expandedRing} ${rootBadge} ${cursorCls}`}
+            className={`relative flex h-[100px] w-[100px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-full border-2 px-2 py-1.5 text-center ring-offset-2 ring-offset-[#0b0f1a] backdrop-blur-sm transition-all duration-200 sm:h-[132px] sm:w-[132px] sm:gap-1 sm:px-3 sm:py-2 ${tierGradient} ${ring} ${rootBadge} ${cursorCls}`}
         >
             {/** Subtle inner highlight for premium look */}
-            <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.08] via-transparent to-black/[0.18]" aria-hidden />
-            <p className="relative max-w-[92%] truncate text-[9px] font-semibold leading-none tracking-tight sm:text-[11px] sm:leading-tight">
+            <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.18] via-transparent to-black/[0.22]" aria-hidden />
+            <p className="relative max-w-[94%] truncate text-[12px] font-extrabold leading-none tracking-tight drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] sm:text-[15px]">
                 {node.login_uid || node.name || t('member.ui.dash')}
             </p>
-            <div className="relative flex max-w-full flex-wrap justify-center gap-px sm:gap-0.5">
-                {node.is_active ? (
-                    <span className="rounded-full bg-emerald-500/25 px-0.5 py-px text-[8px] font-semibold uppercase leading-none text-emerald-200 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+            <div className="relative flex max-w-full flex-wrap justify-center gap-0.5">
+                {superN ? (
+                    <span className="rounded-full bg-amber-100/25 px-1 py-px text-[8px] font-bold uppercase leading-none text-amber-50 sm:px-1.5 sm:py-0.5 sm:text-[10px]">
+                        {t('member.ui.super')}
+                    </span>
+                ) : subOnly ? (
+                    <span className="rounded-full bg-cyan-100/25 px-1 py-px text-[8px] font-bold uppercase leading-none text-sky-50 sm:px-1.5 sm:py-0.5 sm:text-[10px]">
+                        {t('member.ui.sub')}
+                    </span>
+                ) : node.is_active ? (
+                    <span className="rounded-full bg-emerald-100/25 px-1 py-px text-[8px] font-bold uppercase leading-none text-emerald-50 sm:px-1.5 sm:py-0.5 sm:text-[10px]">
                         {t('member.ui.active')}
                     </span>
                 ) : (
-                    <span className="rounded-full bg-white/10 px-0.5 py-px text-[8px] uppercase leading-none text-[#94A3B8] sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
+                    <span className="rounded-full bg-white/10 px-1 py-px text-[8px] uppercase leading-none text-white/70 sm:px-1.5 sm:py-0.5 sm:text-[10px]">
                         {t('member.ui.inactive')}
                     </span>
                 )}
-                {superN ? (
-                    <span className="rounded-full bg-amber-500/30 px-0.5 py-px text-[8px] leading-none text-amber-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
-                        {t('member.ui.super')}
-                    </span>
-                ) : null}
-                {subOnly ? (
-                    <span className="rounded-full bg-sky-500/30 px-0.5 py-px text-[8px] leading-none text-sky-100 sm:px-1.5 sm:py-0.5 sm:text-[10px] sm:leading-normal">
-                        {t('member.ui.sub')}
-                    </span>
-                ) : null}
             </div>
-            <p className="relative max-w-[94%] truncate text-[8px] leading-none text-white/60 sm:text-[10px] sm:leading-tight">
+            <p className="relative max-w-[94%] truncate text-[9px] leading-none text-white/75 sm:text-[11px] sm:leading-tight">
                 {t('member.team.nodeSubSuper', { sub: node.sub_panel_count, super: node.super_sub_panel_count })}
             </p>
             {hasChildren ? (
                 <span
-                    className={`absolute -bottom-1.5 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold leading-none shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all sm:-bottom-2 sm:right-2 sm:h-6 sm:w-6 sm:text-[12px] ${
-                        isExpanded
-                            ? 'border-emerald-300/60 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white'
-                            : 'border-violet-300/60 bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white'
-                    }`}
+                    className="absolute -bottom-1.5 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/40 bg-slate-900/80 text-[12px] font-bold leading-none text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] sm:-bottom-2 sm:right-2 sm:h-7 sm:w-7 sm:text-[14px]"
                     aria-hidden
                 >
                     {isLoading ? (
                         <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                             <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
                         </svg>
-                    ) : isExpanded ? (
-                        '−'
                     ) : (
-                        '+'
+                        '›'
                     )}
                 </span>
             ) : null}
@@ -512,7 +508,7 @@ function EmptyNodeSlot({ side = 'left' }) {
             ? 'border-cyan-400/25 bg-cyan-500/[0.04] text-cyan-200/55'
             : 'border-fuchsia-400/25 bg-fuchsia-500/[0.04] text-fuchsia-200/55';
     return (
-        <div className={`flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed text-[9px] sm:h-[118px] sm:w-[118px] sm:text-[11px] ${tone}`}>
+        <div className={`flex h-[100px] w-[100px] shrink-0 items-center justify-center rounded-full border-2 border-dashed text-[11px] font-semibold sm:h-[132px] sm:w-[132px] sm:text-[13px] ${tone}`}>
             {t('member.ui.empty')}
         </div>
     );
@@ -524,8 +520,8 @@ function LoadingNodeSlot({ side = 'left' }) {
             ? 'border-cyan-400/45 bg-cyan-500/[0.07] text-cyan-200/85'
             : 'border-fuchsia-400/45 bg-fuchsia-500/[0.07] text-fuchsia-200/85';
     return (
-        <div className={`flex h-[86px] w-[86px] shrink-0 items-center justify-center rounded-full border border-dashed text-[9px] sm:h-[118px] sm:w-[118px] sm:text-[11px] ${tone}`}>
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+        <div className={`flex h-[100px] w-[100px] shrink-0 items-center justify-center rounded-full border-2 border-dashed text-[11px] font-semibold sm:h-[132px] sm:w-[132px] sm:text-[13px] ${tone}`}>
+            <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
                 <path d="M12 3a9 9 0 11-9 9" strokeLinecap="round" />
             </svg>
         </div>
@@ -891,54 +887,89 @@ export default function MemberTeamPage() {
                         )}
                         <div className="mt-5 border-t border-white/[0.1] pt-4 sm:mt-9 sm:pt-8">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-[11px] sm:tracking-[0.2em]">{t('member.team.placementTree')}</p>
-                            <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] sm:mt-3 sm:gap-2.5 sm:text-[10px]">
-                                <span className="rounded-full border border-emerald-400/45 bg-emerald-500/12 px-1.5 py-0.5 font-medium text-emerald-100 sm:px-2">
-                                    {t('member.team.legendRingActive')}
+                            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] sm:mt-3 sm:gap-2.5 sm:text-[11px]">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/55 bg-gradient-to-br from-emerald-400/30 via-emerald-500/25 to-emerald-700/30 px-2 py-0.5 font-semibold text-emerald-50 shadow-[0_2px_8px_rgba(16,185,129,0.25)]">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-300" /> {t('member.ui.active')}
                                 </span>
-                                <span className="rounded-full border border-sky-400/40 bg-sky-500/12 px-1.5 py-0.5 font-medium text-sky-100 sm:px-2">{t('member.ui.sub')}</span>
-                                <span className="rounded-full border border-amber-400/45 bg-amber-500/12 px-1.5 py-0.5 font-medium text-amber-100 sm:px-2">{t('member.ui.super')}</span>
+                                <span className="inline-flex items-center gap-1 rounded-full border border-sky-300/55 bg-gradient-to-br from-sky-300/35 via-cyan-300/25 to-sky-400/35 px-2 py-0.5 font-semibold text-sky-50 shadow-[0_2px_8px_rgba(56,189,248,0.25)]">
+                                    <span className="h-2 w-2 rounded-full bg-sky-200" /> {t('member.ui.sub')}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/65 bg-gradient-to-br from-yellow-300/40 via-amber-400/30 to-yellow-600/40 px-2 py-0.5 font-semibold text-amber-50 shadow-[0_2px_8px_rgba(234,179,8,0.3)]">
+                                    <span className="h-2 w-2 rounded-full bg-amber-200" /> {t('member.ui.super')}
+                                </span>
                             </div>
-                            <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-                                <form
-                                    className="flex min-w-0 flex-1 items-center gap-1.5"
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        searchByUid();
-                                    }}
-                                >
-                                    <div className="relative flex-1">
-                                        <svg className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z" />
-                                        </svg>
-                                        <input
-                                            type="text"
-                                            value={uidQuery}
-                                            onChange={(e) => setUidQuery(e.target.value)}
-                                            placeholder="Search by User ID…"
-                                            className="w-full rounded-lg border border-white/15 bg-[#0b1020] py-1.5 pl-8 pr-2 text-[12px] text-white placeholder:text-white/45 focus:border-[#8E6BFF]/50 focus:outline-none focus:ring-1 focus:ring-[#8E6BFF]/30"
-                                            aria-label="Search by User ID"
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={uidSearching || uidQuery.trim() === ''}
-                                        className="shrink-0 rounded-lg border border-violet-300/35 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                            <div className="mt-3 rounded-xl border border-white/10 bg-[#0a0f1f]/70 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-3">
+                                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65 sm:text-[11px]">
+                                    <svg className="h-3.5 w-3.5 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z" />
+                                    </svg>
+                                    Search any user in your tree
+                                </p>
+                                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+                                    <form
+                                        className="flex min-w-0 flex-1 items-center gap-1.5"
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            searchByUid();
+                                        }}
                                     >
-                                        {uidSearching ? '…' : 'Search'}
-                                    </button>
-                                </form>
-                                {isFocusedView ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => loadTree()}
-                                        className="shrink-0 rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-100 transition hover:border-emerald-300/60 hover:bg-emerald-500/25"
-                                    >
-                                        ← Back to my tree
-                                    </button>
+                                        <div className="relative flex-1">
+                                            <svg className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-300/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z" />
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                value={uidQuery}
+                                                onChange={(e) => setUidQuery(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        searchByUid();
+                                                    }
+                                                }}
+                                                placeholder="Enter User ID e.g. RMS123…"
+                                                className="w-full rounded-lg border border-white/20 bg-[#0b1020] py-2 pl-9 pr-2 text-[13px] font-medium text-white placeholder:text-white/45 focus:border-cyan-400/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
+                                                aria-label="Search by User ID"
+                                                autoComplete="off"
+                                                spellCheck={false}
+                                            />
+                                            {uidQuery ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setUidQuery('')}
+                                                    aria-label="Clear search"
+                                                    className="absolute right-2 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
+                                                >
+                                                    ×
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={uidSearching || uidQuery.trim() === ''}
+                                            className="shrink-0 rounded-lg border border-cyan-300/45 bg-gradient-to-r from-cyan-500 to-blue-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {uidSearching ? 'Searching…' : 'Search'}
+                                        </button>
+                                    </form>
+                                    {isFocusedView ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => loadTree()}
+                                            className="shrink-0 rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-3 py-2 text-[12px] font-semibold text-emerald-100 transition hover:border-emerald-300/60 hover:bg-emerald-500/25"
+                                        >
+                                            ← Back to my tree
+                                        </button>
+                                    ) : null}
+                                </div>
+                                {treeErr ? (
+                                    <p className="mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-200">
+                                        {treeErr}
+                                    </p>
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Tap any User ID to view that user with the next two levels — total 7 members shown in left‑to‑right order.
+                                Tap any User ID to focus on that member — you can keep drilling deeper, no level limit.
                             </p>
                             <div
                                 className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
