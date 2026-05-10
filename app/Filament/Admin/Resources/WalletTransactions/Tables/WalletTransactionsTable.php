@@ -15,8 +15,23 @@ class WalletTransactionsTable
     {
         return $table
             ->columns([
+                TextColumn::make('user.login_uid')
+                    ->label('User ID')
+                    ->badge()
+                    ->color('info')
+                    ->copyable()
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('—')
+                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
                 TextColumn::make('user.name')
-                    ->searchable(),
+                    ->label('Name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('user.email')
+                    ->label('Email')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('type')
                     ->searchable(),
                 TextColumn::make('amount')
@@ -34,6 +49,7 @@ class WalletTransactionsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->searchPlaceholder('Search by User ID, name, email or type…')
             ->filters([
                 //
             ])

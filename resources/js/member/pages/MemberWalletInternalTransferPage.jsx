@@ -237,7 +237,7 @@ export default function MemberWalletInternalTransferPage() {
                 </div>
 
                 <div className="my-4 border-t border-white/10" />
-
+{/* 
                 <p className={walletFlowLabel}>P2P → Main (1:1)</p>
                 <form onSubmit={submitP2pToMain} className="mt-3 space-y-2">
                     <input
@@ -254,7 +254,7 @@ export default function MemberWalletInternalTransferPage() {
                     <button type="submit" disabled={busy2} className={`${walletFlowGhostBtn} w-full border-emerald-500/35 text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50`}>
                         {busy2 ? '…' : 'Move to main'}
                     </button>
-                </form>
+                </form> */}
             </section>
 
             {mainConfirmOpen ? (

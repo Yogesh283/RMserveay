@@ -271,7 +271,7 @@ export default function MemberSurveysPage() {
                             </span>
                         </div>
                         <p className="mt-1 text-sm font-semibold leading-snug text-white sm:text-base">
-                            New Survey Drops Every Tuesday
+                        Fresh Surveys Every Tuesday
                         </p>
                         <p className="mt-0.5 text-[11px] leading-snug text-amber-100/85 sm:text-xs">
                             Stay tuned — fresh weekly surveys go live every Tuesday. Don't miss your earnings window.
