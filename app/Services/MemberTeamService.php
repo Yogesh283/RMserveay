@@ -367,7 +367,7 @@ class MemberTeamService
      */
     public function binaryPreview(User $user, int $depth): array
     {
-        $depth = max(1, min(8, $depth));
+        $depth = max(1, min(10, $depth));
 
         return [
             'depth' => $depth,

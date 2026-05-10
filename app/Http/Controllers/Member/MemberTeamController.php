@@ -22,7 +22,7 @@ class MemberTeamController extends Controller
     public function binaryTree(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'depth' => ['sometimes', 'integer', 'min:1', 'max:8'],
+            'depth' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'node_id' => ['sometimes', 'integer', 'min:1'],
             'uid' => ['sometimes', 'string', 'max:64'],
         ]);
