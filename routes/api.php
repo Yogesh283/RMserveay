@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['user' => $user?->toApiArray()]);
     });
     Route::patch('/user', [MemberProfileController::class, 'update']);
+    Route::patch('/member/profile/phone', [MemberProfileController::class, 'updatePhone'])->middleware('throttle:30,1');
     Route::post('/member/profile/email-change-otp', [MemberProfileController::class, 'sendEmailChangeOtp'])->middleware('throttle:10,1');
     Route::post('/member/profile/phone-change-otp', [MemberProfileController::class, 'sendPhoneChangeOtp'])->middleware('throttle:10,1');
     Route::post('/member/profile/password-change-otp', [MemberProfileController::class, 'sendPasswordChangeOtp'])->middleware('throttle:10,1');

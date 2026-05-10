@@ -120,6 +120,27 @@ class MemberProfileController extends Controller
         ]);
     }
 
+    public function updatePhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['nullable', 'string', 'max:32'],
+        ]);
+
+        $user = $request->user();
+        $nextPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : null;
+        if ($nextPhone === '') {
+            $nextPhone = null;
+        }
+
+        $user->phone = $nextPhone;
+        $user->save();
+
+        return response()->json([
+            'user' => $user->fresh()->load('sponsor')->toApiArray(),
+            'message' => 'Mobile number updated.',
+        ]);
+    }
+
     public function update(UpdateMemberProfileRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -159,21 +180,6 @@ class MemberProfileController extends Controller
         }
 
         $nextPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : null;
-        $currentPhone = (string) ($user->phone ?? '');
-        $phoneChanged = ($nextPhone ?? '') !== $currentPhone;
-        if ($phoneChanged && ! empty($nextPhone)) {
-            $phoneOtp = (string) ($validated['phone_otp'] ?? '');
-            if ($phoneOtp === '') {
-                throw ValidationException::withMessages([
-                    'phone_otp' => ['Enter the OTP sent to your current email.'],
-                ]);
-            }
-            if (! OtpController::verifyPhoneChangeUser((int) $user->id, $nextPhone, $phoneOtp)) {
-                throw ValidationException::withMessages([
-                    'phone_otp' => ['Invalid or expired OTP. Please request a new OTP.'],
-                ]);
-            }
-        }
 
         $user->fill([
             'name' => $validated['name'],

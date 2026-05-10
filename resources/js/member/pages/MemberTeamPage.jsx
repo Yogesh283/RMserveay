@@ -1138,8 +1138,8 @@ export default function MemberTeamPage() {
                                         <tbody>
                                             {data.direct.members.map((m) => (
                                                 <tr key={m.id} className="border-t border-white/[0.06]">
-                                                    <td className="px-2 py-1.5 font-mono text-[12px] text-white">{m.login_uid || t('member.ui.dash')}</td>
-                                                    <td className="px-2 py-1.5 font-mono text-[11px] text-[#8E6BFF]">{m.referral_code}</td>
+                                                    <td className="px-2 py-1.5 font-mono text-[12px] uppercase tracking-wide text-white">{(m.login_uid || t('member.ui.dash')).toString().toUpperCase()}</td>
+                                                    <td className="px-2 py-1.5 font-mono text-[11px] uppercase text-[#8E6BFF]">{m.referral_code}</td>
                                                     <td className="px-2 py-1.5">{m.is_active ? t('member.ui.yes') : t('member.ui.dash')}</td>
                                                 </tr>
                                             ))}

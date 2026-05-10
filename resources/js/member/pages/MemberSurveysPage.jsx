@@ -252,6 +252,34 @@ export default function MemberSurveysPage() {
 
     return (
         <div className="relative min-h-[40vh] space-y-3 pb-24">
+            <div className="relative overflow-hidden rounded-[20px] border border-amber-300/35 bg-gradient-to-r from-amber-500/15 via-orange-500/12 to-rose-500/12 p-3 shadow-[0_10px_30px_rgba(251,191,36,0.18)] ring-1 ring-amber-300/25 backdrop-blur-xl sm:p-3.5">
+                <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-400/25 blur-2xl" />
+                <div className="pointer-events-none absolute -left-4 bottom-0 h-16 w-16 rounded-full bg-rose-400/20 blur-2xl" />
+                <div className="relative flex items-start gap-2.5 sm:items-center sm:gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-300/45 bg-gradient-to-br from-amber-400/35 to-orange-500/30 text-amber-50 shadow-[0_0_18px_rgba(251,191,36,0.35)] sm:h-11 sm:w-11">
+                        <svg className="h-5 w-5 sm:h-5.5 sm:w-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="inline-flex items-center rounded-full border border-amber-300/45 bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-amber-100 sm:text-[10px]">
+                                Weekly
+                            </span>
+                            <span className="inline-flex items-center rounded-full border border-rose-300/40 bg-rose-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-rose-100 sm:text-[10px]">
+                                Every Tuesday
+                            </span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold leading-snug text-white sm:text-base">
+                            New Survey Drops Every Tuesday
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-amber-100/85 sm:text-xs">
+                            Stay tuned — fresh weekly surveys go live every Tuesday. Don't miss your earnings window.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-[#050816]/95 via-[#0B1120]/95 to-[#050816]/95 p-3 shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
                 <div className="flex gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/30 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button

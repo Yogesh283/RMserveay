@@ -29,6 +29,9 @@ export default function MemberProfilePage() {
     const [emailOtpSentFor, setEmailOtpSentFor] = useState('');
     const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [savingPhone, setSavingPhone] = useState(false);
+    const [phoneSavedMsg, setPhoneSavedMsg] = useState(null);
+    const [phoneError, setPhoneError] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
     const [error, setError] = useState(null);
     const [savedMsg, setSavedMsg] = useState(null);
@@ -67,10 +70,6 @@ export default function MemberProfilePage() {
         setError(null);
         setFieldErrors({});
         setSavedMsg(null);
-        if (phone?.trim() && !isPossiblePhoneNumber(phone)) {
-            setError('Enter a valid mobile number with country code, or leave it empty.');
-            return;
-        }
         if (newPassword && newPassword.length > 0 && newPassword !== newPasswordConfirmation) {
             setError('New password and confirmation do not match.');
             return;
@@ -81,7 +80,6 @@ export default function MemberProfilePage() {
             const payload = {
                 name: name.trim(),
                 email: email.trim(),
-                phone: phone || null,
                 profile: profile.trim() || null,
             };
             if (isEmailChanged) {
@@ -148,6 +146,38 @@ export default function MemberProfilePage() {
             setError(!err.response ? describeAxiosNetworkError(err) : data?.message ?? err.message ?? 'Could not send OTP.');
         } finally {
             setSendingEmailOtp(false);
+        }
+    }
+
+    async function savePhone() {
+        setPhoneError(null);
+        setPhoneSavedMsg(null);
+        setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+        const trimmed = (phone || '').trim();
+        if (trimmed && !isPossiblePhoneNumber(trimmed)) {
+            setPhoneError('Enter a valid mobile number with country code, or leave it empty.');
+            return;
+        }
+        setSavingPhone(true);
+        try {
+            await prepareSanctum();
+            const { data } = await window.axios.patch('api/member/profile/phone', {
+                phone: trimmed || null,
+            });
+            if (data?.user) {
+                setUser(data.user);
+                setPhone(data.user.phone ?? '');
+            }
+            setPhoneSavedMsg(data?.message ?? 'Mobile number updated.');
+            window.setTimeout(() => setPhoneSavedMsg(null), 3000);
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.errors) {
+                setFieldErrors((prev) => ({ ...prev, ...data.errors }));
+            }
+            setPhoneError(!err.response ? describeAxiosNetworkError(err) : data?.message ?? err.message ?? 'Could not update mobile.');
+        } finally {
+            setSavingPhone(false);
         }
     }
 
@@ -219,7 +249,7 @@ export default function MemberProfilePage() {
                         <p className="truncate text-base font-bold text-white sm:text-lg">{user.name || 'Member'}</p>
                         <p className="truncate text-xs text-[#A0AEC0] sm:text-sm">{user.email}</p>
                         <p className="mt-0.5 font-mono text-[10px] text-[#C4B5FD] sm:text-xs">
-                            User ID: <span className="font-semibold text-white">{user.login_uid ?? '—'}</span>
+                            User ID: <span className="font-semibold uppercase tracking-wide text-white">{(user.login_uid ?? '—').toString().toUpperCase()}</span>
                             <span className="block font-sans text-[9px] font-normal leading-tight text-[#718096] sm:text-[10px]">
                                 Sign in with this User ID and your password.
                             </span>
@@ -379,17 +409,6 @@ export default function MemberProfilePage() {
                     </div>
                 </RmsCard>
 
-                <RmsCard variant="elevated" className="!rounded-[20px] !border-emerald-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200/90 sm:text-[10px]">Mobile update</p>
-                    <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Mobile number ko alag section me update karein.</p>
-
-                    <div className="mt-3 [&_.PhoneInput]:mt-1 [&_.PhoneInput]:w-full [&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-lg [&_.PhoneInputInput]:border [&_.PhoneInputInput]:border-white/[0.1] [&_.PhoneInputInput]:bg-white/[0.06] [&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:py-2 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:text-white [&_.PhoneInputCountry]:mr-2 sm:mt-4">
-                        <label className={labelCls}>Mobile</label>
-                        <PhoneInput international defaultCountry="US" value={phone} onChange={setPhone} />
-                        {fieldErrors.phone?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.phone[0]}</p> : null}
-                    </div>
-                </RmsCard>
-
                 <RmsCard variant="elevated" className="!rounded-[20px] !border-amber-300/20 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-200/90 sm:text-[10px]">Password update</p>
                     <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Password update ke liye OTP registered email par verify hoga.</p>
@@ -463,6 +482,45 @@ export default function MemberProfilePage() {
                     {saving ? 'Saving…' : 'Save changes'}
                 </RmsButton>
             </form>
+
+            <RmsCard variant="elevated" className="!rounded-[20px] !border-emerald-300/25 !bg-[#0b1020]/75 !p-3 backdrop-blur-xl sm:!p-4">
+                <div className="flex items-center justify-between gap-2">
+                    <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200/90 sm:text-[10px]">Mobile update</p>
+                        <p className="mt-0.5 text-[11px] text-[#718096] sm:text-xs">Mobile number directly update karein — no OTP required.</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-200">
+                        No OTP
+                    </span>
+                </div>
+
+                {phoneError ? (
+                    <p className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-200 sm:text-sm">{phoneError}</p>
+                ) : null}
+                {phoneSavedMsg ? (
+                    <p className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-200 sm:text-sm">{phoneSavedMsg}</p>
+                ) : null}
+
+                <p className="mt-3 truncate rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] text-[#A0AEC0]">
+                    Current mobile: <span className="font-medium text-white">{user?.phone || '—'}</span>
+                </p>
+
+                <div className="mt-3 [&_.PhoneInput]:mt-1 [&_.PhoneInput]:w-full [&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-lg [&_.PhoneInputInput]:border [&_.PhoneInputInput]:border-white/[0.1] [&_.PhoneInputInput]:bg-white/[0.06] [&_.PhoneInputInput]:px-2.5 [&_.PhoneInputInput]:py-2 [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:text-white [&_.PhoneInputCountry]:mr-2 sm:mt-4">
+                    <label className={labelCls}>New mobile</label>
+                    <PhoneInput international defaultCountry="US" value={phone} onChange={setPhone} />
+                    {fieldErrors.phone?.[0] ? <p className="mt-1 text-xs text-red-400">{fieldErrors.phone[0]}</p> : null}
+                </div>
+
+                <RmsButton
+                    type="button"
+                    variant="primary"
+                    className="mt-3 w-full !bg-gradient-to-r !from-emerald-500 !to-teal-500 !shadow-[0_10px_24px_rgba(16,185,129,0.25)]"
+                    onClick={savePhone}
+                    disabled={savingPhone}
+                >
+                    {savingPhone ? 'Updating…' : 'Update mobile'}
+                </RmsButton>
+            </RmsCard>
 
             <div className="space-y-1.5">
                 <p className="px-0.5 text-[9px] font-semibold uppercase tracking-wider text-violet-200/80 sm:text-[10px]">Quick links</p>

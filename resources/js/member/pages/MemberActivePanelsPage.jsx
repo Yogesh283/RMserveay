@@ -92,7 +92,7 @@ export default function MemberActivePanelsPage() {
     const progressPct = qualified ? 100 : activationPaid ? 50 : 0;
     const timeline = ['Start', 'Verify', 'Submit', 'Complete'];
     const displayName = user?.name?.trim() || 'Member';
-    const displayId = user?.login_uid || '—';
+    const displayId = (user?.login_uid || '—').toString().toUpperCase();
     const displayInitial = displayName.charAt(0).toUpperCase();
     const isVerified = Boolean(user?.email_verified_at || user?.phone_verified_at);
 

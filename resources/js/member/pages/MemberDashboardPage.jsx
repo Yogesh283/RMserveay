@@ -295,8 +295,8 @@ export default function MemberDashboardPage() {
                                 <p className="text-[10px] text-slate-300">{t('member.dashboard.welcomeBack')}</p>
                                 <p className="truncate text-sm font-semibold leading-tight text-white">{user?.name || 'yogesh'}</p>
                                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                    <span className="inline-flex min-h-[18px] items-center rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-300">
-                                        ID: {user?.login_uid || '—'}
+                                    <span className="inline-flex min-h-[18px] items-center rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-200">
+                                        ID: {(user?.login_uid || '—').toString().toUpperCase()}
                                     </span>
                                     <span className="inline-flex min-h-[18px] items-center gap-1 rounded-full border border-cyan-300/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-100">
                                         Active Panels: {activePanelsCount}
