@@ -734,8 +734,14 @@ export default function MemberTeamPage() {
                 return;
             }
 
-            const childrenAlreadyLoaded =
-                (node.has_left && node.left !== undefined) || (node.has_right && node.right !== undefined) || (!node.has_left && !node.has_right);
+            /**
+             * Children are *truly* loaded only when each existing leg has a populated object.
+             * Server returns `null` for legs that exist but were below the requested depth,
+             * so a `null` value should be treated as "not yet loaded", not "loaded but empty".
+             */
+            const leftReady = !node.has_left || Boolean(node.left);
+            const rightReady = !node.has_right || Boolean(node.right);
+            const childrenAlreadyLoaded = leftReady && rightReady;
 
             if (childrenAlreadyLoaded) {
                 setExpandedIds((prev) => {
