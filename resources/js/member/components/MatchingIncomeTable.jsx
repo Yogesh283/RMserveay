@@ -20,6 +20,14 @@ export function MatchingIncomeTable({
      * which tiers were already credited.
      */
     hideEarnedHighlight = false,
+    /**
+     * Hide *all* live progress data (summary chips at the top and live L/R
+     * counts inside the cells). When true, the L/R columns simply show the
+     * milestone count itself (static schedule), so the table reads as a pure
+     * "Left Panels | Right Panels | Income" reference. Used by the team-page
+     * sub & super matching tabs.
+     */
+    hideLiveData = false,
 }) {
     /** Team page already wraps in `RmsCard` — no second bordered box when embedded. */
     const card = embedded
@@ -91,10 +99,18 @@ export function MatchingIncomeTable({
             : `${tdBase} border-amber-100 text-right ${paid ? 'bg-emerald-50 font-semibold text-emerald-800' : `${stripe ? 'bg-amber-50' : 'bg-amber-50/60'} text-amber-900`}`;
 
     /**
-     * Per-tier progress cell: shows the live count (capped at required for the tier).
-     * Adds a small green check when the side fully meets this tier.
+     * Per-tier progress cell. By default shows the live count + a green check when
+     * the side fully meets this tier. When `hideLiveData` is on, it shows the static
+     * "X Panels" target instead (no live progress, no checkmark).
      */
-    function progressCell(stripeFn, total, required, side) {
+    function progressCell(stripeFn, total, required, side, milestone) {
+        if (hideLiveData) {
+            return (
+                <td className={stripeFn}>
+                    <span className="tabular-nums">{milestone} Panels</span>
+                </td>
+            );
+        }
         const live = Math.max(0, total | 0);
         const reached = live >= required && required > 0;
         return (
@@ -132,8 +148,8 @@ export function MatchingIncomeTable({
             return (
                 <tr key={m} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{m}</td>
-                    {progressCell(cellL(stripe), totalL, required, 'L')}
-                    {progressCell(cellR(stripe), totalR, required, 'R')}
+                    {progressCell(cellL(stripe), totalL, required, 'L', m)}
+                    {progressCell(cellR(stripe), totalR, required, 'R', m)}
                     <td className={cellIncome(stripe, false)}>
                         <span className="tabular-nums text-amber-200">{fmtUsd(perPair)}</span>
                     </td>
@@ -163,8 +179,8 @@ export function MatchingIncomeTable({
             return (
                 <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    {progressCell(cellL(stripe), totalL, required, 'L')}
-                    {progressCell(cellR(stripe), totalR, required, 'R')}
+                    {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
+                    {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
                     <td className={cellIncome(stripe, paid)}>
                         <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
                         {paid ? (
@@ -201,8 +217,8 @@ export function MatchingIncomeTable({
             return (
                 <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    {progressCell(cellL(stripe), totalL, required, 'L')}
-                    {progressCell(cellR(stripe), totalR, required, 'R')}
+                    {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
+                    {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
                     <td className={cellIncome(stripe, paid)}>
                         <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
                         {paid ? (
@@ -254,7 +270,7 @@ export function MatchingIncomeTable({
 
     return (
         <div className={card}>
-            {summary ? (
+            {summary && !hideLiveData ? (
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className={`${summaryChipBase} ${dark ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50'}`}>
                         <span className="opacity-70">Left:</span>
@@ -286,9 +302,9 @@ export function MatchingIncomeTable({
                 <table className={`w-full min-w-[320px] border-collapse ${comfortable ? 'text-base' : 'text-sm'}`}>
                     <thead>
                         <tr>
-                            <th className={`${thBase} rounded-tl-xl ${H.milestone}`}>Panel match table</th>
-                            <th className={`${thBase} text-center ${H.L}`}>L</th>
-                            <th className={`${thBase} text-center ${H.R}`}>R</th>
+                            <th className={`${thBase} rounded-tl-xl ${H.milestone}`}>{hideLiveData ? 'Match' : 'Panel match table'}</th>
+                            <th className={`${thBase} text-center ${H.L}`}>{hideLiveData ? 'Left Panels' : 'L'}</th>
+                            <th className={`${thBase} text-center ${H.R}`}>{hideLiveData ? 'Right Panels' : 'R'}</th>
                             <th className={`${thBase} rounded-tr-xl text-right ${H.income}`}>Income</th>
                         </tr>
                     </thead>

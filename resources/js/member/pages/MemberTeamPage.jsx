@@ -714,7 +714,7 @@ export default function MemberTeamPage() {
         setTreeErr(null);
         try {
             await prepareSanctum();
-            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 10 } });
+            const { data: json } = await window.axios.get('api/member/team/binary-tree', { params: { depth: 100 } });
             if (json?.tree) {
                 setTree(json.tree);
                 setShowTree(true);
@@ -751,7 +751,7 @@ export default function MemberTeamPage() {
             try {
                 await prepareSanctum();
                 const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                    params: { node_id: node.id, depth: 10 },
+                    params: { node_id: node.id, depth: 100 },
                 });
                 if (json?.tree) {
                     setTree(json.tree);
@@ -785,7 +785,7 @@ export default function MemberTeamPage() {
         try {
             await prepareSanctum();
             const { data: json } = await window.axios.get('api/member/team/binary-tree', {
-                params: { uid: q, depth: 10 },
+                params: { uid: q, depth: 100 },
             });
             if (json?.tree) {
                 setTree(json.tree);
@@ -978,7 +978,7 @@ export default function MemberTeamPage() {
                                 ) : null}
                             </div>
                             <p className="mt-2 text-center text-[10px] text-[#94A3B8] sm:text-[11px]">
-                                Showing up to 10 levels of your binary team. Tap any User ID to drill into that member’s 10-level subtree.
+                                Showing your full binary team — every level. Tap any User ID to focus on that member’s subtree.
                             </p>
                             <div
                                 className="relative -mx-3 mt-2 max-h-[72vh] overflow-auto overscroll-contain rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#0b1228]/80 via-[#0a0f24]/85 to-[#080d1f]/90 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.35)] sm:-mx-4 sm:mt-3 sm:max-h-[82vh] sm:px-4 sm:py-6"
@@ -1241,13 +1241,22 @@ export default function MemberTeamPage() {
                                     embedded
                                     comfortable
                                     hideEarnedHighlight
+                                    hideLiveData
                                     variant="sub"
                                     panelData={panelMatchData}
                                     subData={subMatchData}
                                 />
                             ) : null}
                             {matchingIncomeTab === 'super' && superMatchData ? (
-                                <MatchingIncomeTable dark embedded comfortable hideEarnedHighlight variant="super" superData={superMatchData} />
+                                <MatchingIncomeTable
+                                    dark
+                                    embedded
+                                    comfortable
+                                    hideEarnedHighlight
+                                    hideLiveData
+                                    variant="super"
+                                    superData={superMatchData}
+                                />
                             ) : null}
                             {matchingIncomeTab === 'sub' && (!panelMatchData || !subMatchData) ? (
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
