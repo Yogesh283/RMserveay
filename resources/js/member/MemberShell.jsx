@@ -685,48 +685,93 @@ export default function MemberShell() {
                 </main>
             </div>
 
-            {/* Mobile bottom: 4 quick + More (transactions, panels, profile) */}
-            <nav className="fixed bottom-0 left-0 right-0 z-[100] border-t border-violet-500/15 bg-gradient-to-b from-[#0a0817]/95 via-[#0d0a1f]/96 to-[#06040f]/96 shadow-[0_-8px_28px_rgba(76,29,149,0.35)] backdrop-blur-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 lg:hidden">
-                <div className="mx-auto flex max-w-lg items-end justify-around gap-0.5 px-1 pb-2.5 pt-1.5 [padding-bottom:max(0.65rem,env(safe-area-inset-bottom))]">
+            {/* Mobile bottom: premium futuristic nav (4 quick + More) */}
+            <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] px-3 pb-[max(0.55rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">
+                {/* Ambient glow halo behind the floating bar */}
+                <span aria-hidden="true" className="pointer-events-none absolute inset-x-6 bottom-3 -z-10 h-12 rounded-full bg-gradient-to-r from-[#A020F0]/35 via-[#7C3AED]/30 to-[#00E5FF]/25 blur-2xl opacity-90" />
+
+                <div
+                    role="navigation"
+                    className="pointer-events-auto relative mx-auto flex max-w-md items-stretch justify-around gap-1 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-[#0c0820]/85 via-[#070514]/90 to-[#050505]/92 px-2 py-2 shadow-[0_-14px_42px_rgba(160,32,240,0.42),0_0_0_1px_rgba(160,32,240,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl ring-1 ring-[#A020F0]/30"
+                >
+                    {/* LED edge highlight */}
+                    <span aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#A020F0]/60 to-transparent" />
+
                     {primaryNavQuick.map(({ to, label, end, icon: Icon }) => (
                         <NavLink
                             key={to}
                             to={to}
                             end={end}
-                            className="flex min-w-0 flex-1 flex-col items-center justify-end active:scale-[0.97] active:opacity-90"
+                            className="group relative flex min-w-0 flex-1 flex-col items-center justify-end rounded-2xl transition-transform duration-200 active:scale-[0.93]"
                         >
                             {({ isActive }) => (
-                                <span
-                                    className={[
-                                        'flex w-full max-w-[5.25rem] flex-col items-center gap-1 rounded-[14px] px-2 py-2 text-center text-[10px] font-semibold transition-all duration-200',
-                                        isActive
-                                            ? 'bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] text-white shadow-[0_0_24px_rgba(139,92,246,0.65)] ring-1 ring-[#A78BFA]/70'
-                                            : 'text-white/85',
-                                    ].join(' ')}
-                                >
-                                    <Icon active={isActive} />
-                                    <span className="max-w-[4.5rem] truncate leading-tight">{label}</span>
-                                </span>
+                                <>
+                                    {/* Active top neon indicator line */}
+                                    <span
+                                        aria-hidden="true"
+                                        className={[
+                                            'pointer-events-none absolute left-1/2 top-0 h-[3px] -translate-x-1/2 rounded-full bg-gradient-to-r from-[#A020F0] via-[#C084FC] to-[#00E5FF] transition-all duration-300 ease-out',
+                                            isActive ? 'w-9 opacity-100 shadow-[0_0_14px_rgba(160,32,240,0.95)]' : 'w-0 opacity-0',
+                                        ].join(' ')}
+                                    />
+                                    {/* Soft blur light beneath active tab */}
+                                    {isActive ? (
+                                        <span
+                                            aria-hidden="true"
+                                            className="pointer-events-none absolute inset-x-2 inset-y-1 -z-10 rounded-2xl bg-gradient-to-b from-[#A020F0]/35 via-[#7C3AED]/18 to-transparent blur-md animate-pulse"
+                                        />
+                                    ) : null}
+                                    <span
+                                        className={[
+                                            'flex w-full flex-col items-center gap-1 px-2 py-2 text-center text-[10px] font-semibold tracking-wide transition-all duration-300 ease-out',
+                                            isActive
+                                                ? 'scale-[1.06] text-white drop-shadow-[0_0_10px_rgba(160,32,240,0.85)]'
+                                                : 'text-white/55 group-hover:text-white/85',
+                                        ].join(' ')}
+                                    >
+                                        <Icon active={isActive} />
+                                        <span className={['max-w-[4.5rem] truncate leading-tight', isActive ? 'opacity-100' : 'opacity-70'].join(' ')}>{label}</span>
+                                    </span>
+                                </>
                             )}
                         </NavLink>
                     ))}
-                    <button
-                        type="button"
-                        onClick={() => setMoreSheetOpen(true)}
-                        className="flex min-w-0 flex-1 flex-col items-center justify-end active:scale-[0.97] active:opacity-90"
-                    >
-                        <span
-                            className={[
-                                'flex w-full max-w-[5.25rem] flex-col items-center gap-1 rounded-[14px] px-2 py-2 text-center text-[10px] font-semibold transition-all duration-200',
-                                isMoreMenuPath(location.pathname)
-                                    ? 'bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] text-white shadow-[0_0_24px_rgba(139,92,246,0.65)] ring-1 ring-[#A78BFA]/70'
-                                    : 'text-white/85',
-                            ].join(' ')}
-                        >
-                            <IconMore active={isMoreMenuPath(location.pathname)} />
-                            <span className="max-w-[4.5rem] truncate leading-tight">{t('member.more')}</span>
-                        </span>
-                    </button>
+                    {(() => {
+                        const moreActive = isMoreMenuPath(location.pathname);
+
+                        return (
+                            <button
+                                type="button"
+                                onClick={() => setMoreSheetOpen(true)}
+                                className="group relative flex min-w-0 flex-1 flex-col items-center justify-end rounded-2xl transition-transform duration-200 active:scale-[0.93]"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={[
+                                        'pointer-events-none absolute left-1/2 top-0 h-[3px] -translate-x-1/2 rounded-full bg-gradient-to-r from-[#A020F0] via-[#C084FC] to-[#00E5FF] transition-all duration-300 ease-out',
+                                        moreActive ? 'w-9 opacity-100 shadow-[0_0_14px_rgba(160,32,240,0.95)]' : 'w-0 opacity-0',
+                                    ].join(' ')}
+                                />
+                                {moreActive ? (
+                                    <span
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute inset-x-2 inset-y-1 -z-10 rounded-2xl bg-gradient-to-b from-[#A020F0]/35 via-[#7C3AED]/18 to-transparent blur-md animate-pulse"
+                                    />
+                                ) : null}
+                                <span
+                                    className={[
+                                        'flex w-full flex-col items-center gap-1 px-2 py-2 text-center text-[10px] font-semibold tracking-wide transition-all duration-300 ease-out',
+                                        moreActive
+                                            ? 'scale-[1.06] text-white drop-shadow-[0_0_10px_rgba(160,32,240,0.85)]'
+                                            : 'text-white/55 group-hover:text-white/85',
+                                    ].join(' ')}
+                                >
+                                    <IconMore active={moreActive} />
+                                    <span className={['max-w-[4.5rem] truncate leading-tight', moreActive ? 'opacity-100' : 'opacity-70'].join(' ')}>{t('member.more')}</span>
+                                </span>
+                            </button>
+                        );
+                    })()}
                 </div>
             </nav>
 
