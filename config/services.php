@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'cron' => [
+        'token' => env('CRON_TOKEN', ''),
+    ],
+
 ];

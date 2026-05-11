@@ -25,8 +25,8 @@ return [
     /** IANA timezone for the daily cut-off. Default: India Standard Time. */
     'timezone' => env('BINARY_CLOSING_TIMEZONE', 'Asia/Kolkata'),
 
-    /** 24h "HH:MM" inside `timezone` when the closing must run. Default: 00:00 IST. */
-    'closing_time' => env('BINARY_CLOSING_TIME', '00:00'),
+    /** 24h "HH:MM" inside `timezone` when the closing must run. Default: 08:00 IST. */
+    'closing_time' => env('BINARY_CLOSING_TIME', '08:00'),
 
     /** Maximum pairs that can match for a single user in one closing. */
     'max_pairs_per_day' => (int) env('BINARY_CLOSING_MAX_PAIRS_PER_DAY', 20),
