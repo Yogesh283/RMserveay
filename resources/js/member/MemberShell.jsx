@@ -686,7 +686,7 @@ export default function MemberShell() {
             </div>
 
             {/* Mobile bottom: 4 quick + More (transactions, panels, profile) */}
-            <nav className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/[0.08] bg-[rgba(11,15,26,0.92)] shadow-[0_-8px_24px_rgba(0,0,0,0.35)] backdrop-blur-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 lg:hidden">
+            <nav className="fixed bottom-0 left-0 right-0 z-[100] border-t border-violet-500/15 bg-gradient-to-b from-[#0a0817]/95 via-[#0d0a1f]/96 to-[#06040f]/96 shadow-[0_-8px_28px_rgba(76,29,149,0.35)] backdrop-blur-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 lg:hidden">
                 <div className="mx-auto flex max-w-lg items-end justify-around gap-0.5 px-1 pb-2.5 pt-1.5 [padding-bottom:max(0.65rem,env(safe-area-inset-bottom))]">
                     {primaryNavQuick.map(({ to, label, end, icon: Icon }) => (
                         <NavLink
@@ -700,8 +700,8 @@ export default function MemberShell() {
                                     className={[
                                         'flex w-full max-w-[5.25rem] flex-col items-center gap-1 rounded-[14px] px-2 py-2 text-center text-[10px] font-semibold transition-all duration-200',
                                         isActive
-                                            ? 'bg-[rgba(108,76,241,0.22)] text-[#C4B5FD] shadow-[0_0_20px_rgba(108,76,241,0.18)] ring-1 ring-[rgba(142,107,255,0.55)]'
-                                            : 'text-[#A0AEC0]',
+                                            ? 'bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] text-white shadow-[0_0_24px_rgba(139,92,246,0.65)] ring-1 ring-[#A78BFA]/70'
+                                            : 'text-white/85',
                                     ].join(' ')}
                                 >
                                     <Icon active={isActive} />
@@ -719,8 +719,8 @@ export default function MemberShell() {
                             className={[
                                 'flex w-full max-w-[5.25rem] flex-col items-center gap-1 rounded-[14px] px-2 py-2 text-center text-[10px] font-semibold transition-all duration-200',
                                 isMoreMenuPath(location.pathname)
-                                    ? 'bg-[rgba(108,76,241,0.22)] text-[#C4B5FD] shadow-[0_0_20px_rgba(108,76,241,0.18)] ring-1 ring-[rgba(142,107,255,0.55)]'
-                                    : 'text-[#A0AEC0]',
+                                    ? 'bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] text-white shadow-[0_0_24px_rgba(139,92,246,0.65)] ring-1 ring-[#A78BFA]/70'
+                                    : 'text-white/85',
                             ].join(' ')}
                         >
                             <IconMore active={isMoreMenuPath(location.pathname)} />

@@ -236,7 +236,7 @@ git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only orig
 
 
 
-cd /home/rmsurveyai/htdocs/rmsurveyai.com
+cd /home/rmsurveyai/htdocs/rmsurveyai.com             
 git pull --ff-only origin main
 php artisan optimize:clear
 php artisan config:cache
