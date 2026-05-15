@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Models\MatchingPayout;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Filament\Widgets\StatsOverviewWidget;
@@ -10,20 +11,26 @@ use Illuminate\Support\Carbon;
 
 class AdminOverviewStats extends StatsOverviewWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
         $today = Carbon::today();
+        $closingDate = Carbon::now(config('binary_closing.timezone', 'Asia/Kolkata'))->toDateString();
+
+        $todayPayoutTotal = (float) (MatchingPayout::query()
+            ->whereDate('closing_date', $closingDate)
+            ->sum('payout_usd') ?? 0);
+        $todayPayoutCount = MatchingPayout::query()
+            ->whereDate('closing_date', $closingDate)
+            ->count();
+        $totalPayoutUsd = (float) (MatchingPayout::query()->sum('payout_usd') ?? 0);
 
         $totalUsers = User::query()->count();
         $todayUsers = User::query()->whereDate('created_at', $today)->count();
 
         $totalDepositUsd = (float) (WalletTransaction::query()
             ->where('type', WalletTransaction::TYPE_DEPOSIT_CREDIT)
-            ->sum('amount') ?? 0);
-
-        $todayDepositUsd = (float) (WalletTransaction::query()
-            ->where('type', WalletTransaction::TYPE_DEPOSIT_CREDIT)
-            ->whereDate('created_at', $today)
             ->sum('amount') ?? 0);
 
         $totalSubPanelsUsed = (int) (User::query()->sum('sub_panel_count') ?? 0);
@@ -39,10 +46,14 @@ class AdminOverviewStats extends StatsOverviewWidget
             ->count();
 
         return [
+            Stat::make('Today Payout (USD)', '$'.number_format($todayPayoutTotal, 2))
+                ->description("{$todayPayoutCount} members · closing {$closingDate}")
+                ->color('success'),
+            Stat::make('Total Payout (USD)', '$'.number_format($totalPayoutUsd, 2))
+                ->description('All-time matching paid'),
             Stat::make('Total Users', number_format($totalUsers)),
             Stat::make('Today Users', number_format($todayUsers)),
             Stat::make('Total Deposit (USD)', '$'.number_format($totalDepositUsd, 2)),
-            Stat::make('Today Deposit (USD)', '$'.number_format($todayDepositUsd, 2)),
             Stat::make('Total Sub Panel Used', number_format($totalSubPanelsUsed)),
             Stat::make('Today Sub Panel Used', number_format($todaySubPanelsUsed)),
             Stat::make('Total Super Panel Used', number_format($totalSuperSubPanelsUsed)),

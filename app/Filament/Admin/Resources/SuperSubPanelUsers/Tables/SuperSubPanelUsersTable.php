@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Filament\Admin\Resources\ActivePanelUsers\Tables;
+namespace App\Filament\Admin\Resources\SuperSubPanelUsers\Tables;
 
-use App\Models\ActivePanelUser;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -10,7 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class ActivePanelUsersTable
+class SuperSubPanelUsersTable
 {
     public static function configure(Table $table): Table
     {
@@ -29,9 +28,18 @@ class ActivePanelUsersTable
                     ->label('Email')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('activated_at')
-                    ->dateTime()
+                TextColumn::make('panels_count')
+                    ->label('Panels')
+                    ->numeric()
                     ->sortable(),
+                TextColumn::make('first_purchased_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('—'),
+                TextColumn::make('last_purchased_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('—'),
                 TextColumn::make('total_paid_usd')
                     ->label('Total paid (USD)')
                     ->money('USD')
@@ -41,7 +49,7 @@ class ActivePanelUsersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('activated_at', 'desc')
+            ->defaultSort('last_purchased_at', 'desc')
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),

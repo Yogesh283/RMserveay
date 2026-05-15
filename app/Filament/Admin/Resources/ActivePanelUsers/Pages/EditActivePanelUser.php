@@ -3,17 +3,17 @@
 namespace App\Filament\Admin\Resources\ActivePanelUsers\Pages;
 
 use App\Filament\Admin\Resources\ActivePanelUsers\ActivePanelUserResource;
-use Filament\Actions\CreateAction;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
 
-class ListActivePanelUsers extends ListRecords
+class EditActivePanelUser extends EditRecord
 {
     protected static string $resource = ActivePanelUserResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

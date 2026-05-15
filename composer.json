@@ -52,8 +52,12 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php scripts/ensure-dev-server-router.php",
             "@php artisan package:discover --ansi",
             "@php artisan filament:upgrade"
+        ],
+        "post-install-cmd": [
+            "@php scripts/ensure-dev-server-router.php"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

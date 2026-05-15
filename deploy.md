@@ -13,40 +13,68 @@ Replace these values everywhere:
 - `SERVER_USER`: `rmsurveyai` (apne server user name se replace)
 - `SERVER_HOST`: `rmsurveyai.com` (apne server host/IP se replace)
 - `SERVER_DIR`: `/home/rmsurveyai/htdocs/rmsurveyai.com` (apne live path se replace)
+- `LOCAL_DIR` (PowerShell): `C:\xampp\htdocs\RAMSERVE`
+- `LOCAL_DIR` (Git Bash): `/c/xampp/htdocs/RAMSERVE` — **forward slashes**, backslash mat use karein
+
+> **Git Bash:** `cd C:\xampp\...` galat hai — `\x`, `\h` escape ho jate hain aur error `C:xampphtdocsRAMSERVE` aata hai. Hamesha `cd /c/xampp/htdocs/RAMSERVE` use karein.
 
 ---
 
-## 1) Local (Windows PowerShell): Git push
+## 1) Local (Windows): Git push
 
 ### 1.1 Remote check
 
+**Git Bash (MINGW64):**
+
+```bash
+cd /c/xampp/htdocs/RAMSERVE
+git status
+git remote -v
+```
+
+**PowerShell:**
+
 ```powershell
+cd "C:\xampp\htdocs\RAMSERVE"
 git status
 git remote -v
 ```
 
 If remote is missing/wrong:
 
-```powershell
+```bash
 git remote add origin "REPO_URL"
 ```
 
 ### 1.2 Branch ensure `main`
 
-```powershell
+```bash
 git branch
 git checkout -b main
 ```
 
 If you already have commits on another branch, you can switch:
 
-```powershell
+```bash
 git checkout main
 ```
 
 ### 1.3 Commit & push
 
+**Git Bash:**
+
+```bash
+cd /c/xampp/htdocs/RAMSERVE
+git add .
+git commit -m "Update for deployment (YYYY-MM-DD)"
+git pull origin main --rebase
+git push -u origin main
+```
+
+**PowerShell:**
+
 ```powershell
+cd "C:\xampp\htdocs\RAMSERVE"
 git add .
 git commit -m "Update for deployment (YYYY-MM-DD)"
 git pull origin main --rebase

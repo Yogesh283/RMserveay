@@ -2,7 +2,10 @@
 
 namespace App\Filament\Admin\Resources\ActivePanelUsers;
 
+use App\Filament\Admin\Resources\ActivePanelUsers\Pages\CreateActivePanelUser;
+use App\Filament\Admin\Resources\ActivePanelUsers\Pages\EditActivePanelUser;
 use App\Filament\Admin\Resources\ActivePanelUsers\Pages\ListActivePanelUsers;
+use App\Filament\Admin\Resources\ActivePanelUsers\Schemas\ActivePanelUserForm;
 use App\Filament\Admin\Resources\ActivePanelUsers\Tables\ActivePanelUsersTable;
 use App\Models\ActivePanelUser;
 use BackedEnum;
@@ -10,7 +13,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class ActivePanelUserResource extends Resource
@@ -19,7 +21,7 @@ class ActivePanelUserResource extends Resource
 
     protected static ?string $navigationLabel = 'Active panelists';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reports';
+    protected static string|UnitEnum|null $navigationGroup = 'Panel enrollments';
 
     protected static ?int $navigationSort = 1;
 
@@ -27,7 +29,7 @@ class ActivePanelUserResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema;
+        return ActivePanelUserForm::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -44,21 +46,8 @@ class ActivePanelUserResource extends Resource
     {
         return [
             'index' => ListActivePanelUsers::route('/'),
+            'create' => CreateActivePanelUser::route('/create'),
+            'edit' => EditActivePanelUser::route('/{record}/edit'),
         ];
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return false;
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return false;
     }
 }
