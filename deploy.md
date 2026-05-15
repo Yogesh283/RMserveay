@@ -108,11 +108,21 @@ git remote set-url origin "REPO_URL"
 
 ### 2.3 Pull latest code
 
+`public/storage` pehle se **symlink** ho ( `php artisan storage:link` ) to `git pull` fail ho sakta hai: *untracked working tree files would be overwritten by merge: public/storage*.
+
+**Pehle `public/storage` hatao, pull karo, phir dubara link banao:**
+
 ```bash
+cd /home/rmsurveyai/htdocs/rmsurveyai.com
+# Symlink: rm -f kaafi. Folder ho to pehle uploads copy karo, phir rm -rf:
+# cp -a public/storage/. storage/app/public/ 2>/dev/null || true
+rm -rf public/storage
 git fetch --all
 git checkout main
 git pull --ff-only origin main
 ```
+
+> `rm -rf public/storage` sirf `public/storage` entry hataata hai — asli uploads `storage/app/public` me honi chahiye. Agar pehle galat folder bana tha, upar wala `cp -a` ek baar chalao.
 
 ---
 
@@ -120,8 +130,28 @@ git pull --ff-only origin main
 
 ### 3.1 PHP / Composer
 
+Server PHP version check:
+
 ```bash
-composer install --no-interaction --prefer-dist --optimize-autoloader
+php -v
+```
+
+`composer.lock` agar **PHP 8.4+** packages lock karta ho aur server **8.2** ho to ya to server PHP **8.4** par upgrade karo (recommended), ya temporary:
+
+```bash
+composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs
+```
+
+**Root se mat chalao** — hosting user se chalao (warning avoid):
+
+```bash
+sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev'
+```
+
+Agar root se hi karna ho:
+
+```bash
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs
 ```
 
 ### 3.2 Node / Vite build
@@ -170,14 +200,22 @@ php artisan migrate --force
 ```bash
 php artisan optimize:clear
 php artisan config:cache
-php artisan route:cache
+php artisan route:clear
 ```
+
+> **Filament / Livewire:** `php artisan route:cache` mat chalao — stale cache se `Route [filament.admin.pages.*] not defined` aa sakta hai. Sirf `route:clear` + `config:cache` use karo.
 
 ### 4.5 Storage link (if needed)
 
+Pehle purana link/folder hatao, phir link banao:
+
 ```bash
+rm -rf public/storage
 php artisan storage:link
+ls -la public/storage
 ```
+
+Expected: `public/storage -> .../storage/app/public`
 
 ---
 
@@ -242,15 +280,47 @@ git checkout <commit_hash>
 
 ---
 
+## 8) Fix: `Could not delete vendor/...` + `composer.lock` pull conflict
+
+**Cause:** Pehle `composer` / `php artisan` **root** se chala → `vendor/` files `root:root`; `rmsurveyai` uninstall nahi kar pata. Server par `composer.lock` edit ho gaya → `git pull` block.
+
+**Server (copy-paste order):**
+
+```bash
+cd /home/rmsurveyai/htdocs/rmsurveyai.com
+
+# 1) Ownership — poora project hosting user ko
+chown -R rmsurveyai:rmsurveyai .
+
+# 2) Server-side composer.lock changes hatao, GitHub se lo
+git checkout -- composer.lock
+git pull --ff-only origin main
+
+# 3) Broken vendor hatao (root ya rmsurveyai — chown ke baad dono chalenge)
+rm -rf vendor
+
+# 4) Fresh install — hamesha rmsurveyai user se (root mat)
+sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev'
+
+# 5) Laravel cache (rmsurveyai se)
+sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && php artisan optimize:clear && php artisan config:cache && php artisan route:clear'
+```
+
+> Naya `composer.lock` (PHP 8.2) GitHub par ho to step 4 me `--ignore-platform-reqs` ki zarurat nahi. Purana lock ho to: `composer install ... --ignore-platform-reqs`
+
+---
+
 ## Notes
 
-1. Agar deploy ke baad `/api/user` par **401 Unauthorized** aa raha ho, mostly issue hota hai:
+1. **`Route [filament.admin.pages.admin-dashboard] not defined`** — `php artisan route:clear` ( **`route:cache` mat use karo** Filament ke saath). Ensure `app/Filament/Admin/Pages/AdminDashboard.php` deployed hai.
+2. **`git pull` error: `public/storage` would be overwritten** — Section 2.3 dekho: `rm -rf public/storage` → pull → `php artisan storage:link` (Section 4.5 ke baad).
+3. Agar deploy ke baad `/api/user` par **401 Unauthorized** aa raha ho, mostly issue hota hai:
    - `APP_URL` wrong
    - `SANCTUM_STATEFUL_DOMAINS` missing/mismatch
    - session cookie `SESSION_DOMAIN` / `SESSION_SECURE_COOKIE` mismatch
-2. Frontend changes show nahi ho rahe ho to server pe `npm run build` confirm karein (Vite `public/build/manifest.json` generate hota hai).
+4. Frontend changes show nahi ho rahe ho to server pe `npm run build` confirm karein (Vite `public/build/manifest.json` generate hota hai).
 
-3. `tempnam()` / Blade compile error aaye to `storage/framework/views` writable hai ya nahi verify karo, aur codebase me `bootstrap/runtime.php` project ke `storage/tmp` ko `TMPDIR` set karta hai — deploy/pull ke baad permissions phir match karo.
+5. `tempnam()` / Blade compile error aaye to `storage/framework/views` writable hai ya nahi verify karo, aur codebase me `bootstrap/runtime.php` project ke `storage/tmp` ko `TMPDIR` set karta hai — deploy/pull ke baad permissions phir match karo.
 
 
 
@@ -260,7 +330,7 @@ git pull --ff-only origin main
 
 
 
-git -c safe.directory=/home/rmsurveyai/htdocs/rmsurveyai.com pull --ff-only origin main && composer install --no-interaction --prefer-dist --optimize-autoloader && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan storage:link
+cd /home/rmsurveyai/htdocs/rmsurveyai.com && rm -rf public/storage && git pull --ff-only origin main && sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs' && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:clear && rm -rf public/storage && php artisan storage:link
 
 
 
@@ -268,11 +338,14 @@ cd /home/rmsurveyai/htdocs/rmsurveyai.com
 git pull --ff-only origin main
 php artisan optimize:clear
 php artisan config:cache
-php artisan route:cache
+php artisan route:clear
 php artisan migrate
 
 
-
+cd /home/rmsurveyai/htdocs/rmsurveyai.com
+rm -f public/storage
+git pull --ff-only origin main
+php artisan storage:link
 
 
 

@@ -15,6 +15,9 @@ class AdminDashboard extends BaseDashboard
 {
     protected static bool $isDiscovered = false;
 
+    /** Keep Filament’s default dashboard route name (`filament.admin.pages.dashboard`). */
+    protected static ?string $slug = 'dashboard';
+
     protected function getHeaderActions(): array
     {
         return [
