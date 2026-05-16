@@ -126,6 +126,43 @@ git pull --ff-only origin main
 
 ---
 
+## 2.4) Ek hi command — `scripts/deploy-live.sh` (recommended)
+
+Repo me ye script hai: **`scripts/deploy-live.sh`**. Ye ek sequence chalata hai:
+
+`git pull` → `composer install --no-dev` → `npm ci` + `npm run build` → `migrate` → cache clear / `config:cache` / `route:clear` → `storage:link` — aur **`public/hot`** hata deta hai (Vite dev flag).
+
+**Server par (hosting user se, root se nahi):**
+
+```bash
+cd /home/rmsurveyai/htdocs/rmsurveyai.com
+chmod +x scripts/deploy-live.sh   # sirf pehli baar
+bash scripts/deploy-live.sh
+```
+
+Agar server PHP lockfile se chhota ho / platform warning aaye:
+
+```bash
+COMPOSER_IGNORE_PLATFORM_REQS=1 bash scripts/deploy-live.sh
+```
+
+Sirf backend / Composer, bina frontend build:
+
+```bash
+SKIP_NPM=1 bash scripts/deploy-live.sh
+```
+
+**Windows se SSH — ek line:**
+
+```powershell
+ssh rmsurveyai@rmsurveyai.com "cd /home/rmsurveyai/htdocs/rmsurveyai.com && bash scripts/deploy-live.sh"
+```
+
+> Agar aap hamesha `sudo -u rmsurveyai` use karte ho:  
+> `sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && bash scripts/deploy-live.sh'`
+
+---
+
 ## 3) Install dependencies + build (Laravel + Vite)
 
 ### 3.1 PHP / Composer
@@ -159,9 +196,12 @@ COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist --opt
 Root me `package.json` present hai, isliye yahin se build:
 
 ```bash
+rm -f public/hot
 npm ci
 npm run build
 ```
+
+> **`public/hot`** = local Vite dev server (`npm run dev`). Agar yeh file production par rahe to browser `http://localhost:5173` se load karega → CORS error. Deploy par **hamesha delete** karo.
 
 ---
 
@@ -224,6 +264,7 @@ Expected: `public/storage -> .../storage/app/public`
 PHP-FPM jo user se chalta hai (often `www-data`, kabhi hosting user `rmsurveyai`), **usi user ko `storage/` + `bootstrap/cache` par write chahiye**.  
 Galat ownership se ye errors aate hain:
 
+- **`vendor/autoload.php: Permission denied`** → browser **HTTP 500**, lekin `php artisan` / tinker **200** (CLI `rmsurveyai`, web `www-data`)
 - `file_put_contents(... storage/framework/sessions ...): Permission denied`
 - Blade / Livewire par `tempnam(): file created in the system's temporary directory` → HTTP 500
 
@@ -240,13 +281,23 @@ sudo chown -R www-data:www-data "/home/rmsurveyai/htdocs/rmsurveyai.com/storage"
 sudo chmod -R ug+rwX "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
 ```
 
-Agar aap codebase ko `rmsurveyai` user se own karna chahte ho lekin PHP-FPM `www-data` hai, tab **same group + setgid directory** sensible hota hai (example):
+Agar PHP-FPM **`www-data`** hai aur project **`rmsurveyai`** own karta hai (recommended):
 
 ```bash
-sudo chown -R rmsurveyai:www-data "/home/rmsurveyai/htdocs/rmsurveyai.com"
-sudo chmod -R ug+rwX "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache"
-sudo find "/home/rmsurveyai/htdocs/rmsurveyai.com/storage" "/home/rmsurveyai/htdocs/rmsurveyai.com/bootstrap/cache" -type d -exec chmod g+s {} \;
-sudo usermod -aG www-data rmsurveyai   # sirf zarurat ho to
+cd /home/rmsurveyai/htdocs/rmsurveyai.com
+# Parent dirs: www-data ko traverse allow (home often 750 hota hai)
+chmod 711 /home/rmsurveyai /home/rmsurveyai/htdocs 2>/dev/null || true
+chown -R rmsurveyai:www-data .
+chmod -R ug+rX .
+chmod -R 775 storage bootstrap/cache
+chmod 640 .env
+```
+
+Verify (www-data jaisa read):
+
+```bash
+sudo -u www-data test -r vendor/autoload.php && echo "vendor OK" || echo "vendor FAIL"
+curl -sI https://rmsurveyai.com | head -1
 ```
 
 > Root se `composer` / `php artisan` chalane par newly created files `root:root` ho sakti hain — isliye deploy ke baad `chown` dubara zaroor check karo.
@@ -322,30 +373,7 @@ sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && php
 
 5. `tempnam()` / Blade compile error aaye to `storage/framework/views` writable hai ya nahi verify karo, aur codebase me `bootstrap/runtime.php` project ke `storage/tmp` ko `TMPDIR` set karta hai — deploy/pull ke baad permissions phir match karo.
 
-
-
-git fetch --all
-git checkout main
-git pull --ff-only origin main
-
-
-
-cd /home/rmsurveyai/htdocs/rmsurveyai.com && rm -rf public/storage && git pull --ff-only origin main && sudo -u rmsurveyai -H bash -lc 'cd /home/rmsurveyai/htdocs/rmsurveyai.com && composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs' && npm ci && npm run build && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:clear && rm -rf public/storage && php artisan storage:link
-
-
-
-cd /home/rmsurveyai/htdocs/rmsurveyai.com             
-git pull --ff-only origin main
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:clear
-php artisan migrate
-
-
-cd /home/rmsurveyai/htdocs/rmsurveyai.com
-rm -f public/storage
-git pull --ff-only origin main
-php artisan storage:link
+*(Quick deploy: section **2.4** — `bash scripts/deploy-live.sh`.)*
 
 
 

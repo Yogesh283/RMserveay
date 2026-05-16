@@ -4,12 +4,12 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\MatchingPayout;
+use App\Support\BinaryClosingCalendar;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class TodayMatchingPayoutsWidget extends TableWidget
 {
@@ -19,7 +19,11 @@ class TodayMatchingPayoutsWidget extends TableWidget
 
     public function getTableHeading(): ?string
     {
-        return "Today's matching payouts ({$this->closingDateLabel()})";
+        $tz = BinaryClosingCalendar::timezone();
+        $y = BinaryClosingCalendar::yesterdayDateString();
+        $t = BinaryClosingCalendar::todayDateString();
+
+        return "Matching payouts (closing dates {$y} & {$t} · {$tz})";
     }
 
     public function table(Table $table): Table
@@ -45,6 +49,10 @@ class TodayMatchingPayoutsWidget extends TableWidget
                         MatchingPayout::SCOPE_SUPER => 'warning',
                         default => 'gray',
                     })
+                    ->sortable(),
+                TextColumn::make('closing_date')
+                    ->label('Closing date')
+                    ->date()
                     ->sortable(),
                 TextColumn::make('pairs_matched')
                     ->label('Pairs')
@@ -72,9 +80,9 @@ class TodayMatchingPayoutsWidget extends TableWidget
                     ->dateTime()
                     ->sortable(),
             ])
-            ->defaultSort('payout_usd', 'desc')
-            ->emptyStateHeading('No matching payouts today')
-            ->emptyStateDescription('Paid members appear here after the daily binary closing runs.')
+            ->defaultSort('closing_date', 'desc')
+            ->emptyStateHeading('No matching payouts for recent closing dates')
+            ->emptyStateDescription('Cron closes yesterday in the closing timezone. After binary:daily-closing runs, rows appear for that closing date.')
             ->paginated([10, 25, 50, 100])
             ->recordUrl(fn (MatchingPayout $record): string => UserResource::getUrl('view', ['record' => $record->user_id]));
     }
@@ -83,7 +91,12 @@ class TodayMatchingPayoutsWidget extends TableWidget
     {
         return MatchingPayout::query()
             ->with('user')
-            ->whereDate('closing_date', $this->closingDate());
+            ->whereIn('closing_date', [
+                BinaryClosingCalendar::yesterdayDateString(),
+                BinaryClosingCalendar::todayDateString(),
+            ])
+            ->orderByDesc('closing_date')
+            ->orderByDesc('payout_usd');
     }
 
     public static function scopeLabel(string $scope): string
@@ -96,13 +109,4 @@ class TodayMatchingPayoutsWidget extends TableWidget
         };
     }
 
-    protected function closingDate(): string
-    {
-        return Carbon::now(config('binary_closing.timezone', 'Asia/Kolkata'))->toDateString();
-    }
-
-    protected function closingDateLabel(): string
-    {
-        return Carbon::now(config('binary_closing.timezone', 'Asia/Kolkata'))->format('d M Y');
-    }
 }

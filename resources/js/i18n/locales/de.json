@@ -301,6 +301,7 @@
             "eyebrow": "RM Survey",
             "title": "Transaction history",
             "subtitle": "Every credit and debit on your main wallet ledger.",
+            "matchingAll": "Matching (alle)",
             "colDate": "Date",
             "colTxId": "TX ID",
             "colType": "Type",
@@ -315,6 +316,7 @@
                 "survey_credit": "Survey credit",
                 "direct_commission": "Direct income",
                 "survey_level_income": "Level income",
+                "active_panel_matching": "Active-Panel-Matching",
                 "panel_matching": "Panel matching",
                 "sub_panel_matching": "Sub-panel matching",
                 "super_sub_panel_matching": "Super matching",
@@ -322,7 +324,12 @@
                 "p2p_transfer_out": "P2P out",
                 "plan_purchase": "Plan purchase",
                 "main_to_p2p": "Main → P2P",
-                "p2p_to_main": "P2P → Main"
+                "p2p_to_main": "P2P → Main",
+                "activation_fee": "Aktivierungsgebühr",
+                "minimum_panel_fee": "Mindest-Panelgebühr",
+                "sub_panel_fee": "Sub-Panel-Gebühr",
+                "super_sub_panel_fee": "Super-Panel-Gebühr",
+                "signup_bonus": "Registrierungsbonus"
             },
             "p2pOutDetail": "P2P sent to {{name}} · User ID {{uid}} · #{{id}}",
             "p2pInDetail": "P2P received from {{name}} · User ID {{uid}} · #{{id}}"

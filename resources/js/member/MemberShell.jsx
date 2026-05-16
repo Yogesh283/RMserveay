@@ -680,7 +680,7 @@ export default function MemberShell() {
                     </div>
                 </header>
 
-                <main className="relative mx-auto max-w-6xl px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:px-4 lg:pb-8 max-lg:pt-[calc(3.25rem+1rem+env(safe-area-inset-top,0px))] sm:max-lg:pt-[calc(3.25rem+1.25rem+env(safe-area-inset-top,0px))] lg:pt-4">
+                <main className="relative mx-auto max-w-6xl px-3 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] sm:px-4 lg:pb-8 max-lg:pt-[calc(3.25rem+1rem+env(safe-area-inset-top,0px))] sm:max-lg:pt-[calc(3.25rem+1.25rem+env(safe-area-inset-top,0px))] lg:pt-4">
                     <Outlet key={i18n.resolvedLanguage} context={{ dark: true }} />
                 </main>
             </div>

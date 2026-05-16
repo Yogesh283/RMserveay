@@ -2,12 +2,13 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Models\ActivePanelUser;
 use App\Models\MatchingPayout;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\BinaryClosingCalendar;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 
 class AdminOverviewStats extends StatsOverviewWidget
 {
@@ -15,49 +16,72 @@ class AdminOverviewStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
-        $closingDate = Carbon::now(config('binary_closing.timezone', 'Asia/Kolkata'))->toDateString();
+        $tz = BinaryClosingCalendar::timezone();
+        $closingYesterday = BinaryClosingCalendar::yesterdayDateString();
+        $closingToday = BinaryClosingCalendar::todayDateString();
+        [$todayStart, $todayEnd] = BinaryClosingCalendar::todayLocalBounds();
 
-        $todayPayoutTotal = (float) (MatchingPayout::query()
-            ->whereDate('closing_date', $closingDate)
+        $yesterdayPayoutTotal = (float) (MatchingPayout::query()
+            ->whereDate('closing_date', $closingYesterday)
             ->sum('payout_usd') ?? 0);
-        $todayPayoutCount = MatchingPayout::query()
-            ->whereDate('closing_date', $closingDate)
+        $yesterdayPayoutCount = MatchingPayout::query()
+            ->whereDate('closing_date', $closingYesterday)
             ->count();
+
+        $todayClosingPayoutTotal = (float) (MatchingPayout::query()
+            ->whereDate('closing_date', $closingToday)
+            ->sum('payout_usd') ?? 0);
+        $todayClosingPayoutCount = MatchingPayout::query()
+            ->whereDate('closing_date', $closingToday)
+            ->count();
+
         $totalPayoutUsd = (float) (MatchingPayout::query()->sum('payout_usd') ?? 0);
 
         $totalUsers = User::query()->count();
-        $todayUsers = User::query()->whereDate('created_at', $today)->count();
+        $todayUsers = User::query()
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->count();
 
         $totalDepositUsd = (float) (WalletTransaction::query()
             ->where('type', WalletTransaction::TYPE_DEPOSIT_CREDIT)
             ->sum('amount') ?? 0);
 
+        $totalActivePanelists = ActivePanelUser::query()->count();
+        $todayActivePanelists = ActivePanelUser::query()
+            ->whereBetween('activated_at', [$todayStart, $todayEnd])
+            ->count();
+
         $totalSubPanelsUsed = (int) (User::query()->sum('sub_panel_count') ?? 0);
         $todaySubPanelsUsed = WalletTransaction::query()
             ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
-            ->whereDate('created_at', $today)
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->count();
 
         $totalSuperSubPanelsUsed = (int) (User::query()->sum('super_sub_panel_count') ?? 0);
         $todaySuperSubPanelsUsed = WalletTransaction::query()
             ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
-            ->whereDate('created_at', $today)
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->count();
 
         return [
-            Stat::make('Today Payout (USD)', '$'.number_format($todayPayoutTotal, 2))
-                ->description("{$todayPayoutCount} members · closing {$closingDate}")
+            Stat::make('Yesterday closing payout (USD)', '$'.number_format($yesterdayPayoutTotal, 2))
+                ->description("{$yesterdayPayoutCount} payouts · closing date {$closingYesterday} · {$tz}")
                 ->color('success'),
-            Stat::make('Total Payout (USD)', '$'.number_format($totalPayoutUsd, 2))
+            Stat::make('Today closing payout (USD)', '$'.number_format($todayClosingPayoutTotal, 2))
+                ->description("{$todayClosingPayoutCount} payouts · closing date {$closingToday} (only if you run closing with --date=today)")
+                ->color('gray'),
+            Stat::make('Total payout (USD)', '$'.number_format($totalPayoutUsd, 2))
                 ->description('All-time matching paid'),
-            Stat::make('Total Users', number_format($totalUsers)),
-            Stat::make('Today Users', number_format($todayUsers)),
-            Stat::make('Total Deposit (USD)', '$'.number_format($totalDepositUsd, 2)),
-            Stat::make('Total Sub Panel Used', number_format($totalSubPanelsUsed)),
-            Stat::make('Today Sub Panel Used', number_format($todaySubPanelsUsed)),
-            Stat::make('Total Super Panel Used', number_format($totalSuperSubPanelsUsed)),
-            Stat::make('Today Super Panel Used', number_format($todaySuperSubPanelsUsed)),
+            Stat::make('Active panelists', number_format($totalActivePanelists))
+                ->description("{$todayActivePanelists} activated today · {$tz}"),
+            Stat::make('Sub panel slots (total)', number_format($totalSubPanelsUsed))
+                ->description("{$todaySubPanelsUsed} purchases today · {$tz}"),
+            Stat::make('Super sub slots (total)', number_format($totalSuperSubPanelsUsed))
+                ->description("{$todaySuperSubPanelsUsed} purchases today · {$tz}"),
+            Stat::make('Total users', number_format($totalUsers)),
+            Stat::make('Today users', number_format($todayUsers))
+                ->description("Joined today · {$tz}"),
+            Stat::make('Total deposit (USD)', '$'.number_format($totalDepositUsd, 2)),
         ];
     }
 }
