@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\CompleteUnifiedRegistrationRequest;
 use App\Models\User;
 use App\Services\UserRegistrationService;
 use App\Support\DashboardRoute;
+use App\Support\SessionAuthStamp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,6 +118,7 @@ class UnifiedAuthController extends Controller
         if ($request->hasSession()) {
             $request->session()->regenerate();
             $request->session()->put('app_login_user_type', $validated['user_type']);
+            SessionAuthStamp::stamp($request);
         }
 
         $role = $validated['user_type'];

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
+use App\Support\SessionAuthStamp;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -64,6 +65,7 @@ class UserRegistrationService
             if ($request->hasSession()) {
                 $request->session()->regenerate();
                 $request->session()->put('app_login_user_type', $validated['user_type']);
+                SessionAuthStamp::stamp($request);
             }
 
             return $user->fresh();

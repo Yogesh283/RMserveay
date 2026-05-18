@@ -91,7 +91,8 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        Auth::login($user, $this->boolean('remember'));
+        /** Sessions expire after 24 hours — do not extend via "remember me". */
+        Auth::login($user, false);
 
         RateLimiter::clear($this->throttleKey());
     }

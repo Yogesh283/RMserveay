@@ -26,8 +26,11 @@ export default function AuthLoginPage() {
     const [otpBypass, setOtpBypass] = useState(false);
 
     useEffect(() => {
-        if (new URLSearchParams(location.search).get('blocked') === '1') {
+        const params = new URLSearchParams(location.search);
+        if (params.get('blocked') === '1') {
             setError('Your account has been blocked. Please contact support.');
+        } else if (params.get('expired') === '1') {
+            setError('Your session expired after 24 hours. Please log in again.');
         }
     }, [location.search]);
 

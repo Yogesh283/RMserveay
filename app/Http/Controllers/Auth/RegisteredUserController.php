@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Models\User;
 use App\Services\SponsorPlacementService;
 use App\Support\DashboardRoute;
+use App\Support\SessionAuthStamp;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -71,6 +72,7 @@ class RegisteredUserController extends Controller
             if ($request->hasSession()) {
                 $request->session()->regenerate();
                 $request->session()->put('app_login_user_type', $validated['user_type']);
+                SessionAuthStamp::stamp($request);
             }
 
             $user = $user->fresh();

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AdminImpersonation;
 use App\Support\DashboardRoute;
+use App\Support\SessionAuthStamp;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ class AdminImpersonationController extends Controller
         $request->session()->put(AdminImpersonation::SESSION_ADMIN_ID, (int) $admin->id);
         $request->session()->put(AdminImpersonation::SESSION_RETURN_URL, $returnUrl);
         $request->session()->put('app_login_user_type', $role);
+        SessionAuthStamp::stamp($request);
 
         Log::info('admin.impersonate.start', [
             'admin_id' => $admin->id,

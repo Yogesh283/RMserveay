@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'account.not_blocked' => \App\Http\Middleware\EnsureAccountNotBlocked::class,
+            'session.max_age' => \App\Http\Middleware\EnforceSessionMaxAge::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

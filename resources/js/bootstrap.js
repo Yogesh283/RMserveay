@@ -102,6 +102,12 @@ window.axios.interceptors.response.use(
                 window.location.href = `${loginPath}?blocked=1`;
             }
         }
+        if (status === 401 && data?.session_expired) {
+            const loginPath = '/login';
+            if (!window.location.pathname.startsWith(loginPath)) {
+                window.location.href = `${loginPath}?expired=1`;
+            }
+        }
         return Promise.reject(error);
     },
 );

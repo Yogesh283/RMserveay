@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use App\Support\DashboardRoute;
+use App\Support\SessionAuthStamp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,7 @@ class AuthenticatedSessionController extends Controller
         if ($request->hasSession()) {
             $request->session()->regenerate();
             $request->session()->put('app_login_user_type', $request->string('user_type')->toString());
+            SessionAuthStamp::stamp($request);
         }
 
         $role = $request->string('user_type')->toString();
@@ -64,6 +66,7 @@ class AuthenticatedSessionController extends Controller
         if ($request->hasSession()) {
             $request->session()->regenerate();
             $request->session()->put('app_login_user_type', $role);
+            SessionAuthStamp::stamp($request);
         }
 
         return response()->json([
@@ -78,6 +81,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($request->hasSession()) {
             $request->session()->forget('app_login_user_type');
+            SessionAuthStamp::clear($request);
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
