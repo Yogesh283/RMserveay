@@ -4,9 +4,17 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "cap:sync": "cap sync",
+        "cap:assets": "node scripts/prepare-android-branding.mjs",
+        "cap:copy-apk": "node scripts/copy-member-apk.mjs",
+        "cap:open:android": "cap open android"
     },
     "devDependencies": {
+        "@capacitor/android": "^8.3.4",
+        "@capacitor/assets": "^3.0.5",
+        "@capacitor/cli": "^8.3.4",
+        "@capacitor/core": "^8.3.4",
         "@tailwindcss/vite": "^4.0.0",
         "@vitejs/plugin-react": "^5.1.2",
         "axios": "^1.11.0",

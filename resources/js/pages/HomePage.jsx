@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { copyReferralParams, readReferralParams } from '../lib/registerReferral';
+import { getMemberApkDownload } from '../lib/memberApk';
 import RmSurveyBackdrop, { rgbaHex } from '../components/RmSurveyBackdrop';
 import { RM } from '../survey-mobile/theme';
 
@@ -127,6 +128,18 @@ function HeroButtonIconLock() {
     );
 }
 
+function HeroButtonIconAndroid() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.25 4.5l1.2 2.1M15.75 4.5l-1.2 2.1M6.75 8.25h10.5M7.5 19.5h9a1.5 1.5 0 001.5-1.5v-7.5a1.5 1.5 0 00-1.5-1.5h-9a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5z"
+            />
+        </svg>
+    );
+}
+
 function HeroButtonArrow() {
     return (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -152,6 +165,7 @@ export default function HomePage() {
     }, [searchParams]);
 
     const registerPublisherTo = useMemo(() => ({ pathname: '/register/publisher' }), []);
+    const memberApk = useMemo(() => getMemberApkDownload(), []);
 
     /** Migrate any legacy register URL (`?ref=…`, `?account=…&flow=register#register`, `#register`) to the new dedicated pages. */
     useEffect(() => {
@@ -336,6 +350,36 @@ export default function HomePage() {
                                                 <HeroButtonArrow />
                                             </span>
                                         </Link>
+                                        {memberApk.available ? (
+                                            <a
+                                                href={memberApk.url}
+                                                download
+                                                className="home-apk-highlight group relative mt-1 inline-flex min-h-[58px] w-full items-center justify-between overflow-hidden rounded-[18px] border-2 border-emerald-300/80 bg-gradient-to-r from-[#10B981] via-[#14B8A6] to-[#22D3EE] px-4 py-3.5 text-sm font-bold text-white ring-2 ring-emerald-200/40 transition-all duration-300 hover:scale-[1.02] hover:brightness-110 active:scale-[0.99]"
+                                            >
+                                                <span
+                                                    className="pointer-events-none absolute inset-0 bg-[linear-gradient(105deg,transparent_35%,rgba(255,255,255,0.22)_50%,transparent_65%)] opacity-60"
+                                                    aria-hidden
+                                                />
+                                                <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/20 blur-2xl" aria-hidden />
+                                                <span className="relative inline-flex min-w-0 flex-1 items-center gap-2.5">
+                                                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.35)]">
+                                                        <HeroButtonIconAndroid />
+                                                    </span>
+                                                    <span className="text-left leading-tight">
+                                                        <span className="flex flex-wrap items-center gap-2">
+                                                            <span className="block text-[15px] tracking-tight drop-shadow-sm">{t('home.downloadApk')}</span>
+                                                            <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 shadow-sm">
+                                                                {t('home.downloadApkBadge')}
+                                                            </span>
+                                                        </span>
+                                                        <span className="mt-0.5 block text-[11px] font-medium text-emerald-50/95">{t('home.downloadApkHint')}</span>
+                                                    </span>
+                                                </span>
+                                                <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/30 bg-white/15 text-white transition-transform group-hover:translate-x-0.5">
+                                                    <HeroButtonArrow />
+                                                </span>
+                                            </a>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>

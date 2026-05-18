@@ -46,6 +46,8 @@
             id="app"
             data-app-name="{{ config('app.name', 'RM Survey') }}"
             data-app-url="{{ url('/') }}"
+            data-member-apk-url="{{ route('download.member-app') }}"
+            data-member-apk-available="{{ is_file(config('member_apk.path')) ? '1' : '0' }}"
         ></div>
     </body>
 </html>

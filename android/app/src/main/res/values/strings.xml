@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RM Survey</string>
+    <string name="title_activity_main">RM Survey</string>
+    <string name="package_name">com.rmsurveyai.member</string>
+    <string name="custom_url_scheme">com.rmsurveyai.member</string>
+</resources>

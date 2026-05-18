@@ -2,7 +2,11 @@
 
 use App\Http\Controllers\Cron\BinaryDailyClosingCronController;
 use App\Http\Controllers\Cron\RespondentPayoutsCronController;
+use App\Http\Controllers\MemberApkDownloadController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/download/member-app', MemberApkDownloadController::class)
+    ->name('download.member-app');
 
 Route::view('/', 'welcome');
 Route::view('/login', 'welcome')->name('login');

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\ActivePanelUser;
 use App\Models\MatchingPayout;
 use App\Models\User;
@@ -41,6 +42,14 @@ class AdminOverviewStats extends StatsOverviewWidget
         $todayUsers = User::query()
             ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->count();
+        $todayPanelists = User::query()
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->where('user_type', 'normal')
+            ->count();
+        $todayPublishers = User::query()
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->where('user_type', 'publisher')
+            ->count();
 
         $totalDepositUsd = (float) (WalletTransaction::query()
             ->where('type', WalletTransaction::TYPE_DEPOSIT_CREDIT)
@@ -64,6 +73,10 @@ class AdminOverviewStats extends StatsOverviewWidget
             ->count();
 
         return [
+            Stat::make('Today new register', number_format($todayUsers))
+                ->description("{$todayPanelists} panelist · {$todayPublishers} publisher · {$tz}")
+                ->color('primary')
+                ->url(UserResource::getUrl('index')),
             Stat::make('Yesterday closing payout (USD)', '$'.number_format($yesterdayPayoutTotal, 2))
                 ->description("{$yesterdayPayoutCount} payouts · closing date {$closingYesterday} · {$tz}")
                 ->color('success'),
@@ -79,8 +92,6 @@ class AdminOverviewStats extends StatsOverviewWidget
             Stat::make('Super sub slots (total)', number_format($totalSuperSubPanelsUsed))
                 ->description("{$todaySuperSubPanelsUsed} purchases today · {$tz}"),
             Stat::make('Total users', number_format($totalUsers)),
-            Stat::make('Today users', number_format($todayUsers))
-                ->description("Joined today · {$tz}"),
             Stat::make('Total deposit (USD)', '$'.number_format($totalDepositUsd, 2)),
         ];
     }
