@@ -83,6 +83,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        if ($user->isAccountBlocked()) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'login_uid' => ['This account has been blocked. Please contact support.'],
+            ]);
+        }
+
         Auth::login($user, $this->boolean('remember'));
 
         RateLimiter::clear($this->throttleKey());

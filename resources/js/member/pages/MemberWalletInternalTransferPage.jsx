@@ -76,8 +76,13 @@ export default function MemberWalletInternalTransferPage() {
             setMainErr('Enter a valid amount greater than zero.');
             return;
         }
-        if (overview && a > Number.parseFloat(overview.wallet_balance)) {
-            setMainErr('Amount exceeds your main wallet balance.');
+        const transferable = Number.parseFloat(
+            overview?.main_transferable_to_p2p_usd ?? overview?.wallet_balance ?? '0',
+        );
+        if (overview && a > transferable) {
+            setMainErr(
+                'Only programme income can move to P2P. Deposited funds stay in the main wallet.',
+            );
             return;
         }
         setConfirmPassword('');
@@ -214,6 +219,16 @@ export default function MemberWalletInternalTransferPage() {
                 <p className="mt-1 text-[10px] text-slate-500">
                     Lifetime {bonusRatePct}% bonus credited to your P2P wallet from {bonusTransferCount} transfer{bonusTransferCount === 1 ? '' : 's'}.
                 </p>
+                {overview ? (
+                    <p className="mt-1 text-[10px] text-amber-200/85">
+                        Income available for Main→P2P:{' '}
+                        <span className="font-semibold tabular-nums text-white">
+                            {fmtUsd(overview.main_transferable_to_p2p_usd ?? '0')}
+                        </span>
+                        {' '}
+                        (deposits cannot be moved to P2P)
+                    </p>
+                ) : null}
                 {preview ? (
                     <p className="mt-1 text-xs text-emerald-300/90">
                         ≈ {fmtUsd(preview.bonus)} bonus · {fmtUsd(preview.total)} to P2P

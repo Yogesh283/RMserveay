@@ -5,7 +5,7 @@
  */
 return [
 
-    'panelist_per_survey' => env('SELF_SURVEY_PANELIST_USD', '0.01'),
+    'panelist_per_survey' => env('SELF_SURVEY_PANELIST_USD', '0.20'),
 
     'activation_fee' => env('SELF_SURVEY_ACTIVATION_FEE_USD', '1.00'),
 

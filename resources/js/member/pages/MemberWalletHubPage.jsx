@@ -103,6 +103,14 @@ export default function MemberWalletHubPage() {
 
            
 
+            <div className="relative overflow-hidden rounded-[22px] border border-sky-400/35 bg-gradient-to-br from-sky-500/[0.08] to-[#0b1020]/85 p-3 shadow-[0_0_28px_rgba(56,189,248,0.15)] backdrop-blur-xl">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-200/90">SURVEY WALLET</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums text-white">
+                    {overview ? fmtUsd(overview.survey_wallet_balance) : t('member.ui.dash')}
+                </p>
+                <p className="mt-1 text-xs text-[#94A3B8]">Survey completion rewards are credited here.</p>
+            </div>
+
             <div className="relative overflow-hidden rounded-[22px] border border-violet-400/35 bg-gradient-to-br from-white/[0.07] to-[#0b1020]/85 p-3 shadow-[0_0_32px_rgba(108,76,241,0.2)] backdrop-blur-xl">
                 <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-2xl" />
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a5b4fc]">YOUR MAIN WALLET</p>

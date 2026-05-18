@@ -12,7 +12,7 @@
  * Override any value via .env without touching code.
  */
 return [
-    'free' => env('SURVEY_REWARD_FREE_USD', '0.01'),
+    'free' => env('SURVEY_REWARD_FREE_USD', '0.20'),
     'panel' => env('SURVEY_REWARD_PANEL_USD', '1.00'),
     'sub_panel_per_active' => env('SURVEY_REWARD_SUB_PANEL_PER_ACTIVE_USD', '1.00'),
     'super_panel_per_active' => env('SURVEY_REWARD_SUPER_PANEL_PER_ACTIVE_USD', '10.00'),

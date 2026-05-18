@@ -41,6 +41,8 @@ class User extends Authenticatable implements FilamentUser
         'p2p_receive_code',
         'wallet_balance',
         'p2p_wallet_balance',
+        'survey_wallet_balance',
+        'main_deposit_balance',
         'usdt_bep20_withdrawal_address',
         'activation_fee_paid_at',
         'minimum_panel_fee_paid_at',
@@ -62,6 +64,7 @@ class User extends Authenticatable implements FilamentUser
         'sspm_milestone_mask',
         'sspm_pair_carry_forward',
         'profile_completed_at',
+        'account_blocked_at',
     ];
 
     /**
@@ -72,6 +75,8 @@ class User extends Authenticatable implements FilamentUser
         'remember_token',
         'wallet_balance',
         'p2p_wallet_balance',
+        'survey_wallet_balance',
+        'main_deposit_balance',
         'usdt_bep20_withdrawal_address',
         'activation_fee_paid_at',
         'minimum_panel_fee_paid_at',
@@ -101,10 +106,13 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
+            'account_blocked_at' => 'datetime',
             'password' => 'hashed',
             'survey_profile' => 'array',
             'wallet_balance' => 'decimal:2',
             'p2p_wallet_balance' => 'decimal:2',
+            'survey_wallet_balance' => 'decimal:2',
+            'main_deposit_balance' => 'decimal:2',
             'activation_fee_paid_at' => 'datetime',
             'minimum_panel_fee_paid_at' => 'datetime',
             'spm_match_day' => 'date',
@@ -143,6 +151,8 @@ class User extends Authenticatable implements FilamentUser
                 [
                     'wallet_balance' => $startingBalance,
                     'p2p_wallet_balance' => $user->p2p_wallet_balance ?? '0.00',
+                    'survey_wallet_balance' => $user->survey_wallet_balance ?? '0.00',
+                    'main_deposit_balance' => $user->main_deposit_balance ?? '0.00',
                 ]
             );
 
@@ -165,7 +175,7 @@ class User extends Authenticatable implements FilamentUser
             if ($user->wasRecentlyCreated) {
                 return;
             }
-            if (! $user->wasChanged(['wallet_balance', 'p2p_wallet_balance'])) {
+            if (! $user->wasChanged(['wallet_balance', 'p2p_wallet_balance', 'survey_wallet_balance', 'main_deposit_balance'])) {
                 return;
             }
 
@@ -174,6 +184,8 @@ class User extends Authenticatable implements FilamentUser
                 [
                     'wallet_balance' => $user->wallet_balance,
                     'p2p_wallet_balance' => $user->p2p_wallet_balance,
+                    'survey_wallet_balance' => $user->survey_wallet_balance,
+                    'main_deposit_balance' => $user->main_deposit_balance,
                 ]
             );
         });
@@ -201,9 +213,16 @@ class User extends Authenticatable implements FilamentUser
         $b = $this->balancesForApi();
         $data['wallet_balance'] = $b['wallet_balance'];
         $data['p2p_wallet_balance'] = $b['p2p_wallet_balance'];
+        $data['survey_wallet_balance'] = $b['survey_wallet_balance'];
         $data['p2p_receive_code'] = (string) $this->p2p_receive_code;
+        $data['account_blocked'] = $this->isAccountBlocked();
 
         return $data;
+    }
+
+    public function isAccountBlocked(): bool
+    {
+        return $this->account_blocked_at !== null;
     }
 
     /**
@@ -248,7 +267,7 @@ class User extends Authenticatable implements FilamentUser
      * Resolved main + P2P balances for JSON after reconciling mirror drift.
      * Prefer `wallet` when its row was updated more recently (e.g. phpMyAdmin fix on `wallet`).
      *
-     * @return array{wallet_balance: string, p2p_wallet_balance: string}
+     * @return array{wallet_balance: string, p2p_wallet_balance: string, survey_wallet_balance: string, main_deposit_balance: string}
      */
     public function balancesForApi(): array
     {
@@ -257,30 +276,56 @@ class User extends Authenticatable implements FilamentUser
             return [
                 'wallet_balance' => (string) $this->wallet_balance,
                 'p2p_wallet_balance' => (string) $this->p2p_wallet_balance,
+                'survey_wallet_balance' => (string) ($this->survey_wallet_balance ?? '0.00'),
+                'main_deposit_balance' => (string) ($this->main_deposit_balance ?? '0.00'),
             ];
         }
 
         $wm = (string) $this->wallet->wallet_balance;
         $wp = (string) $this->wallet->p2p_wallet_balance;
+        $ws = (string) ($this->wallet->survey_wallet_balance ?? '0.00');
+        $wd = (string) ($this->wallet->main_deposit_balance ?? '0.00');
         $um = (string) $this->wallet_balance;
         $up = (string) $this->p2p_wallet_balance;
+        $us = (string) ($this->survey_wallet_balance ?? '0.00');
+        $ud = (string) ($this->main_deposit_balance ?? '0.00');
 
         $wu = $this->wallet->updated_at;
         $uu = $this->updated_at;
 
         if ($wu !== null && $uu !== null && $wu->gt($uu)) {
-            return ['wallet_balance' => $wm, 'p2p_wallet_balance' => $wp];
+            return [
+                'wallet_balance' => $wm,
+                'p2p_wallet_balance' => $wp,
+                'survey_wallet_balance' => $ws,
+                'main_deposit_balance' => $wd,
+            ];
         }
 
         if ($wu !== null && $uu !== null && $uu->gt($wu)) {
-            return ['wallet_balance' => $um, 'p2p_wallet_balance' => $up];
+            return [
+                'wallet_balance' => $um,
+                'p2p_wallet_balance' => $up,
+                'survey_wallet_balance' => $us,
+                'main_deposit_balance' => $ud,
+            ];
         }
 
-        if (bccomp($wm, $um, 2) !== 0 || bccomp($wp, $up, 2) !== 0) {
-            return ['wallet_balance' => $wm, 'p2p_wallet_balance' => $wp];
+        if (bccomp($wm, $um, 2) !== 0 || bccomp($wp, $up, 2) !== 0 || bccomp($ws, $us, 2) !== 0 || bccomp($wd, $ud, 2) !== 0) {
+            return [
+                'wallet_balance' => $wm,
+                'p2p_wallet_balance' => $wp,
+                'survey_wallet_balance' => $ws,
+                'main_deposit_balance' => $wd,
+            ];
         }
 
-        return ['wallet_balance' => $um, 'p2p_wallet_balance' => $up];
+        return [
+            'wallet_balance' => $um,
+            'p2p_wallet_balance' => $up,
+            'survey_wallet_balance' => $us,
+            'main_deposit_balance' => $ud,
+        ];
     }
 
     /**
@@ -296,10 +341,14 @@ class User extends Authenticatable implements FilamentUser
 
         $wm = (string) $this->wallet->wallet_balance;
         $wp = (string) $this->wallet->p2p_wallet_balance;
+        $ws = (string) ($this->wallet->survey_wallet_balance ?? '0.00');
+        $wd = (string) ($this->wallet->main_deposit_balance ?? '0.00');
         $um = (string) $this->wallet_balance;
         $up = (string) $this->p2p_wallet_balance;
+        $us = (string) ($this->survey_wallet_balance ?? '0.00');
+        $ud = (string) ($this->main_deposit_balance ?? '0.00');
 
-        if (bccomp($wm, $um, 2) === 0 && bccomp($wp, $up, 2) === 0) {
+        if (bccomp($wm, $um, 2) === 0 && bccomp($wp, $up, 2) === 0 && bccomp($ws, $us, 2) === 0 && bccomp($wd, $ud, 2) === 0) {
             return false;
         }
 
@@ -310,6 +359,8 @@ class User extends Authenticatable implements FilamentUser
             $this->wallet->forceFill([
                 'wallet_balance' => $um,
                 'p2p_wallet_balance' => $up,
+                'survey_wallet_balance' => $us,
+                'main_deposit_balance' => $ud,
             ])->save();
 
             return true;
@@ -317,6 +368,8 @@ class User extends Authenticatable implements FilamentUser
 
         $this->wallet_balance = $wm;
         $this->p2p_wallet_balance = $wp;
+        $this->survey_wallet_balance = $ws;
+        $this->main_deposit_balance = $wd;
         $this->save();
 
         return true;

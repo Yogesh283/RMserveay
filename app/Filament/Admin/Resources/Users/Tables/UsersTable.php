@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Users\Tables;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\AdminMemberAccountService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -110,6 +111,14 @@ class UsersTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('account_blocked_at')
+                    ->label('Blocked')
+                    ->dateTime()
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state) => $state ? 'danger' : 'success')
+                    ->formatStateUsing(fn ($state) => $state ? 'Blocked' : 'Active')
+                    ->sortable(),
                 TextColumn::make('sub_panel_count')
                     ->numeric()
                     ->sortable()
@@ -139,6 +148,9 @@ class UsersTable
                 ViewAction::make(),
                 EditAction::make(),
                 ActionGroup::make([
+                    self::activateAllPanelsAction(),
+                    self::blockAccountAction(),
+                    self::unblockAccountAction(),
                     self::updateEmailAction(),
                     self::updateMobileAction(),
                     self::creditP2pWalletAction(),
@@ -153,6 +165,67 @@ class UsersTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    protected static function activateAllPanelsAction(): Action
+    {
+        return Action::make('activate_all_panels')
+            ->label('Activate all panels')
+            ->icon(Heroicon::OutlinedCheckBadge)
+            ->color('success')
+            ->requiresConfirmation()
+            ->modalHeading(fn (User $record) => 'Activate all panels for '.strtoupper((string) ($record->login_uid ?? '#'.$record->id)))
+            ->modalDescription('Sets activation fee, minimum panel, and max sub/super panels without charging the wallet.')
+            ->visible(fn (User $record): bool => $record->minimum_panel_fee_paid_at === null
+                || (int) $record->sub_panel_count < (int) config('self_survey.max_sub_panels', 9)
+                || (int) $record->super_sub_panel_count < (int) config('self_survey.max_super_sub_panels', 9))
+            ->action(function (User $record): void {
+                app(AdminMemberAccountService::class)->activateAllPanels($record);
+
+                Notification::make()
+                    ->title('Member activated')
+                    ->body('All panel flags and snapshots updated.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    protected static function blockAccountAction(): Action
+    {
+        return Action::make('block_account')
+            ->label('Block account')
+            ->icon(Heroicon::OutlinedNoSymbol)
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(fn (User $record) => 'Block '.strtoupper((string) ($record->login_uid ?? '#'.$record->id)))
+            ->modalDescription('Blocked members cannot log in or use the member/publisher app.')
+            ->visible(fn (User $record): bool => $record->account_blocked_at === null)
+            ->action(function (User $record): void {
+                app(AdminMemberAccountService::class)->blockAccount($record);
+
+                Notification::make()
+                    ->title('Account blocked')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    protected static function unblockAccountAction(): Action
+    {
+        return Action::make('unblock_account')
+            ->label('Unblock account')
+            ->icon(Heroicon::OutlinedLockOpen)
+            ->color('warning')
+            ->requiresConfirmation()
+            ->visible(fn (User $record): bool => $record->account_blocked_at !== null)
+            ->action(function (User $record): void {
+                app(AdminMemberAccountService::class)->unblockAccount($record);
+
+                Notification::make()
+                    ->title('Account unblocked')
+                    ->success()
+                    ->send();
+            });
     }
 
     /** Quick Action: update only the email — no OTP, instant save. */

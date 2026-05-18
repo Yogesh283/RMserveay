@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Models\User;
-use App\Services\BinaryPlacementService;
+use App\Services\SponsorPlacementService;
 use App\Support\DashboardRoute;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -30,27 +30,21 @@ class RegisteredUserController extends Controller
         }
 
         return DB::transaction(function () use ($request, $validated, $email) {
-            $placement = null;
-            $sponsor = null;
-            $code = $validated['sponsor_referral_code'] ?? null;
+            $placementSvc = app(SponsorPlacementService::class);
+            $code = isset($validated['sponsor_referral_code'])
+                ? trim((string) $validated['sponsor_referral_code'])
+                : '';
             $side = $validated['binary_side'] ?? null;
 
-            if ($code) {
-                $sponsor = User::query()->where('referral_code', $code)->lockForUpdate()->first();
-                if (! $sponsor) {
-                    throw ValidationException::withMessages([
-                        'sponsor_referral_code' => ['Invalid referral code.'],
-                    ]);
-                }
-                if ($side === 'left' || $side === 'right') {
-                    $placement = app(BinaryPlacementService::class)->findAvailableSlotInLeg($sponsor, $side);
-                    if ($placement === null) {
-                        throw ValidationException::withMessages([
-                            'binary_side' => ['No placement slot found for this sponsor leg.'],
-                        ]);
-                    }
-                }
-            }
+            $resolved = $placementSvc->resolvePlacementForRegistration(
+                $code !== '' ? $code : null,
+                $side
+            );
+
+            User::whereKey($resolved['sponsor']->id)->lockForUpdate()->firstOrFail();
+
+            $placement = $resolved['placement'];
+            $effectiveSide = $resolved['binary_side'];
 
             $user = User::create([
                 'name' => $validated['name'],
@@ -60,21 +54,14 @@ class RegisteredUserController extends Controller
                 'user_type' => $validated['user_type'],
                 'phone' => $validated['phone'] ?? null,
                 'referral_code' => User::generateReferralCode(),
-                'sponsor_id' => $sponsor?->id,
+                'sponsor_id' => $resolved['sponsor']->id,
                 'binary_parent_id' => $placement['parent']->id ?? null,
                 'binary_side' => $placement['side'] ?? null,
                 'profile_completed_at' => now(),
             ]);
 
             if ($placement !== null) {
-                /** @var User $parent */
-                $parent = $placement['parent'];
-                if ($placement['side'] === 'left') {
-                    $parent->left_child_id = $user->id;
-                } else {
-                    $parent->right_child_id = $user->id;
-                }
-                $parent->save();
+                $placementSvc->attachUserToPlacement($user, $resolved['sponsor'], $placement);
             }
 
             event(new Registered($user));
@@ -91,7 +78,12 @@ class RegisteredUserController extends Controller
             return response()->json([
                 'user' => $user->toApiArray(),
                 'redirect_to' => DashboardRoute::forAppRole($validated['user_type']),
-                'placement' => $side ? ['binary_side' => $side, 'sponsor_referral_code' => $code] : null,
+                'placement' => $effectiveSide
+                    ? [
+                        'binary_side' => $effectiveSide,
+                        'sponsor_referral_code' => $resolved['sponsor_referral_code'],
+                    ]
+                    : null,
             ], 201);
         });
     }

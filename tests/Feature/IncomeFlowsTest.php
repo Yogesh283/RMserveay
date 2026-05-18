@@ -73,6 +73,10 @@ class IncomeFlowsTest extends TestCase
 
         app(SelfSurveyIncomeService::class)->creditSurvey($downline, 'income-test-ref-1');
 
+        $downline->refresh();
+        $this->assertSame('0.00', number_format((float) $downline->wallet_balance, 2, '.', ''));
+        $this->assertGreaterThan(0, (float) $downline->survey_wallet_balance);
+
         $directTx = WalletTransaction::query()
             ->where('user_id', $sponsor->id)
             ->where('type', WalletTransaction::TYPE_DIRECT_COMMISSION)

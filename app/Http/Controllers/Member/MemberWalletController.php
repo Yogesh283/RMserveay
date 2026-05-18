@@ -75,9 +75,14 @@ class MemberWalletController extends Controller
             }
         }
 
+        $transferable = $this->walletBuckets->transferableMainToP2p($user);
+
         return response()->json([
             'wallet_balance' => $b['wallet_balance'],
             'p2p_wallet_balance' => $b['p2p_wallet_balance'],
+            'survey_wallet_balance' => $b['survey_wallet_balance'],
+            'main_deposit_balance' => $b['main_deposit_balance'],
+            'main_transferable_to_p2p_usd' => $transferable,
             'p2p_receive_code' => $p2pCode,
             'p2p_receive_qr_payload' => $p2pCode !== '' ? User::P2P_RECEIVE_QR_PREFIX.$p2pCode : '',
             'withdrawal_address' => $user->usdt_bep20_withdrawal_address,
@@ -144,8 +149,7 @@ class MemberWalletController extends Controller
                 'tx_hash' => $hash,
             ]);
 
-            $newBalance = bcadd((string) $user->wallet_balance, $amount, 2);
-            $user->wallet_balance = $newBalance;
+            $newBalance = $this->walletBuckets->creditMainDeposit($user, $amount);
             $user->save();
             $user->refresh();
 
@@ -174,6 +178,8 @@ class MemberWalletController extends Controller
     /** Move USDT from main → internal P2P wallet (+10% bonus on default config). */
     public function mainToP2p(Request $request): JsonResponse
     {
+        $this->assertActivePanelistForP2p($request->user());
+
         $validated = $request->validate([
             'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'password' => ['required', 'string', 'max:255'],
@@ -196,11 +202,7 @@ class MemberWalletController extends Controller
                 ]);
             }
 
-            if (bccomp((string) $user->wallet_balance, $amount, 2) < 0) {
-                abort(422, 'Insufficient main wallet balance.');
-            }
-
-            $user->wallet_balance = bcsub((string) $user->wallet_balance, $amount, 2);
+            $this->walletBuckets->transferMainIncomeToP2p($user, $amount);
             $user->p2p_wallet_balance = bcadd((string) $user->p2p_wallet_balance, $totalToP2p, 2);
             $user->save();
 
@@ -241,6 +243,8 @@ class MemberWalletController extends Controller
     /** Move USDT from P2P → main (1:1, no bonus). */
     public function p2pToMain(Request $request): JsonResponse
     {
+        $this->assertActivePanelistForP2p($request->user());
+
         $validated = $request->validate([
             'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
         ]);
@@ -260,7 +264,7 @@ class MemberWalletController extends Controller
             }
 
             $user->p2p_wallet_balance = bcsub((string) $user->p2p_wallet_balance, $amount, 2);
-            $user->wallet_balance = bcadd((string) $user->wallet_balance, $amount, 2);
+            $newMain = $this->walletBuckets->creditMainIncome($user, $amount);
             $user->save();
             $user->refresh();
 
@@ -268,7 +272,7 @@ class MemberWalletController extends Controller
                 'user_id' => $user->id,
                 'type' => WalletTransaction::TYPE_P2P_TO_MAIN,
                 'amount' => $amount,
-                'balance_after' => (string) $user->wallet_balance,
+                'balance_after' => $newMain,
                 'meta' => [
                     'from_p2p_usd' => $amount,
                     'p2p_balance_after' => (string) $user->p2p_wallet_balance,
@@ -290,6 +294,8 @@ class MemberWalletController extends Controller
      */
     public function p2pRecipientLookup(Request $request): JsonResponse
     {
+        $this->assertActivePanelistForP2p($request->user());
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:256'],
         ]);
@@ -325,6 +331,8 @@ class MemberWalletController extends Controller
 
     public function p2pTransfer(Request $request): JsonResponse
     {
+        $this->assertActivePanelistForP2p($request->user());
+
         $validated = $request->validate([
             'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'password' => ['required', 'string', 'max:255'],
@@ -362,6 +370,10 @@ class MemberWalletController extends Controller
 
         if ($recipient === null) {
             throw ValidationException::withMessages(['recipient' => ['Recipient account not found.']]);
+        }
+
+        if ($recipient->isAccountBlocked()) {
+            throw ValidationException::withMessages(['recipient' => ['Recipient account is not available.']]);
         }
 
         $senderId = $request->user()->id;
@@ -526,8 +538,8 @@ class MemberWalletController extends Controller
                 $user->usdt_bep20_withdrawal_address = $validated['bep20_address'];
             }
 
-            $newMain = bcsub((string) $user->wallet_balance, $gross, 2);
-            $user->wallet_balance = $newMain;
+            $this->walletBuckets->debitMain($user, $gross);
+            $newMain = (string) $user->wallet_balance;
             $user->save();
 
             WalletTransaction::create([
@@ -915,5 +927,14 @@ class MemberWalletController extends Controller
             'detail' => $this->buildTransactionDetail($t, $userMap),
             'p2p_counterparty' => $p2pCp,
         ];
+    }
+
+    protected function assertActivePanelistForP2p(?User $user): void
+    {
+        if ($user === null || ! $user->qualifiesActivePanelistIncome()) {
+            throw ValidationException::withMessages([
+                'amount_usd' => ['P2P wallet is only available for active panel members. Pay activation and minimum panel fee first.'],
+            ]);
+        }
     }
 }

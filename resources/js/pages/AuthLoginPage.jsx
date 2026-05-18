@@ -26,6 +26,12 @@ export default function AuthLoginPage() {
     const [otpBypass, setOtpBypass] = useState(false);
 
     useEffect(() => {
+        if (new URLSearchParams(location.search).get('blocked') === '1') {
+            setError('Your account has been blocked. Please contact support.');
+        }
+    }, [location.search]);
+
+    useEffect(() => {
         let cancelled = false;
         (async () => {
             try {

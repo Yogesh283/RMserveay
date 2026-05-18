@@ -43,7 +43,7 @@ Route::post('/surveys/public/{id}/responses', [PublisherSurveyController::class,
 Route::post('/payments/nowpayments/ipn', NowPaymentsIpnController::class)
     ->middleware('throttle:120,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'account.not_blocked'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
     Route::get('/user', function (Request $request) {
         $user = $request->user();

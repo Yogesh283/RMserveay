@@ -90,3 +90,18 @@ function resolveAppBaseUrl() {
 }
 
 window.axios.defaults.baseURL = resolveAppBaseUrl();
+
+window.axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status;
+        const data = error?.response?.data;
+        if (status === 403 && data?.account_blocked) {
+            const loginPath = '/login';
+            if (!window.location.pathname.startsWith(loginPath)) {
+                window.location.href = `${loginPath}?blocked=1`;
+            }
+        }
+        return Promise.reject(error);
+    },
+);

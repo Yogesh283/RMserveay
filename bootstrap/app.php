@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Behind nginx/Cloudflare/Hostinger: trust X-Forwarded-* so Secure cookies + HTTPS detection work.
         $middleware->trustProxies(at: '*');
         $middleware->statefulApi();
+        $middleware->alias([
+            'account.not_blocked' => \App\Http\Middleware\EnsureAccountNotBlocked::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

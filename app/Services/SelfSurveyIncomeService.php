@@ -93,12 +93,14 @@ class SelfSurveyIncomeService
                 }
             }
 
-            $newBalance = bcadd((string) $locked->wallet_balance, $amount, 2);
-
-            $locked->wallet_balance = $newBalance;
+            $newBalance = $this->walletBuckets->creditSurvey($locked, $amount);
             $locked->save();
 
-            $meta = ['breakdown' => $breakdown];
+            $meta = [
+                'breakdown' => $breakdown,
+                'bucket' => 'survey',
+                'survey_balance_after' => $newBalance,
+            ];
             if ($reference !== null && $reference !== '') {
                 $meta['reference'] = $reference;
             }
@@ -158,8 +160,7 @@ class SelfSurveyIncomeService
             }
 
             $ref = 'survey_response:'.$response->id;
-            $newBalance = bcadd((string) $locked->wallet_balance, $amount, 2);
-            $locked->wallet_balance = $newBalance;
+            $newBalance = $this->walletBuckets->creditSurvey($locked, $amount);
             $locked->save();
 
             $surveyTx = WalletTransaction::create([
@@ -172,6 +173,8 @@ class SelfSurveyIncomeService
                     'survey_id' => $response->survey_id,
                     'payout' => 'delayed',
                     'reference' => $ref,
+                    'bucket' => 'survey',
+                    'survey_balance_after' => $newBalance,
                 ],
             ]);
 

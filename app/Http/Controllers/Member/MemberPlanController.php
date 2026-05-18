@@ -74,8 +74,8 @@ class MemberPlanController extends Controller
                 return response()->json(['message' => 'Insufficient main wallet balance.'], 422);
             }
 
-            $newMain = bcsub((string) $user->wallet_balance, $price, 2);
-            $user->wallet_balance = $newMain;
+            app(\App\Services\WalletBucketService::class)->debitMain($user, $price);
+            $newMain = (string) $user->wallet_balance;
             $user->membership_tier = $tier + 1;
             $user->save();
 

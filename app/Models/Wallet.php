@@ -17,6 +17,8 @@ class Wallet extends Model
         'user_id',
         'wallet_balance',
         'p2p_wallet_balance',
+        'survey_wallet_balance',
+        'main_deposit_balance',
     ];
 
     /**
@@ -27,6 +29,8 @@ class Wallet extends Model
         return [
             'wallet_balance' => 'decimal:2',
             'p2p_wallet_balance' => 'decimal:2',
+            'survey_wallet_balance' => 'decimal:2',
+            'main_deposit_balance' => 'decimal:2',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Services\NowPayments;
 use App\Models\NowPaymentIntent;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\WalletBucketService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -67,8 +68,7 @@ class NowPaymentsLedgerService
             $user->reconcileBalancesFromWalletTableIfBlank();
             $user->refresh();
 
-            $newBalance = bcadd((string) $user->wallet_balance, $amountUsd, 2);
-            $user->wallet_balance = $newBalance;
+            $newBalance = app(WalletBucketService::class)->creditMainDeposit($user, $amountUsd);
             $user->save();
             $user->refresh();
 

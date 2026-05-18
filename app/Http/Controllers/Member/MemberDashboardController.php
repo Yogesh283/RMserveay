@@ -278,7 +278,12 @@ class MemberDashboardController extends Controller
         return response()->json([
             'wallet_main_usd' => $b['wallet_balance'],
             'wallet_p2p_usd' => $b['p2p_wallet_balance'],
-            'wallet_total_usd' => bcadd($b['wallet_balance'], $b['p2p_wallet_balance'], 2),
+            'wallet_survey_usd' => $b['survey_wallet_balance'],
+            'wallet_total_usd' => bcadd(
+                bcadd($b['wallet_balance'], $b['p2p_wallet_balance'], 2),
+                $b['survey_wallet_balance'],
+                2
+            ),
             'earnings_summary_usd' => [
                 'total_from_programme' => $totalProgramme,
                 'direct_income' => $direct,

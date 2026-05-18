@@ -203,6 +203,7 @@ export default function MemberDashboardPage() {
     /** Mirrored from `wallet` / `users` (main = spend/withdraw; P2P = internal pool). */
     const mainWalletUsd = overview?.wallet_balance ?? summary?.wallet_main_usd ?? user?.wallet_balance;
     const p2pWalletUsd = overview?.p2p_wallet_balance ?? summary?.wallet_p2p_usd ?? user?.p2p_wallet_balance;
+    const surveyWalletUsd = overview?.survey_wallet_balance ?? summary?.wallet_survey_usd ?? user?.survey_wallet_balance;
 
     const panelStatus = summary?.panel_status ?? null;
     const nextActionKey = panelStatus?.next_action_key ?? null;
@@ -414,21 +415,29 @@ export default function MemberDashboardPage() {
                             {mainWalletUsd != null && mainWalletUsd !== '' ? fmtUsd(mainWalletUsd) : '—'}
                         </p>
                         <RmsCard variant="inset" className="!p-0" padding={false}>
-                            <div className="flex flex-wrap items-end justify-between gap-2.5 p-2.5 sm:p-3">
+                            <div className="grid gap-2.5 p-2.5 sm:grid-cols-2 sm:p-3">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">
-                                        {t('member.dashboard.p2pWalletTitle')}
-                                    </p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-200/90">Survey wallet</p>
                                     <p className="mt-0.5 text-lg font-bold tabular-nums text-white sm:text-xl">
-                                        {p2pWalletUsd != null && p2pWalletUsd !== '' ? fmtUsd(p2pWalletUsd) : '—'}
+                                        {surveyWalletUsd != null && surveyWalletUsd !== '' ? fmtUsd(surveyWalletUsd) : '—'}
                                     </p>
                                 </div>
-                                <Link
-                                    to="/member/wallet/internal"
-                                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#C4B5FD] transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] hover:text-white active:scale-[0.98]"
-                                >
-                                    Main ↔ P2P
-                                </Link>
+                                <div className="flex flex-wrap items-end justify-between gap-2.5">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A0AEC0]">
+                                            {t('member.dashboard.p2pWalletTitle')}
+                                        </p>
+                                        <p className="mt-0.5 text-lg font-bold tabular-nums text-white sm:text-xl">
+                                            {p2pWalletUsd != null && p2pWalletUsd !== '' ? fmtUsd(p2pWalletUsd) : '—'}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        to="/member/wallet/internal"
+                                        className="shrink-0 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#C4B5FD] transition hover:border-[#8E6BFF]/40 hover:bg-white/[0.1] hover:text-white active:scale-[0.98]"
+                                    >
+                                        Main ↔ P2P
+                                    </Link>
+                                </div>
                             </div>
                         </RmsCard>
                         <div className="flex flex-wrap gap-1.5 pt-0.5">
