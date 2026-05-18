@@ -467,40 +467,6 @@ function buildSuperLegRows(legs, t, superMatching) {
     ];
 }
 
-/** Same three concepts as section 2, for the tree card summary strip. */
-function buildTreeLegMatchingRows(legs, t, activeMatching) {
-    if (!legs?.left || !legs?.right) {
-        return [];
-    }
-    const L = legs.left;
-    const R = legs.right;
-    const am = activeMatching ?? {};
-    const carryAL = Number(am.carry_left ?? 0) | 0;
-    const carryAR = Number(am.carry_right ?? 0) | 0;
-    return [
-        {
-            label: 'Active matching carry',
-            left: carryAL,
-            right: carryAR,
-        },
-        {
-            label: t('member.team.rowMatchingPanels'),
-            left: `${L.carry_panel_left} / ${L.carry_panel_right}`,
-            right: `${R.carry_panel_left} / ${R.carry_panel_right}`,
-        },
-        {
-            label: t('member.team.rowSubMatchingPanels'),
-            left: L.sub_panels,
-            right: R.sub_panels,
-        },
-        {
-            label: t('member.team.rowSuperMatchingPanels'),
-            left: `${L.carry_super_left} / ${L.carry_super_right}`,
-            right: `${R.carry_super_left} / ${R.carry_super_right}`,
-        },
-    ];
-}
-
 function EmptyNodeSlot({ side = 'left' }) {
     const { t } = useTranslation();
     const tone =
@@ -916,7 +882,11 @@ export default function MemberTeamPage() {
                         <p className="text-base font-bold text-white">{t('member.team.binaryTreeTitle')}</p>
                         <p className="mt-0.5 text-[11px] text-[#A0AEC0]">{t('member.team.sameLegStatsHint')}</p>
                         {data?.legs ? (
-                            <LegsCompareTable rows={buildTreeLegMatchingRows(data.legs, t, data?.matching?.active_panel)} caption={t('member.team.matchCaption')} />
+                            <LegsCompareTable
+                                rows={buildActiveLegRows(data.legs, t, data?.matching?.active_panel)}
+                                caption={totalTeamTableCaption('active', t)}
+                                accent="active"
+                            />
                         ) : (
                             <p className="mt-2 text-[12px] text-[#94A3B8]">{t('member.team.reloadIfStatsMissing')}</p>
                         )}

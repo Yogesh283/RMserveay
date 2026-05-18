@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, createSearchParams, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import MemberApkDownloadButton from '../components/MemberApkDownloadButton';
 import PageShell from '../components/PageShell';
 import PasswordField from '../components/PasswordField';
 import { prepareSanctum } from '../lib/auth';
@@ -12,27 +13,7 @@ export default function AuthLoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const [searchParams] = useSearchParams();
-    const userTypeParam = searchParams.get('user_type');
-
-    const [loginUserType, setLoginUserType] = useState(() =>
-        userTypeParam === 'publisher' ? 'publisher' : 'normal',
-    );
-
-    useEffect(() => {
-        if (userTypeParam === 'publisher' || userTypeParam === 'normal') {
-            setLoginUserType(userTypeParam);
-        }
-    }, [userTypeParam]);
-
-    const homeRegisterLink = useMemo(
-        () => ({
-            pathname: '/',
-            search: `?${createSearchParams({ account: loginUserType, flow: 'register' })}`,
-            hash: 'register',
-        }),
-        [loginUserType],
-    );
+    const homeRegisterLink = useMemo(() => ({ pathname: '/register/panelist' }), []);
     const [loginUid, setLoginUid] = useState('');
     const [password, setPassword] = useState('');
     const [otp, setOtp] = useState('');
@@ -121,7 +102,7 @@ export default function AuthLoginPage() {
                 login_uid: uid,
                 password,
                 otp: otpBypass ? '' : otp,
-                user_type: loginUserType,
+                user_type: 'normal',
                 remember,
             });
             buzzSuccess();
@@ -157,19 +138,10 @@ export default function AuthLoginPage() {
     const inputCls =
         'mt-1 w-full rounded-md border border-white/[0.12] bg-black/30 px-2.5 py-2.5 text-sm leading-tight text-white placeholder:text-zinc-500 focus:border-[#7C3AED]/50 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/35 sm:mt-1.5 sm:rounded-lg sm:px-3 sm:py-3 sm:text-[15px]';
 
-    const pageTitle = loginUserType === 'publisher' ? t('authLogin.titlePublisher') : t('authLogin.titleMember');
-    const pageEyebrow = loginUserType === 'publisher' ? t('authLogin.eyebrowPublisher') : t('authLogin.eyebrowMember');
-
     const returnState = location.state?.from ? { from: location.state.from } : undefined;
 
-    function setPublisherLogin(on) {
-        const next = on ? 'publisher' : 'normal';
-        setLoginUserType(next);
-        navigate({ pathname: '/login', search: `?${createSearchParams({ user_type: next })}` }, { replace: true });
-    }
-
     return (
-        <PageShell title={pageTitle} eyebrow={pageEyebrow} compact>
+        <PageShell title={t('authLogin.titleMember')} eyebrow={t('authLogin.eyebrowMember')} compact>
             <p className="text-[10px] leading-tight text-slate-500 sm:text-[11px] sm:leading-snug">
                 {otpBypass ? (
                     <>
@@ -264,18 +236,6 @@ export default function AuthLoginPage() {
                     </p>
                 )}
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[0.1] bg-black/25 px-3 py-3 sm:items-center sm:py-2.5">
-                    <input
-                        type="checkbox"
-                        checked={loginUserType === 'publisher'}
-                        onChange={(ev) => setPublisherLogin(ev.target.checked)}
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/25 bg-black/40 text-[#7C3AED] focus:ring-[#7C3AED]/50 sm:mt-0"
-                    />
-                    <span className="min-w-0">
-                        <span className="block text-xs font-semibold text-white">{t('authLogin.loginAsPublisher')}</span>
-                    </span>
-                </label>
-
                 <label className="flex cursor-pointer items-center gap-2 text-xs text-white sm:text-sm">
                     <input
                         type="checkbox"
@@ -293,6 +253,7 @@ export default function AuthLoginPage() {
                 >
                     {loading ? t('authLogin.signingIn') : t('authLogin.logIn')}
                 </button>
+                <MemberApkDownloadButton />
             </form>
 
             <p className="mt-4 text-center text-sm leading-relaxed text-zinc-500 sm:mt-5 sm:text-base">

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import MemberApkDownloadButton from './MemberApkDownloadButton';
 import PasswordField from './PasswordField';
 import { describeAxiosNetworkError } from '../lib/axiosErrorMessage';
 import { prepareSanctum } from '../lib/auth';
@@ -89,6 +90,7 @@ export function RegistrationCredentialsModal({ loginUid, password, onContinue })
                 >
                     {t('register.form.continueToApp')}
                 </button>
+                <MemberApkDownloadButton className="mt-3" />
             </div>
         </div>
     );
@@ -534,6 +536,7 @@ export default function RegisterCard({
                 >
                     {loading ? t('register.form.creatingAccount') : t('register.form.createAccount')}
                 </button>
+                <MemberApkDownloadButton />
             </form>
             {credentialsModal ? (
                 <RegistrationCredentialsModal
