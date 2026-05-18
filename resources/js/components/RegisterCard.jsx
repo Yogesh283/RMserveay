@@ -90,7 +90,7 @@ export function RegistrationCredentialsModal({ loginUid, password, onContinue })
                 >
                     {t('register.form.continueToApp')}
                 </button>
-                <MemberApkDownloadButton className="mt-3" />
+                <MemberApkDownloadButton variant="auth" className="mt-3" />
             </div>
         </div>
     );
@@ -536,7 +536,7 @@ export default function RegisterCard({
                 >
                     {loading ? t('register.form.creatingAccount') : t('register.form.createAccount')}
                 </button>
-                <MemberApkDownloadButton />
+                <MemberApkDownloadButton variant="auth" />
             </form>
             {credentialsModal ? (
                 <RegistrationCredentialsModal

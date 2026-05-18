@@ -253,7 +253,7 @@ export default function AuthLoginPage() {
                 >
                     {loading ? t('authLogin.signingIn') : t('authLogin.logIn')}
                 </button>
-                <MemberApkDownloadButton />
+                <MemberApkDownloadButton variant="auth" />
             </form>
 
             <p className="mt-4 text-center text-sm leading-relaxed text-zinc-500 sm:mt-5 sm:text-base">
