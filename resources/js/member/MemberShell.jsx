@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import HomeLanguageSwitcher from '../components/HomeLanguageSwitcher';
 import AppLogo from '../components/AppLogo';
+import ImpersonationBanner from '../components/ImpersonationBanner';
 import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../lib/branding';
 import { fetchSessionUser, prepareSanctum } from '../lib/auth';
 import RmsPageBackdrop from './components/RmsPageBackdrop';
@@ -554,6 +555,7 @@ export default function MemberShell() {
 
     return (
         <div className="relative min-h-dvh w-full max-w-[100vw] overflow-x-hidden bg-[#0B0F1A] font-[Inter,Poppins,system-ui,sans-serif] text-white antialiased">
+            <ImpersonationBanner user={user} />
             <RmsPageBackdrop />
 
             {/* Desktop sidebar */}

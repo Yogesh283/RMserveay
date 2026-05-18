@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\AdminImpersonation;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Database\Factories\UserFactory;
@@ -216,6 +217,11 @@ class User extends Authenticatable implements FilamentUser
         $data['survey_wallet_balance'] = $b['survey_wallet_balance'];
         $data['p2p_receive_code'] = (string) $this->p2p_receive_code;
         $data['account_blocked'] = $this->isAccountBlocked();
+
+        if (AdminImpersonation::isActive()) {
+            $data['admin_impersonation'] = true;
+            $data['admin_impersonation_exit_url'] = route('admin.impersonate.leave');
+        }
 
         return $data;
     }

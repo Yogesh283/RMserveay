@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import AppLogo from '../components/AppLogo';
+import ImpersonationBanner from '../components/ImpersonationBanner';
 import HomeLanguageSwitcher from '../components/HomeLanguageSwitcher';
 import { fetchSessionUser, prepareSanctum } from '../lib/auth';
 import { pub } from './ui/pubTheme';
@@ -197,6 +198,7 @@ export default function PublisherShell() {
 
     return (
         <div className={`relative min-h-dvh w-full max-w-[100vw] overflow-x-hidden font-sans antialiased ${pub.bg} ${pub.page}`}>
+            <ImpersonationBanner user={user} />
             <div className="pointer-events-none absolute -left-24 top-10 h-60 w-60 rounded-full bg-[#6C4CF1]/20 blur-3xl" />
             <div className="pointer-events-none absolute right-0 top-40 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
             {sidebarOpen ? (

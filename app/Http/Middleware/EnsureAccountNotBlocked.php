@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\AdminImpersonation;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,10 @@ class EnsureAccountNotBlocked
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+
+        if (AdminImpersonation::isActive()) {
+            return $next($request);
+        }
 
         if ($user !== null && $user->isAccountBlocked()) {
             Auth::guard('web')->logout();

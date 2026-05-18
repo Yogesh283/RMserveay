@@ -4,56 +4,127 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AdminMemberAccountService
 {
     public function __construct(
         protected PanelEnrollmentService $panelEnrollment,
+        protected ActivePanelMatchingService $activePanelMatching,
+        protected PanelMatchingService $panelMatching,
+        protected SuperSubPanelMatchingService $superSubPanelMatching,
     ) {}
 
-    /**
-     * Mark member fully active: activation + minimum panel + max sub + max super panels (no wallet debit).
-     */
-    public function activateAllPanels(User $user): User
+    /** Activation fee ($1) — no wallet debit. */
+    public function activateActivationFee(User $user): User
     {
         return DB::transaction(function () use ($user) {
             /** @var User $user */
             $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $now = now();
+
+            if ($user->activation_fee_paid_at !== null) {
+                throw ValidationException::withMessages([
+                    'user' => ['Activation fee is already marked paid for this member.'],
+                ]);
+            }
+
+            $user->activation_fee_paid_at = now();
+            $user->save();
+
+            return $user->fresh();
+        });
+    }
+
+    /** Minimum / active panel fee ($10) — no wallet debit. */
+    public function activateMinimumPanel(User $user): User
+    {
+        return DB::transaction(function () use ($user) {
+            /** @var User $user */
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             if ($user->activation_fee_paid_at === null) {
-                $user->activation_fee_paid_at = $now;
+                throw ValidationException::withMessages([
+                    'user' => ['Mark activation fee paid first.'],
+                ]);
             }
 
-            $wasActive = $user->minimum_panel_fee_paid_at !== null;
-
-            if ($user->minimum_panel_fee_paid_at === null) {
-                $user->minimum_panel_fee_paid_at = $now;
+            if ($user->minimum_panel_fee_paid_at !== null) {
+                throw ValidationException::withMessages([
+                    'user' => ['Minimum panel is already marked paid for this member.'],
+                ]);
             }
 
-            $maxSub = (int) config('self_survey.max_sub_panels', 9);
-            $maxSuper = (int) config('self_survey.max_super_sub_panels', 9);
-
-            if ((int) $user->sub_panel_count < $maxSub) {
-                $user->sub_panel_count = $maxSub;
-            }
-
-            if ((int) $user->super_sub_panel_count < $maxSuper) {
-                $user->super_sub_panel_count = $maxSuper;
-            }
-
+            $user->minimum_panel_fee_paid_at = now();
             $user->save();
 
             $user = $user->fresh();
 
             $this->panelEnrollment->recordActivePanelActivation($user);
+            $this->activePanelMatching->processActivePanelActivation($user);
 
-            if (! $wasActive) {
-                app(ActivePanelMatchingService::class)->processActivePanelActivation($user);
+            return $user->fresh();
+        });
+    }
+
+    /** Add one sub-panel slot (up to max) — no wallet debit. */
+    public function addOneSubPanel(User $user): User
+    {
+        return DB::transaction(function () use ($user) {
+            /** @var User $user */
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+            if ($user->minimum_panel_fee_paid_at === null) {
+                throw ValidationException::withMessages([
+                    'user' => ['Mark minimum / active panel paid before adding sub-panels.'],
+                ]);
             }
 
+            $max = (int) config('self_survey.max_sub_panels', 9);
+            if ((int) $user->sub_panel_count >= $max) {
+                throw ValidationException::withMessages([
+                    'user' => ['Maximum sub-panels ('.$max.') already reached.'],
+                ]);
+            }
+
+            $user->sub_panel_count = (int) $user->sub_panel_count + 1;
+            $user->save();
+
+            $user = $user->fresh();
+
             $this->panelEnrollment->recordSubPanelPurchase($user);
+            $this->panelMatching->processSubPanelPurchase($user);
+
+            return $user->fresh();
+        });
+    }
+
+    /** Add one super sub-panel slot (up to max) — no wallet debit. */
+    public function addOneSuperSubPanel(User $user): User
+    {
+        return DB::transaction(function () use ($user) {
+            /** @var User $user */
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+            if ($user->minimum_panel_fee_paid_at === null) {
+                throw ValidationException::withMessages([
+                    'user' => ['Mark minimum / active panel paid before adding super sub-panels.'],
+                ]);
+            }
+
+            $max = (int) config('self_survey.max_super_sub_panels', 9);
+            if ((int) $user->super_sub_panel_count >= $max) {
+                throw ValidationException::withMessages([
+                    'user' => ['Maximum super sub-panels ('.$max.') already reached.'],
+                ]);
+            }
+
+            $user->super_sub_panel_count = (int) $user->super_sub_panel_count + 1;
+            $user->save();
+
+            $user = $user->fresh();
+
             $this->panelEnrollment->recordSuperSubPanelPurchase($user);
+            $this->superSubPanelMatching->processSuperSubPanelPurchase($user);
 
             return $user->fresh();
         });

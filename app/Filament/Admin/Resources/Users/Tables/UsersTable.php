@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UsersTable
 {
@@ -148,7 +149,11 @@ class UsersTable
                 ViewAction::make(),
                 EditAction::make(),
                 ActionGroup::make([
-                    self::activateAllPanelsAction(),
+                    self::loginAsMemberAction(),
+                    self::activateActivationFeeAction(),
+                    self::activateMinimumPanelAction(),
+                    self::addOneSubPanelAction(),
+                    self::addOneSuperSubPanelAction(),
                     self::blockAccountAction(),
                     self::unblockAccountAction(),
                     self::updateEmailAction(),
@@ -167,27 +172,114 @@ class UsersTable
             ]);
     }
 
-    protected static function activateAllPanelsAction(): Action
+    public static function loginAsMemberAction(): Action
     {
-        return Action::make('activate_all_panels')
-            ->label('Activate all panels')
+        return Action::make('login_as_member')
+            ->label('Login as member')
+            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+            ->color('info')
+            ->url(fn (User $record): string => route('admin.impersonate.start', $record))
+            ->openUrlInNewTab(false)
+            ->visible(fn (User $record): bool => ! $record->canAccessPanel(\Filament\Facades\Filament::getPanel('admin')));
+    }
+
+    public static function activateActivationFeeAction(): Action
+    {
+        return Action::make('admin_activate_activation')
+            ->label('Mark activation paid ($1)')
+            ->icon(Heroicon::OutlinedBolt)
+            ->color('success')
+            ->requiresConfirmation()
+            ->modalDescription('Marks activation fee paid. No wallet charge.')
+            ->visible(fn (User $record): bool => $record->activation_fee_paid_at === null)
+            ->action(fn (User $record) => self::runPanelAdminAction(
+                $record,
+                fn (User $u) => app(AdminMemberAccountService::class)->activateActivationFee($u),
+                'Activation marked paid',
+            ));
+    }
+
+    public static function activateMinimumPanelAction(): Action
+    {
+        return Action::make('admin_activate_minimum_panel')
+            ->label('Mark active panel paid ($10)')
             ->icon(Heroicon::OutlinedCheckBadge)
             ->color('success')
             ->requiresConfirmation()
-            ->modalHeading(fn (User $record) => 'Activate all panels for '.strtoupper((string) ($record->login_uid ?? '#'.$record->id)))
-            ->modalDescription('Sets activation fee, minimum panel, and max sub/super panels without charging the wallet.')
-            ->visible(fn (User $record): bool => $record->minimum_panel_fee_paid_at === null
-                || (int) $record->sub_panel_count < (int) config('self_survey.max_sub_panels', 9)
-                || (int) $record->super_sub_panel_count < (int) config('self_survey.max_super_sub_panels', 9))
-            ->action(function (User $record): void {
-                app(AdminMemberAccountService::class)->activateAllPanels($record);
+            ->modalDescription('Marks minimum / active panel paid. No wallet charge. Runs active-panel matching once.')
+            ->visible(fn (User $record): bool => $record->activation_fee_paid_at !== null
+                && $record->minimum_panel_fee_paid_at === null)
+            ->action(fn (User $record) => self::runPanelAdminAction(
+                $record,
+                fn (User $u) => app(AdminMemberAccountService::class)->activateMinimumPanel($u),
+                'Active panel marked paid',
+            ));
+    }
 
-                Notification::make()
-                    ->title('Member activated')
-                    ->body('All panel flags and snapshots updated.')
-                    ->success()
-                    ->send();
-            });
+    public static function addOneSubPanelAction(): Action
+    {
+        $max = (int) config('self_survey.max_sub_panels', 9);
+
+        return Action::make('admin_add_sub_panel')
+            ->label('Add 1 sub-panel')
+            ->icon(Heroicon::OutlinedPlusCircle)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalDescription('Adds one sub-panel slot (max '.$max.'). No wallet charge.')
+            ->visible(fn (User $record): bool => $record->minimum_panel_fee_paid_at !== null
+                && (int) $record->sub_panel_count < $max)
+            ->action(fn (User $record) => self::runPanelAdminAction(
+                $record,
+                fn (User $u) => app(AdminMemberAccountService::class)->addOneSubPanel($u),
+                'Sub-panel added',
+            ));
+    }
+
+    public static function addOneSuperSubPanelAction(): Action
+    {
+        $max = (int) config('self_survey.max_super_sub_panels', 9);
+
+        return Action::make('admin_add_super_sub_panel')
+            ->label('Add 1 super sub-panel')
+            ->icon(Heroicon::OutlinedPlusCircle)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalDescription('Adds one super sub-panel slot (max '.$max.'). No wallet charge.')
+            ->visible(fn (User $record): bool => $record->minimum_panel_fee_paid_at !== null
+                && (int) $record->super_sub_panel_count < $max)
+            ->action(fn (User $record) => self::runPanelAdminAction(
+                $record,
+                fn (User $u) => app(AdminMemberAccountService::class)->addOneSuperSubPanel($u),
+                'Super sub-panel added',
+            ));
+    }
+
+    /**
+     * @param  callable(User): User  $callback
+     */
+    protected static function runPanelAdminAction(User $record, callable $callback, string $successTitle): void
+    {
+        try {
+            $fresh = $callback($record);
+            $maxSub = (int) config('self_survey.max_sub_panels', 9);
+            $maxSuper = (int) config('self_survey.max_super_sub_panels', 9);
+
+            Notification::make()
+                ->title($successTitle)
+                ->body(
+                    'Sub-panels: '.(int) $fresh->sub_panel_count.'/'.$maxSub
+                    .' · Super: '.(int) $fresh->super_sub_panel_count.'/'.$maxSuper
+                )
+                ->success()
+                ->send();
+        } catch (ValidationException $e) {
+            $msg = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+            Notification::make()
+                ->title('Panel update failed')
+                ->body((string) $msg)
+                ->danger()
+                ->send();
+        }
     }
 
     protected static function blockAccountAction(): Action
