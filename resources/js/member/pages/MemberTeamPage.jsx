@@ -384,6 +384,14 @@ function buildActiveLegRows(legs, t, activeMatching) {
     ];
 }
 
+/** 1:1 binary leg math: pairs = min(L,R), carry = volume − pairs on each side. */
+function teamLegBinaryStats(leftVol, rightVol) {
+    const L = Math.max(0, Number(leftVol) | 0);
+    const R = Math.max(0, Number(rightVol) | 0);
+    const pairs = Math.min(L, R);
+    return { pairs, carryL: L - pairs, carryR: R - pairs };
+}
+
 function buildSubLegRows(legs, t, panelMatching, subMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
@@ -392,8 +400,13 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const R = legs.right;
     const pm = panelMatching ?? {};
     const sm = subMatching ?? {};
-    const carryL = Number(pm.carry_left ?? 0) | 0;
-    const carryR = Number(pm.carry_right ?? 0) | 0;
+    const team = teamLegBinaryStats(
+        pm.team_volume_left ?? L.sub_panels,
+        pm.team_volume_right ?? R.sub_panels,
+    );
+    const carryL = Number(pm.team_carry_left ?? team.carryL) | 0;
+    const carryR = Number(pm.team_carry_right ?? team.carryR) | 0;
+    const pairsTeam = Number(pm.team_pairs_1_1 ?? team.pairs) | 0;
     const pairsToday = Number(sm.cumulative_matched_panels_today ?? 0) | 0;
     const lapsedToday = Number(sm.today_milestone_lapsed_pairs ?? 0) | 0;
     const milestonePaid = Number.parseFloat(sm.today_milestone_paid_usd ?? '0');
@@ -409,6 +422,11 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
             label: t('member.team.rowTeamSubPanels'),
             left: L.sub_panels,
             right: R.sub_panels,
+        },
+        {
+            label: '1:1 matched (team)',
+            left: pairsTeam,
+            right: pairsTeam,
         },
         {
             label: 'Sub carry forward',
@@ -440,8 +458,13 @@ function buildSuperLegRows(legs, t, superMatching) {
     const L = legs.left;
     const R = legs.right;
     const sup = superMatching ?? {};
-    const carryL = Number(sup.carry_left ?? 0) | 0;
-    const carryR = Number(sup.carry_right ?? 0) | 0;
+    const team = teamLegBinaryStats(
+        sup.team_volume_left ?? L.super_sub_panels,
+        sup.team_volume_right ?? R.super_sub_panels,
+    );
+    const carryL = Number(sup.team_carry_left ?? team.carryL) | 0;
+    const carryR = Number(sup.team_carry_right ?? team.carryR) | 0;
+    const pairsTeam = Number(sup.team_pairs_1_1 ?? team.pairs) | 0;
     const pairsToday = Number(sup.cumulative_matched_panels_today ?? 0) | 0;
     const lapsedToday = Number(sup.today_milestone_lapsed_pairs ?? 0) | 0;
     const milestonePaid = Number.parseFloat(sup.today_milestone_paid_usd ?? '0');
@@ -457,6 +480,11 @@ function buildSuperLegRows(legs, t, superMatching) {
             label: t('member.team.rowTeamSuperSub'),
             left: L.super_sub_panels,
             right: R.super_sub_panels,
+        },
+        {
+            label: '1:1 matched (team)',
+            left: pairsTeam,
+            right: pairsTeam,
         },
         {
             label: 'Super carry forward',

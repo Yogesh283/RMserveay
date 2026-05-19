@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\BinaryLegMatching;
 use App\Support\MatchingTodayStats;
 use Illuminate\Support\Facades\DB;
 
@@ -277,6 +278,16 @@ class SuperSubPanelMatchingService
         }
 
         $lifetime = $this->lifetimeSuperSubPanelBuys($earner);
+        $teamLeg = BinaryLegMatching::fromLegVolumes($lifetime['left'], $lifetime['right']);
+        $teamMilestonePanels = BinaryLegMatching::highestMilestone(
+            $teamLeg['pairs_1_1'],
+            (array) config('super_sub_panel_matching.milestones', []),
+        );
+        $teamMilestonePayout = $teamMilestonePanels > 0
+            ? bcmul((string) $teamMilestonePanels, $mult, 2)
+            : '0.00';
+        $teamMilestoneLapsed = max(0, $teamLeg['pairs_1_1'] - $teamMilestonePanels);
+
         $todayClosing = MatchingTodayStats::todayClosing($earner->id, BinaryDailyClosing::SCOPE_SUPER);
         $pairsToday = MatchingTodayStats::pairsMatchedToday(
             $earner->id,
@@ -318,6 +329,14 @@ class SuperSubPanelMatchingService
             'today_milestone_paid_usd' => MatchingTodayStats::milestonePaidUsdDisplay($todayClosing, $earned),
             'carry_left' => (int) $earner->super_panel_match_carry_left,
             'carry_right' => (int) $earner->super_panel_match_carry_right,
+            'team_volume_left' => $teamLeg['left_volume'],
+            'team_volume_right' => $teamLeg['right_volume'],
+            'team_pairs_1_1' => $teamLeg['pairs_1_1'],
+            'team_carry_left' => $teamLeg['carry_left'],
+            'team_carry_right' => $teamLeg['carry_right'],
+            'team_milestone' => $teamMilestonePanels,
+            'team_milestone_payout_usd' => $teamMilestonePayout,
+            'team_milestone_lapsed_pairs' => $teamMilestoneLapsed,
             /** Lifetime cumulative left/right super-sub-panel buys (live). */
             'total_left_supers' => $lifetime['left'],
             'total_right_supers' => $lifetime['right'],
