@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TodayMatchingPayoutsWidget extends TableWidget
 {
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 5;
 
     protected int | string | array $columnSpan = 'full';
 

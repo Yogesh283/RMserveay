@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\TodayNewUserReports;
 use App\Filament\Admin\Resources\TodayNewUserReports\Pages\ListTodayNewUserReports;
 use App\Filament\Admin\Resources\TodayNewUserReports\Tables\TodayNewUserReportsTable;
 use App\Models\User;
+use App\Support\BinaryClosingCalendar;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -18,7 +19,7 @@ class TodayNewUserReportResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationLabel = "Today's new IDs";
+    protected static ?string $navigationLabel = 'Today Registration';
 
     protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
@@ -38,7 +39,11 @@ class TodayNewUserReportResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereDate('created_at', today());
+        [$start, $end] = BinaryClosingCalendar::todayLocalBounds();
+
+        return parent::getEloquentQuery()
+            ->with('sponsor:id,login_uid,name')
+            ->whereBetween('created_at', [$start, $end]);
     }
 
     public static function getRelations(): array

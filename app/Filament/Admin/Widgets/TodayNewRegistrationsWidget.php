@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TodayNewRegistrationsWidget extends TableWidget
 {
+    protected static bool $isDiscovered = false;
+
     protected static ?int $sort = 0;
 
     protected int | string | array $columnSpan = 'full';

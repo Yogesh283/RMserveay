@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\TodayActiveUserReports;
 use App\Filament\Admin\Resources\TodayActiveUserReports\Pages\ListTodayActiveUserReports;
 use App\Filament\Admin\Resources\TodayActiveUserReports\Tables\TodayActiveUserReportsTable;
 use App\Models\User;
+use App\Support\BinaryClosingCalendar;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -18,7 +19,7 @@ class TodayActiveUserReportResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationLabel = 'Today active';
+    protected static ?string $navigationLabel = 'Today Active Users';
 
     protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
@@ -36,33 +37,14 @@ class TodayActiveUserReportResource extends Resource
         return TodayActiveUserReportsTable::configure($table);
     }
 
+    /** Users who paid the $10 active panel fee today (app closing timezone). */
     public static function getEloquentQuery(): Builder
     {
-        $start = now()->startOfDay()->timestamp;
+        [$start, $end] = BinaryClosingCalendar::todayLocalBounds();
 
         return parent::getEloquentQuery()
-            ->where('user_type', 'normal')
-            ->where(function (Builder $q) use ($start): void {
-                $q->whereDate('created_at', today())
-                    ->orWhereExists(function ($sub) use ($start): void {
-                        $sub->selectRaw('1')
-                            ->from('sessions')
-                            ->whereColumn('sessions.user_id', 'users.id')
-                            ->where('sessions.last_activity', '>=', $start);
-                    })
-                    ->orWhereExists(function ($sub): void {
-                        $sub->selectRaw('1')
-                            ->from('wallet_transactions')
-                            ->whereColumn('wallet_transactions.user_id', 'users.id')
-                            ->whereDate('wallet_transactions.created_at', today());
-                    })
-                    ->orWhereExists(function ($sub): void {
-                        $sub->selectRaw('1')
-                            ->from('survey_responses')
-                            ->whereColumn('survey_responses.respondent_user_id', 'users.id')
-                            ->whereDate('survey_responses.created_at', today());
-                    });
-            });
+            ->with('sponsor:id,login_uid,name')
+            ->whereBetween('minimum_panel_fee_paid_at', [$start, $end]);
     }
 
     public static function getRelations(): array
