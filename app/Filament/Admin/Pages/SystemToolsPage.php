@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Models\SurveyResponse;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -35,9 +36,31 @@ class SystemToolsPage extends Page
      */
     public array $databaseTableRows = [];
 
+    public int $surveyPayoutsDueNow = 0;
+
+    public int $surveyPayoutsWaiting = 0;
+
     public function mount(): void
     {
         $this->databaseTableRows = $this->loadDatabaseTableRows();
+        $this->refreshSurveyPayoutCounts();
+    }
+
+    public function refreshSurveyPayoutCounts(): void
+    {
+        $base = SurveyResponse::query()
+            ->where('completed', true)
+            ->whereNotNull('respondent_user_id')
+            ->whereNotNull('respondent_payout_at')
+            ->whereNull('respondent_payout_wallet_tx_id');
+
+        $this->surveyPayoutsDueNow = (clone $base)
+            ->where('respondent_payout_at', '<=', now())
+            ->count();
+
+        $this->surveyPayoutsWaiting = (clone $base)
+            ->where('respondent_payout_at', '>', now())
+            ->count();
     }
 
     public function content(Schema $schema): Schema
@@ -45,9 +68,66 @@ class SystemToolsPage extends Page
         $tz = (string) config('binary_closing.timezone', 'Asia/Kolkata');
         $time = (string) config('binary_closing.closing_time', '08:00');
         $enabled = filter_var(config('binary_closing.enabled', true), FILTER_VALIDATE_BOOLEAN);
+        $surveyDelayDays = (int) config('publisher.respondent_payout_delay_days', 7);
 
         return $schema
             ->components([
+                Section::make('Survey respondent payouts (7-day wallet credit)')
+                    ->description(
+                        'After a member completes a survey, their reward is scheduled for '
+                        .$surveyDelayDays.' day(s) later (`respondent_payout_at`). '
+                        .'Scheduled job: `surveys:pay-respondent-payouts` runs hourly. '
+                        .'Due now: '.$this->surveyPayoutsDueNow.'. '
+                        .'Still waiting: '.$this->surveyPayoutsWaiting.'.'
+                    )
+                    ->icon(Heroicon::OutlinedBanknotes)
+                    ->headerActions([
+                        Action::make('runSurveyRespondentPayouts')
+                            ->label('Run survey payouts now')
+                            ->icon(Heroicon::OutlinedPlay)
+                            ->color('success')
+                            ->requiresConfirmation()
+                            ->modalHeading('Credit due survey income to wallets?')
+                            ->modalDescription(
+                                'Runs `surveys:pay-respondent-payouts`. Only responses whose '
+                                .$surveyDelayDays.'-day delay has passed and that are not yet paid will be credited. '
+                                'Currently due: '.$this->surveyPayoutsDueNow.'.'
+                            )
+                            ->action(function (): void {
+                                try {
+                                    $exitCode = Artisan::call('surveys:pay-respondent-payouts');
+                                    $output = trim(Artisan::output());
+                                    $this->refreshSurveyPayoutCounts();
+
+                                    if ($exitCode !== 0) {
+                                        Notification::make()
+                                            ->title('Survey payouts failed')
+                                            ->body(Str::limit($output !== '' ? $output : 'Non-zero exit code: '.$exitCode, 4000))
+                                            ->danger()
+                                            ->persistent()
+                                            ->send();
+
+                                        return;
+                                    }
+
+                                    Notification::make()
+                                        ->title('Survey payouts finished')
+                                        ->body(Str::limit($output !== '' ? $output : 'Completed.', 4000))
+                                        ->success()
+                                        ->duration(15000)
+                                        ->send();
+                                } catch (Throwable $e) {
+                                    report($e);
+                                    Notification::make()
+                                        ->title('Survey payouts error')
+                                        ->body($e->getMessage())
+                                        ->danger()
+                                        ->persistent()
+                                        ->send();
+                                }
+                            }),
+                    ])
+                    ->schema([]),
                 Section::make('Binary daily closing')
                     ->description(
                         'Scheduled job: `binary:daily-closing` runs daily at '.$time.' ('.$tz.'). '

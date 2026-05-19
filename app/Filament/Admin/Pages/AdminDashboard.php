@@ -21,6 +21,48 @@ class AdminDashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('runSurveyRespondentPayouts')
+                ->label('Run survey payouts')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Credit due survey income')
+                ->modalDescription(
+                    'Runs `surveys:pay-respondent-payouts` — credits member wallets for completed surveys whose '
+                    .(int) config('publisher.respondent_payout_delay_days', 7).'-day delay has passed.'
+                )
+                ->action(function (): void {
+                    try {
+                        $exitCode = Artisan::call('surveys:pay-respondent-payouts');
+                        $output = trim(Artisan::output());
+
+                        if ($exitCode !== 0) {
+                            Notification::make()
+                                ->title('Survey payouts failed')
+                                ->body(Str::limit($output !== '' ? $output : 'Non-zero exit code: '.$exitCode, 4000))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Survey payouts finished')
+                            ->body(Str::limit($output !== '' ? $output : 'No payouts due.', 4000))
+                            ->success()
+                            ->duration(15000)
+                            ->send();
+                    } catch (Throwable $e) {
+                        report($e);
+                        Notification::make()
+                            ->title('Survey payouts error')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
             Action::make('runBinaryDailyClosing')
                 ->label('Run closing')
                 ->icon(Heroicon::OutlinedBolt)
