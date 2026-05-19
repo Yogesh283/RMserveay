@@ -128,6 +128,37 @@ class SystemToolsPage extends Page
                             }),
                     ])
                     ->schema([]),
+                Section::make('Sub / super panel carry backfill')
+                    ->description(
+                        'Rebuilds `panel_match_carry_*` and `super_panel_match_carry_*` from every member’s '
+                        .'sub_panel_count / super_sub_panel_count in the binary tree. Use after admin bulk-activations '
+                        .'so upline carry and matching display match real team volume. Does not move wallet money.'
+                    )
+                    ->icon(Heroicon::OutlinedArrowsRightLeft)
+                    ->headerActions([
+                        Action::make('backfillPanelCarries')
+                            ->label('Backfill sub-panel carries')
+                            ->icon(Heroicon::OutlinedArrowPath)
+                            ->color('gray')
+                            ->requiresConfirmation()
+                            ->modalDescription('Runs `php artisan binary:backfill-panel-carries --scope=panel`')
+                            ->action(fn () => $this->runArtisanBackfill('binary:backfill-panel-carries', ['--scope' => 'panel'])),
+                        Action::make('backfillSuperCarries')
+                            ->label('Backfill super carries')
+                            ->icon(Heroicon::OutlinedArrowPath)
+                            ->color('gray')
+                            ->requiresConfirmation()
+                            ->modalDescription('Runs `php artisan binary:backfill-panel-carries --scope=super`')
+                            ->action(fn () => $this->runArtisanBackfill('binary:backfill-panel-carries', ['--scope' => 'super'])),
+                        Action::make('backfillActivePanelCarries')
+                            ->label('Backfill active-panel carries')
+                            ->icon(Heroicon::OutlinedArrowPath)
+                            ->color('gray')
+                            ->requiresConfirmation()
+                            ->modalDescription('Runs `php artisan binary:backfill-active-panel-carries`')
+                            ->action(fn () => $this->runArtisanBackfill('binary:backfill-active-panel-carries', [])),
+                    ])
+                    ->schema([]),
                 Section::make('Binary daily closing')
                     ->description(
                         'Scheduled job: `binary:daily-closing` runs daily at '.$time.' ('.$tz.'). '
@@ -200,6 +231,43 @@ class SystemToolsPage extends Page
                             ]),
                     ]),
             ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     */
+    private function runArtisanBackfill(string $command, array $params): void
+    {
+        try {
+            $exitCode = Artisan::call($command, $params);
+            $output = trim(Artisan::output());
+
+            if ($exitCode !== 0) {
+                Notification::make()
+                    ->title('Backfill failed')
+                    ->body(Str::limit($output !== '' ? $output : 'Exit code: '.$exitCode, 4000))
+                    ->danger()
+                    ->persistent()
+                    ->send();
+
+                return;
+            }
+
+            Notification::make()
+                ->title('Backfill finished')
+                ->body(Str::limit($output !== '' ? $output : 'Completed.', 4000))
+                ->success()
+                ->duration(15000)
+                ->send();
+        } catch (Throwable $e) {
+            report($e);
+            Notification::make()
+                ->title('Backfill error')
+                ->body($e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
     }
 
     /**

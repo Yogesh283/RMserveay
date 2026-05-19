@@ -107,6 +107,22 @@ class AdminMemberAccountService
         });
     }
 
+    /**
+     * When admin raises sub_panel_count (e.g. via user edit), award upline carries
+     * for each new panel — same as repeated “Add sub-panel” clicks.
+     */
+    public function syncSubPanelCarriesFromCountIncrease(User $user, int $previousCount): void
+    {
+        $delta = (int) $user->sub_panel_count - max(0, $previousCount);
+        if ($delta <= 0) {
+            return;
+        }
+
+        for ($i = 0; $i < $delta; $i++) {
+            $this->panelMatching->processSubPanelPurchase($user->fresh());
+        }
+    }
+
     /** Add one super sub-panel slot (up to max) — no wallet debit. */
     public function addOneSuperSubPanel(User $user): User
     {
@@ -137,6 +153,19 @@ class AdminMemberAccountService
 
             return $user->fresh();
         });
+    }
+
+    /** When admin raises super_sub_panel_count via user edit. */
+    public function syncSuperSubPanelCarriesFromCountIncrease(User $user, int $previousCount): void
+    {
+        $delta = (int) $user->super_sub_panel_count - max(0, $previousCount);
+        if ($delta <= 0) {
+            return;
+        }
+
+        for ($i = 0; $i < $delta; $i++) {
+            $this->superSubPanelMatching->processSuperSubPanelPurchase($user->fresh());
+        }
     }
 
     public function blockAccount(User $user): User

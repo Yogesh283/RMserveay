@@ -396,7 +396,14 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const carryR = Number(pm.carry_right ?? 0) | 0;
     const pairsToday = Number(sm.cumulative_matched_panels_today ?? 0) | 0;
     const lapsedToday = Number(sm.today_milestone_lapsed_pairs ?? 0) | 0;
-    const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
+    const milestonePaid = Number.parseFloat(sm.today_milestone_paid_usd ?? '0');
+    const earnedToday = Number.parseFloat(sm.earned_today_usd ?? '0');
+    const payoutToday =
+        !Number.isNaN(milestonePaid) && milestonePaid > 0
+            ? sm.today_milestone_paid_usd
+            : !Number.isNaN(earnedToday) && earnedToday > 0
+              ? sm.earned_today_usd
+              : '0.00';
     return [
         {
             label: t('member.team.rowTeamSubPanels'),
@@ -437,7 +444,14 @@ function buildSuperLegRows(legs, t, superMatching) {
     const carryR = Number(sup.carry_right ?? 0) | 0;
     const pairsToday = Number(sup.cumulative_matched_panels_today ?? 0) | 0;
     const lapsedToday = Number(sup.today_milestone_lapsed_pairs ?? 0) | 0;
-    const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
+    const milestonePaid = Number.parseFloat(sup.today_milestone_paid_usd ?? '0');
+    const earnedToday = Number.parseFloat(sup.earned_today_usd ?? '0');
+    const payoutToday =
+        !Number.isNaN(milestonePaid) && milestonePaid > 0
+            ? sup.today_milestone_paid_usd
+            : !Number.isNaN(earnedToday) && earnedToday > 0
+              ? sup.earned_today_usd
+              : '0.00';
     return [
         {
             label: t('member.team.rowTeamSuperSub'),

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\MatchingTodayStats;
 
 /**
  * Sub-panel matching ($10 base) — tier-based payout with excess-lapse rule.
@@ -140,16 +141,27 @@ class SubPanelMatchingService
             }
         }
 
-        /** Latest daily-closing row is the live source for matched pairs / paid milestone. */
-        $todayClosing = BinaryDailyClosing::query()
-            ->where('user_id', $earner->id)
-            ->where('scope', BinaryDailyClosing::SCOPE_PANEL)
-            ->whereDate('closing_date', now()->toDateString())
-            ->latest('id')
-            ->first();
+        $todayClosing = MatchingTodayStats::todayClosing($earner->id, BinaryDailyClosing::SCOPE_PANEL);
+        $pairsToday = MatchingTodayStats::pairsMatchedToday(
+            $earner->id,
+            BinaryDailyClosing::SCOPE_PANEL,
+            WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+            WalletTransaction::TYPE_PANEL_MATCHING,
+        );
         $todayMilestone = (int) ($todayClosing?->meta['milestone'] ?? 0);
+        if ($todayMilestone <= 0 && $pairsToday > 0) {
+            $sortedMilestones = array_values((array) config('sub_panel_matching.milestones', []));
+            rsort($sortedMilestones, SORT_NUMERIC);
+            foreach ($sortedMilestones as $m) {
+                $m = (int) $m;
+                if ($m > 0 && $pairsToday >= $m) {
+                    $todayMilestone = $m;
+                    break;
+                }
+            }
+        }
         $milestoneMask = 0;
-        foreach (array_values($milestones) as $idx => $m) {
+        foreach (array_values((array) config('sub_panel_matching.milestones', [])) as $idx => $m) {
             if ((int) $m > 0 && (int) $m === $todayMilestone) {
                 $milestoneMask |= (1 << $idx);
                 break;
@@ -161,10 +173,14 @@ class SubPanelMatchingService
             'daily_cap_usd' => $cap,
             'earned_today_usd' => $earned,
             'remaining_cap_usd' => $remaining,
-            'cumulative_matched_panels_today' => (int) ($todayClosing?->pairs_matched ?? 0),
+            'cumulative_matched_panels_today' => $pairsToday,
             'milestones_hit_mask' => $milestoneMask,
-            'today_milestone_lapsed_pairs' => (int) ($todayClosing?->meta['milestone_lapsed_pairs'] ?? 0),
-            'today_milestone_paid_usd' => (string) ($todayClosing?->meta['milestone_paid_usd'] ?? '0.00'),
+            'today_milestone_lapsed_pairs' => MatchingTodayStats::lapsedPairsToday(
+                $todayClosing,
+                $earner->id,
+                WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+            ),
+            'today_milestone_paid_usd' => MatchingTodayStats::milestonePaidUsdDisplay($todayClosing, $earned),
             'pair_carry_forward' => 0,
             'next_milestone' => $smallestMilestone,
             'pairs_until_next_milestone' => $smallestMilestone,
