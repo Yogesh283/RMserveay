@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\WalletTransaction;
-use App\Support\BinaryLegMatching;
 use Illuminate\Support\Facades\DB;
 
 class PanelMatchingService
@@ -238,24 +237,11 @@ class PanelMatchingService
         $pairsAvailable = min($carryL, $carryR);
         $slotsLeftToday = max(0, $max - $used);
         $lifetime = $this->lifetimeSubPanelBuys($earner);
-        $teamLeg = BinaryLegMatching::fromLegVolumes($lifetime['left'], $lifetime['right']);
-        $teamMilestone = BinaryLegMatching::milestoneSplit(
-            $teamLeg['pairs_1_1'],
-            (array) config('sub_panel_matching.milestones', []),
-        );
 
         return [
             'eligible' => $earner->qualifiesForPanelMatchingIncome(),
             'carry_left' => $carryL,
             'carry_right' => $carryR,
-            'team_volume_left' => $teamLeg['left_volume'],
-            'team_volume_right' => $teamLeg['right_volume'],
-            'team_pairs_1_1' => $teamLeg['pairs_1_1'],
-            'team_carry_left' => $teamLeg['carry_left'],
-            'team_carry_right' => $teamLeg['carry_right'],
-            'team_milestone' => $teamMilestone['milestone'],
-            'team_milestone_payout_usd' => $teamMilestone['payout_usd'],
-            'team_milestone_lapsed_pairs' => $teamMilestone['lapsed_pairs'],
             /** Lifetime cumulative left/right sub-panel buys under this earner (live). */
             'total_left_subs' => $lifetime['left'],
             'total_right_subs' => $lifetime['right'],

@@ -96,10 +96,10 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('20.00', (string) $closing->payout_usd);
 
         $user->refresh();
-        $this->assertSame(3, (int) $user->panel_match_carry_left, 'Strong leg keeps diff only (25-22=3)');
-        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Weak leg fully consumed');
+        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg leftover carries forward (25-20=5)');
+        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Lower leg leftover lapsed');
         $this->assertSame(2, (int) $closing->right_lapsed, 'Lapsed amount recorded (22-20=2)');
-        $this->assertSame(2, (int) $closing->left_lapsed);
+        $this->assertSame(0, (int) $closing->left_lapsed);
     }
 
     public function test_no_pair_when_one_leg_is_zero(): void

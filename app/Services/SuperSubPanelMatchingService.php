@@ -5,8 +5,6 @@ namespace App\Services;
 use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
-use App\Support\BinaryLegMatching;
-use App\Support\MatchingTodayStats;
 use Illuminate\Support\Facades\DB;
 
 class SuperSubPanelMatchingService
@@ -278,36 +276,16 @@ class SuperSubPanelMatchingService
         }
 
         $lifetime = $this->lifetimeSuperSubPanelBuys($earner);
-        $teamLeg = BinaryLegMatching::fromLegVolumes($lifetime['left'], $lifetime['right']);
-        $teamMilestonePanels = BinaryLegMatching::highestMilestone(
-            $teamLeg['pairs_1_1'],
-            (array) config('super_sub_panel_matching.milestones', []),
-        );
-        $teamMilestonePayout = $teamMilestonePanels > 0
-            ? bcmul((string) $teamMilestonePanels, $mult, 2)
-            : '0.00';
-        $teamMilestoneLapsed = max(0, $teamLeg['pairs_1_1'] - $teamMilestonePanels);
-
-        $todayClosing = MatchingTodayStats::todayClosing($earner->id, BinaryDailyClosing::SCOPE_SUPER);
-        $pairsToday = MatchingTodayStats::pairsMatchedToday(
-            $earner->id,
-            BinaryDailyClosing::SCOPE_SUPER,
-            WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
-        );
+        /** Latest daily-closing row is the live source for matched pairs / paid milestone. */
+        $todayClosing = BinaryDailyClosing::query()
+            ->where('user_id', $earner->id)
+            ->where('scope', BinaryDailyClosing::SCOPE_SUPER)
+            ->whereDate('closing_date', now()->toDateString())
+            ->latest('id')
+            ->first();
         $todayMilestone = (int) ($todayClosing?->meta['milestone'] ?? 0);
-        if ($todayMilestone <= 0 && $pairsToday > 0) {
-            $sortedMilestones = array_values((array) config('super_sub_panel_matching.milestones', []));
-            rsort($sortedMilestones, SORT_NUMERIC);
-            foreach ($sortedMilestones as $m) {
-                $m = (int) $m;
-                if ($m > 0 && $pairsToday >= $m) {
-                    $todayMilestone = $m;
-                    break;
-                }
-            }
-        }
         $milestoneMask = 0;
-        foreach (array_values((array) config('super_sub_panel_matching.milestones', [])) as $idx => $m) {
+        foreach (array_values($milestones) as $idx => $m) {
             if ((int) $m > 0 && (int) $m === $todayMilestone) {
                 $milestoneMask |= (1 << $idx);
                 break;
@@ -319,24 +297,12 @@ class SuperSubPanelMatchingService
             'daily_cap_usd' => $cap,
             'earned_today_usd' => $earned,
             'remaining_cap_usd' => $remaining,
-            'cumulative_matched_panels_today' => $pairsToday,
+            'cumulative_matched_panels_today' => (int) ($todayClosing?->pairs_matched ?? 0),
             'milestones_hit_mask' => $milestoneMask,
-            'today_milestone_lapsed_pairs' => MatchingTodayStats::lapsedPairsToday(
-                $todayClosing,
-                $earner->id,
-                WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING,
-            ),
-            'today_milestone_paid_usd' => MatchingTodayStats::milestonePaidUsdDisplay($todayClosing, $earned),
+            'today_milestone_lapsed_pairs' => (int) ($todayClosing?->meta['milestone_lapsed_pairs'] ?? 0),
+            'today_milestone_paid_usd' => (string) ($todayClosing?->meta['milestone_paid_usd'] ?? '0.00'),
             'carry_left' => (int) $earner->super_panel_match_carry_left,
             'carry_right' => (int) $earner->super_panel_match_carry_right,
-            'team_volume_left' => $teamLeg['left_volume'],
-            'team_volume_right' => $teamLeg['right_volume'],
-            'team_pairs_1_1' => $teamLeg['pairs_1_1'],
-            'team_carry_left' => $teamLeg['carry_left'],
-            'team_carry_right' => $teamLeg['carry_right'],
-            'team_milestone' => $teamMilestonePanels,
-            'team_milestone_payout_usd' => $teamMilestonePayout,
-            'team_milestone_lapsed_pairs' => $teamMilestoneLapsed,
             /** Lifetime cumulative left/right super-sub-panel buys (live). */
             'total_left_supers' => $lifetime['left'],
             'total_right_supers' => $lifetime['right'],
