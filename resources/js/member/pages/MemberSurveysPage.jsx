@@ -28,7 +28,7 @@ const TIER_ORDER = ['free', 'panel', 'sub_panel', 'super_panel'];
 const TIER_SECTIONS = {
     free: {
         title: 'Free Survey',
-        subtitle: 'Start instantly and earn from beginner surveys.',
+        subtitle: 'Inactive members only — before active panel activation.',
         titleClass: 'text-white',
         cardBorder:
             'border-emerald-500/30 bg-gradient-to-br from-emerald-950/35 via-[#0f172a] to-[#111827] ring-1 ring-emerald-500/20 shadow-[0_0_36px_rgba(16,185,129,0.08)]',
@@ -108,6 +108,8 @@ function groupByTier(rows, tierGetter) {
 
 function tierLockHint(tier) {
     switch (tier) {
+        case 'free':
+            return 'Free surveys are for inactive members only (active panelists cannot fill).';
         case 'panel':
             return 'Unlock: become an active panelist ($1 activation + $10 minimum panel).';
         case 'sub_panel':

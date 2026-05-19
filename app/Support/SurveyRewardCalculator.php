@@ -10,7 +10,7 @@ use App\Models\User;
  * based on the survey tier and the member's panel ownership.
  *
  * Rules (from config/survey_completion_rewards.php):
- *  - free:        flat (default $0.01)
+ *  - free:        flat (default $0.01) — inactive members only (not active panelists)
  *  - panel:       flat (default $1.00) — only if member is an active panelist
  *  - sub_panel:   $rate × member.sub_panel_count
  *  - super_panel: $rate × member.super_sub_panel_count
@@ -24,7 +24,9 @@ class SurveyRewardCalculator
         $cfg = (array) config('survey_completion_rewards', []);
 
         return match ($tier) {
-            Survey::TIER_FREE => $this->money((string) ($cfg['free'] ?? '0.00')),
+            Survey::TIER_FREE => ! $user->qualifiesActivePanelistIncome()
+                ? $this->money((string) ($cfg['free'] ?? '0.00'))
+                : '0.00',
 
             Survey::TIER_PANEL => $user->qualifiesActivePanelistIncome()
                 ? $this->money((string) ($cfg['panel'] ?? '0.00'))
@@ -49,7 +51,7 @@ class SurveyRewardCalculator
         $tier = $this->normalizeTier($survey->member_tier);
 
         return match ($tier) {
-            Survey::TIER_FREE => true,
+            Survey::TIER_FREE => ! $user->qualifiesActivePanelistIncome(),
             Survey::TIER_PANEL => $user->qualifiesActivePanelistIncome(),
             Survey::TIER_SUB_PANEL => ((int) ($user->sub_panel_count ?? 0)) >= 1,
             Survey::TIER_SUPER_PANEL => ((int) ($user->super_sub_panel_count ?? 0)) >= 1,

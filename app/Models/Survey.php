@@ -29,7 +29,7 @@ class Survey extends Model
     public static function tierOptions(): array
     {
         return [
-            self::TIER_FREE => 'Free (open to all members)',
+            self::TIER_FREE => 'Free (inactive members only)',
             self::TIER_PANEL => 'Active Panel survey',
             self::TIER_SUB_PANEL => 'Sub Panel survey',
             self::TIER_SUPER_PANEL => 'Super Panel survey',

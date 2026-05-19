@@ -45,7 +45,7 @@ class SurveyForm
                             ->default(Survey::TIER_FREE)
                             ->options(Survey::tierOptions())
                             ->descriptions([
-                                Survey::TIER_FREE => 'Sare members fill kar sakte hain. Koi restriction nahi.',
+                                Survey::TIER_FREE => 'Sirf inactive members (jin ka active panel paid nahi) fill kar sakte hain.',
                                 Survey::TIER_PANEL => 'Sirf $11 active panelist ($1 activation + $10 panel paid) members.',
                                 Survey::TIER_SUB_PANEL => 'Sirf jinhone $10 wala Sub Panel kharida ho (≥1).',
                                 Survey::TIER_SUPER_PANEL => 'Sirf jinhone $100 wala Super Panel kharida ho (≥1).',
