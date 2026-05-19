@@ -59,11 +59,20 @@ class AdminMemberAccountService
 
             $user = $user->fresh();
 
-            $this->panelEnrollment->recordActivePanelActivation($user);
-            $this->activePanelMatching->processActivePanelActivation($user);
+            $this->finalizeActivePanelActivation($user);
 
             return $user->fresh();
         });
+    }
+
+    /**
+     * Snapshot + upline carry after a user becomes an active panelist.
+     * Call only when minimum_panel_fee_paid_at transitions from null → set.
+     */
+    public function finalizeActivePanelActivation(User $user): void
+    {
+        $this->panelEnrollment->recordActivePanelActivation($user);
+        $this->activePanelMatching->processActivePanelActivation($user);
     }
 
     /** Add one sub-panel slot (up to max) — no wallet debit. */
