@@ -48,4 +48,21 @@ return [
 
     /** Pay currencies the member UI may offer (NOWPayments tickers). */
     'allowed_pay_currencies' => $allowedPay !== [] ? $allowedPay : ['usdtbsc'],
+
+    /**
+     * Mass payouts (member withdrawals → user BEP20 via NOWPayments).
+     * Requires Custody + API key + account email/password (POST /auth) + IPN secret.
+     * Whitelist server IP and destination wallets in NOWPayments dashboard.
+     */
+    'payouts' => [
+        'enabled' => (bool) env('NOWPAYMENTS_PAYOUTS_ENABLED', false)
+            && trim((string) env('NOWPAYMENTS_API_KEY', '')) !== ''
+            && trim((string) env('NOWPAYMENTS_PAYOUT_EMAIL', '')) !== ''
+            && trim((string) env('NOWPAYMENTS_PAYOUT_PASSWORD', '')) !== ''
+            && trim((string) env('NOWPAYMENTS_IPN_SECRET', '')) !== '',
+        'email' => env('NOWPAYMENTS_PAYOUT_EMAIL', ''),
+        'password' => env('NOWPAYMENTS_PAYOUT_PASSWORD', ''),
+        /** Payout currency ticker (USDT BEP20). */
+        'currency' => strtolower(trim((string) env('NOWPAYMENTS_PAYOUT_CURRENCY', env('NOWPAYMENTS_PAY_CURRENCY', 'usdtbsc')))),
+    ],
 ];

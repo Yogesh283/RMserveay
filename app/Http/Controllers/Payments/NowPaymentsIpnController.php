@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Payments;
 use App\Http\Controllers\Controller;
 use App\Services\NowPayments\NowPaymentsIpnVerifier;
 use App\Services\NowPayments\NowPaymentsLedgerService;
+use App\Services\NowPayments\NowPaymentsWithdrawalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,7 @@ class NowPaymentsIpnController extends Controller
 {
     public function __construct(
         protected NowPaymentsLedgerService $ledger,
+        protected NowPaymentsWithdrawalService $withdrawals,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -49,8 +51,42 @@ class NowPaymentsIpnController extends Controller
             'payment_status' => $data['payment_status'] ?? null,
         ]);
 
-        $this->ledger->syncFromIpnPayload($data);
+        if ($this->isPayoutIpn($data)) {
+            $tx = $this->withdrawals->findTransactionForPayoutPayload($data);
+            if ($tx !== null) {
+                $this->withdrawals->applyPayoutPayloadToTransaction($tx, $data);
+                Log::info('nowpayments.ipn.payout synced', [
+                    'wallet_transaction_id' => $tx->id,
+                    'status' => $data['status'] ?? $data['payout_status'] ?? null,
+                ]);
+            } else {
+                Log::warning('nowpayments.ipn.payout no matching withdrawal', [
+                    'payout_id' => $data['payout_id'] ?? $data['id'] ?? null,
+                    'unique_external_id' => $data['unique_external_id'] ?? null,
+                ]);
+            }
+        } else {
+            $this->ledger->syncFromIpnPayload($data);
+        }
 
         return response('OK', 200);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function isPayoutIpn(array $data): bool
+    {
+        if (isset($data['payment_id']) && $data['payment_id'] !== '') {
+            return false;
+        }
+
+        if (isset($data['payout_id']) || isset($data['withdrawal_id'])) {
+            return true;
+        }
+
+        $external = (string) ($data['unique_external_id'] ?? '');
+
+        return str_starts_with($external, 'wallet_tx_');
     }
 }

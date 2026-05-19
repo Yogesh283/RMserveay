@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\NowPayments\NowPaymentsClient;
+use App\Services\NowPayments\NowPaymentsMassPayoutClient;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +21,18 @@ class AppServiceProvider extends ServiceProvider
             return new NowPaymentsClient(
                 (string) ($config['base_url'] ?? 'https://api.nowpayments.io/v1'),
                 (string) ($config['api_key'] ?? ''),
+            );
+        });
+
+        $this->app->singleton(NowPaymentsMassPayoutClient::class, function ($app) {
+            $config = $app['config']->get('nowpayments', []);
+            $payouts = is_array($config['payouts'] ?? null) ? $config['payouts'] : [];
+
+            return new NowPaymentsMassPayoutClient(
+                (string) ($config['base_url'] ?? 'https://api.nowpayments.io/v1'),
+                (string) ($config['api_key'] ?? ''),
+                (string) ($payouts['email'] ?? ''),
+                (string) ($payouts['password'] ?? ''),
             );
         });
     }

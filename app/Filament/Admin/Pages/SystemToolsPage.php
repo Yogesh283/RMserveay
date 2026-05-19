@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Resources\WithdrawalRequests\WithdrawalRequestResource;
 use App\Models\SurveyResponse;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -126,6 +127,23 @@ class SystemToolsPage extends Page
                                         ->send();
                                 }
                             }),
+                    ])
+                    ->schema([]),
+                Section::make('Member withdrawals (NOWPayments Mass Payout)')
+                    ->description(
+                        'Member withdrawal requests debit the main wallet and queue payout to their BEP20 address. '
+                        .'Process them under Wallet → Withdrawals: Send via NOWPayments, then Verify 2FA (master account), '
+                        .'then Refresh status. IPN: '.url('/api/payments/nowpayments/ipn').'. '
+                        .'Payouts API: '.((bool) config('nowpayments.payouts.enabled') ? 'enabled' : 'disabled — set NOWPAYMENTS_PAYOUTS_ENABLED + email/password in .env').'. '
+                        .'Currency: '.(string) config('nowpayments.payouts.currency', 'usdtbsc').'.'
+                    )
+                    ->icon(Heroicon::OutlinedArrowUpTray)
+                    ->headerActions([
+                        Action::make('openWithdrawalQueue')
+                            ->label('Open withdrawal queue')
+                            ->icon(Heroicon::OutlinedQueueList)
+                            ->color('warning')
+                            ->url(WithdrawalRequestResource::getUrl('index')),
                     ])
                     ->schema([]),
                 Section::make('Sub / super panel carry backfill')
