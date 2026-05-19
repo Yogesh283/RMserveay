@@ -91,7 +91,7 @@ class SystemToolsPage extends Page
                             ->modalDescription(
                                 'Runs `surveys:pay-respondent-payouts`. Only responses whose '
                                 .$surveyDelayDays.'-day delay has passed and that are not yet paid will be credited. '
-                                'Currently due: '.$this->surveyPayoutsDueNow.'.'
+                                .'Currently due: '.$this->surveyPayoutsDueNow.'.'
                             )
                             ->action(function (): void {
                                 try {
