@@ -32,6 +32,7 @@ class BinaryDailyClosingService
     public function __construct(
         protected SubPanelMatchingService $subPanelMatching,
         protected SuperSubPanelMatchingService $superSubPanelMatching,
+        protected PanelMatchingService $panelMatching,
     ) {}
 
     /**
@@ -274,19 +275,22 @@ class BinaryDailyClosingService
             $user->save();
 
             // Tier-based milestone payout for sub-panel and super-sub-panel scopes.
-            // applyMatchedPairs() pays the highest milestone reached by today's
-            // matched pairs only — excess pairs above the milestone LAPSE
-            // (counter does NOT carry across days). Mutates the in-memory user;
-            // we save after the call.
+            // Milestone tier is driven by the weaker binary leg's lifetime panel
+            // count (min of left/right subtree totals), not today's pair cap alone.
+            // Mutates the in-memory user; we save after the call.
             $milestonePaidUsd = '0.00';
             $milestoneMeta = [];
             if ($pairsMatched > 0) {
                 if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
-                    $r = $this->subPanelMatching->applyMatchedPairs($user, $pairsMatched);
+                    $lifetime = $this->panelMatching->lifetimeSubPanelBuys($user);
+                    $weakLeg = min($lifetime['left'], $lifetime['right']);
+                    $r = $this->subPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
                     $milestonePaidUsd = (string) $r['payout_usd'];
                     $milestoneMeta = $r;
                 } elseif ($scope === BinaryDailyClosing::SCOPE_SUPER) {
-                    $r = $this->superSubPanelMatching->applyMatchedPairs($user, $pairsMatched);
+                    $lifetime = $this->superSubPanelMatching->lifetimeSuperSubPanelBuys($user);
+                    $weakLeg = min($lifetime['left'], $lifetime['right']);
+                    $r = $this->superSubPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
                     $milestonePaidUsd = (string) $r['payout_usd'];
                     $milestoneMeta = $r;
                 }
@@ -320,6 +324,7 @@ class BinaryDailyClosingService
                     'milestone_paid_usd' => $milestonePaidUsd,
                     'milestone' => $milestoneMeta['milestone'] ?? null,
                     'milestone_pairs_today' => $milestoneMeta['pairs_today'] ?? null,
+                    'milestone_weak_leg' => $milestoneMeta['weak_leg'] ?? null,
                     'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
                 ],
             ]);

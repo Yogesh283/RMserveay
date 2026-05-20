@@ -80,9 +80,9 @@ return [
             // SubPanelMatchingService::applyMatchedPairs). Excess matched
             // pairs above the highest reached milestone LAPSE same day.
             'pair_income_usd' => env('BINARY_CLOSING_PAIR_INCOME_USD', '0.00'),
-            // 20 pairs/day binary match cap; unmatched leg leftover carries.
+            // 20 pairs/day binary match cap; strong leg keeps diff, weak leg lapses.
             'max_pairs_per_day' => (int) env('BINARY_CLOSING_MAX_PAIRS_PER_DAY', 20),
-            'lapse_strategy' => env('BINARY_CLOSING_PANEL_LAPSE_STRATEGY', 'no_lapse_both_carry'),
+            'lapse_strategy' => env('BINARY_CLOSING_PANEL_LAPSE_STRATEGY', 'weak_lapse_strong_diff'),
         ],
         'super' => [
             'enabled' => filter_var(env('BINARY_CLOSING_SUPER_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
@@ -94,7 +94,7 @@ return [
             // pairs above the highest reached milestone LAPSE same day.
             'pair_income_usd' => env('BINARY_CLOSING_SUPER_PAIR_INCOME_USD', '0.00'),
             'max_pairs_per_day' => (int) env('BINARY_CLOSING_SUPER_MAX_PAIRS_PER_DAY', 20),
-            'lapse_strategy' => env('BINARY_CLOSING_SUPER_LAPSE_STRATEGY', 'no_lapse_both_carry'),
+            'lapse_strategy' => env('BINARY_CLOSING_SUPER_LAPSE_STRATEGY', 'weak_lapse_strong_diff'),
         ],
     ],
 

@@ -368,19 +368,16 @@ function buildActiveLegRows(legs, t, activeMatching) {
     const L = legs.left;
     const R = legs.right;
     const am = activeMatching ?? {};
-    const carryL = Number(am.carry_left ?? 0) | 0;
-    const carryR = Number(am.carry_right ?? 0) | 0;
-    const pairsToday = Number(am.pairs_paid_today ?? 0) | 0;
-    const lapseL = Number(am.today_left_lapsed ?? 0) | 0;
-    const lapseR = Number(am.today_right_lapsed ?? 0) | 0;
+    const carryL = Number(am.display_carry_left ?? am.today_left_carry_out ?? 0) | 0;
+    const carryR = Number(am.display_carry_right ?? am.today_right_carry_out ?? 0) | 0;
+    const weakLapse = weakSideLapseDisplay(am);
     const payoutToday = am.earned_today_usd ?? '0.00';
     return [
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
         { label: t('member.team.rowActivePanelists'), left: L.active, right: R.active },
         { label: 'Active carry forward', left: carryL, right: carryR },
-        { label: 'Matched pairs today', left: pairsToday, right: pairsToday },
         { label: 'Payout today', left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
-        { label: 'Lapsed today', left: lapseL, right: lapseR },
+        { label: 'Lapsed today', left: weakLapse.left, right: weakLapse.right },
     ];
 }
 
@@ -394,8 +391,7 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const sm = subMatching ?? {};
     const carryL = Number(pm.carry_left ?? 0) | 0;
     const carryR = Number(pm.carry_right ?? 0) | 0;
-    const pairsToday = Number(sm.cumulative_matched_panels_today ?? 0) | 0;
-    const lapsedToday = Number(sm.today_milestone_lapsed_pairs ?? 0) | 0;
+    const weakLapse = weakSideLapseDisplay(sm);
     const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     return [
         {
@@ -409,19 +405,14 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
             right: carryR,
         },
         {
-            label: 'Matched pairs today',
-            left: pairsToday,
-            right: pairsToday,
-        },
-        {
             label: 'Payout today',
             left: fmtUsdShort(payoutToday),
             right: fmtUsdShort(payoutToday),
         },
         {
             label: 'Lapsed today',
-            left: lapsedToday,
-            right: lapsedToday,
+            left: weakLapse.left,
+            right: weakLapse.right,
         },
     ];
 }
@@ -435,8 +426,7 @@ function buildSuperLegRows(legs, t, superMatching) {
     const sup = superMatching ?? {};
     const carryL = Number(sup.carry_left ?? 0) | 0;
     const carryR = Number(sup.carry_right ?? 0) | 0;
-    const pairsToday = Number(sup.cumulative_matched_panels_today ?? 0) | 0;
-    const lapsedToday = Number(sup.today_milestone_lapsed_pairs ?? 0) | 0;
+    const weakLapse = weakSideLapseDisplay(sup);
     const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     return [
         {
@@ -450,21 +440,37 @@ function buildSuperLegRows(legs, t, superMatching) {
             right: carryR,
         },
         {
-            label: 'Matched pairs today',
-            left: pairsToday,
-            right: pairsToday,
-        },
-        {
             label: 'Payout today',
             left: fmtUsdShort(payoutToday),
             right: fmtUsdShort(payoutToday),
         },
         {
             label: 'Lapsed today',
-            left: lapsedToday,
-            right: lapsedToday,
+            left: weakLapse.left,
+            right: weakLapse.right,
         },
     ];
+}
+
+/** Lapse count only on the weaker leg column (— on the strong side). */
+function weakSideLapseDisplay(data) {
+    const dash = '—';
+    const side = data?.today_weak_side;
+    const lapsed =
+        Number(data?.today_weak_lapsed ?? data?.today_left_lapsed ?? data?.today_right_lapsed ?? 0) | 0;
+    if (side === 'left') {
+        return { left: lapsed, right: dash };
+    }
+    if (side === 'right') {
+        return { left: dash, right: lapsed };
+    }
+    if ((Number(data?.today_left_lapsed ?? 0) | 0) > 0) {
+        return { left: Number(data.today_left_lapsed) | 0, right: dash };
+    }
+    if ((Number(data?.today_right_lapsed ?? 0) | 0) > 0) {
+        return { left: dash, right: Number(data.today_right_lapsed) | 0 };
+    }
+    return { left: 0, right: 0 };
 }
 
 function EmptyNodeSlot({ side = 'left' }) {
@@ -618,8 +624,6 @@ export default function MemberTeamPage() {
     const [treePreviewExpanded, setTreePreviewExpanded] = useState(true);
     const [levelIncomeExpanded, setLevelIncomeExpanded] = useState(false);
     const [inviteLinksExpanded, setInviteLinksExpanded] = useState(false);
-    /** Sub vs super matching table inside “Matching income” (Active is shown
-     *  in the My Team section instead). */
     const [matchingIncomeTab, setMatchingIncomeTab] = useState('sub');
     const [panelMatchData, setPanelMatchData] = useState(null);
     const [subMatchData, setSubMatchData] = useState(null);
@@ -1231,7 +1235,7 @@ export default function MemberTeamPage() {
                             aria-labelledby={matchingIncomeTab === 'sub' ? 'matching-income-tab-sub' : 'matching-income-tab-super'}
                             id="matching-income-panel"
                         >
-                            {matchingIncomeTab === 'sub' && panelMatchData && subMatchData ? (
+                            {matchingIncomeTab === 'sub' && subMatchData ? (
                                 <MatchingIncomeTable
                                     dark
                                     embedded
@@ -1254,7 +1258,7 @@ export default function MemberTeamPage() {
                                     superData={superMatchData}
                                 />
                             ) : null}
-                            {matchingIncomeTab === 'sub' && (!panelMatchData || !subMatchData) ? (
+                            {matchingIncomeTab === 'sub' && !subMatchData ? (
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
                             ) : null}
                             {matchingIncomeTab === 'super' && !superMatchData ? (

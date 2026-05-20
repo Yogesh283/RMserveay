@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\BinaryWeakSideLapse;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -217,31 +218,60 @@ class ActivePanelMatchingService
         $carryR = (int) $earner->active_panel_match_carry_right;
         $available = min($carryL, $carryR);
         $lifetime = $this->lifetimeActivePanelistsInLegs($earner);
-        $todayClosing = BinaryDailyClosing::query()
+        $weakLeg = min($lifetime['left'], $lifetime['right']);
+        $todayClosing = BinaryDailyClosing::latestForDisplay(
+            $earner->id,
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
+        );
+        // Team table aligns carry/lapse with lifetime active panelists (33/36), not raw match-queue buckets.
+        $display = BinaryWeakSideLapse::splitFromLegCounts(
+            $lifetime['left'],
+            $lifetime['right'],
+            $max,
+        );
+
+        $earnedToday = WalletTransaction::query()
             ->where('user_id', $earner->id)
-            ->where('scope', BinaryDailyClosing::SCOPE_ACTIVE_PANEL)
-            ->whereDate('closing_date', now()->toDateString())
-            ->latest('id')
-            ->first();
+            ->where('type', WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING)
+            ->whereDate('created_at', now()->toDateString())
+            ->sum('amount');
+
+        $tierRows = [];
+        for ($p = 1; $p <= $max; $p++) {
+            $tierRows[] = [
+                'matching_panels' => $p,
+                'income_usd' => $perPair,
+            ];
+        }
 
         return [
             'eligible' => $earner->qualifiesActivePanelistIncome(),
+            'income_mode' => 'per_pair_daily_cap',
             'carry_left' => $carryL,
             'carry_right' => $carryR,
+            'display_carry_left' => $display['left_out'],
+            'display_carry_right' => $display['right_out'],
             'total_left_active_panels' => $lifetime['left'],
             'total_right_active_panels' => $lifetime['right'],
+            'weak_leg' => $weakLeg,
+            'strong_leg_carry_diff' => abs($lifetime['left'] - $lifetime['right']),
             'pairs_available' => $available,
             'pairs_paid_today' => $used,
-            'today_lapsed_pairs' => (int) (($todayClosing?->left_lapsed ?? 0) + ($todayClosing?->right_lapsed ?? 0)),
-            'today_left_lapsed' => (int) ($todayClosing?->left_lapsed ?? 0),
-            'today_right_lapsed' => (int) ($todayClosing?->right_lapsed ?? 0),
-            'today_left_carry_out' => (int) ($todayClosing?->left_carry_out ?? $carryL),
-            'today_right_carry_out' => (int) ($todayClosing?->right_carry_out ?? $carryR),
-            'earned_today_usd' => $todayClosing?->payout_usd !== null ? (string) $todayClosing->payout_usd : '0.00',
+            'pairs_matched_last_closing' => (int) ($todayClosing?->pairs_matched ?? 0),
+            'display_pairs_matched_today' => $display['pairs_matched'],
+            'today_weak_side' => $display['weak_side'],
+            'today_weak_lapsed' => $display['weak_lapsed'],
+            'today_left_lapsed' => $display['weak_side'] === 'left' ? $display['weak_lapsed'] : 0,
+            'today_right_lapsed' => $display['weak_side'] === 'right' ? $display['weak_lapsed'] : 0,
+            'today_left_carry_out' => $display['left_out'],
+            'today_right_carry_out' => $display['right_out'],
+            'earned_today_usd' => number_format((float) ($earnedToday ?? 0), 2, '.', ''),
             'pairs_remaining_today' => max(0, $max - $used),
             'pairs_payable_today' => min($available, max(0, $max - $used)),
             'max_pairs_per_day' => $max,
             'per_pair_income_usd' => $perPair,
+            'tier_rows' => $tierRows,
+            'last_closing_date' => $todayClosing?->closing_date?->toDateString(),
         ];
     }
 

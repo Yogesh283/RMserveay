@@ -139,8 +139,6 @@ export function MatchingIncomeTable({
             r: totalR,
             carryL: panelData.carry_left | 0,
             carryR: panelData.carry_right | 0,
-            extraLabel: 'Pairs paid today',
-            extraValue: panelData.pairs_paid_today ?? 0,
         };
         rows = MILESTONES.map((m, i) => {
             const stripe = i % 2 === 1;
@@ -156,24 +154,24 @@ export function MatchingIncomeTable({
                 </tr>
             );
         });
-    } else if (variant === 'sub' && panelData && subData) {
-        const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
-        const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
-        const mask = subData.milestones_hit_mask ?? 0;
+    } else if (variant === 'sub' && subData) {
+        const totalL = (panelData?.total_left_subs ?? subData.total_left_subs ?? panelData?.carry_left ?? 0) | 0;
+        const totalR = (panelData?.total_right_subs ?? subData.total_right_subs ?? panelData?.carry_right ?? 0) | 0;
+        const currentMilestone = subData.current_milestone ?? 0;
         const tiers = subData.tier_rows ?? [];
         summary = {
             l: totalL,
             r: totalR,
-            carryL: panelData.carry_left | 0,
-            carryR: panelData.carry_right | 0,
-            extraLabel: 'Matched today',
-            extraValue: subData.cumulative_matched_panels_today ?? 0,
+            carryL: (panelData?.carry_left ?? 0) | 0,
+            carryR: (panelData?.carry_right ?? 0) | 0,
             extraLabel2: 'Lapsed today',
-            extraValue2: subData.today_milestone_lapsed_pairs ?? 0,
+            extraValue2: subData.today_weak_lapsed ?? 0,
         };
         rows = tiers.map((row, idx) => {
-            const rawPaid = tierPaid(mask, idx);
-            const paid = hideEarnedHighlight ? false : rawPaid;
+            const paid =
+                !hideEarnedHighlight &&
+                (row.matching_panels | 0) === (currentMilestone | 0) &&
+                (currentMilestone | 0) > 0;
             const stripe = idx % 2 === 1;
             const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (
@@ -197,21 +195,21 @@ export function MatchingIncomeTable({
     } else if (variant === 'super' && superData) {
         const totalL = (superData.total_left_supers ?? superData.carry_left) | 0;
         const totalR = (superData.total_right_supers ?? superData.carry_right) | 0;
-        const mask = superData.milestones_hit_mask ?? 0;
+        const currentMilestone = superData.current_milestone ?? 0;
         const tiers = superData.tier_rows ?? [];
         summary = {
             l: totalL,
             r: totalR,
             carryL: superData.carry_left | 0,
             carryR: superData.carry_right | 0,
-            extraLabel: 'Matched today',
-            extraValue: superData.cumulative_matched_panels_today ?? 0,
             extraLabel2: 'Lapsed today',
-            extraValue2: superData.today_milestone_lapsed_pairs ?? 0,
+            extraValue2: superData.today_weak_lapsed ?? 0,
         };
         rows = tiers.map((row, idx) => {
-            const rawPaid = tierPaid(mask, idx);
-            const paid = hideEarnedHighlight ? false : rawPaid;
+            const paid =
+                !hideEarnedHighlight &&
+                (row.matching_panels | 0) === (currentMilestone | 0) &&
+                (currentMilestone | 0) > 0;
             const stripe = idx % 2 === 1;
             const required = Math.max(1, (row.matching_panels | 0) / 2);
             return (
@@ -285,10 +283,6 @@ export function MatchingIncomeTable({
                         <span className="opacity-50">·</span>
                         <span className="text-[10px] opacity-70">unmatched</span>
                         <span className="tabular-nums">{summary.carryR}</span>
-                    </span>
-                    <span className={`${summaryChipBase} ${dark ? 'border-amber-400/30 bg-amber-500/10 text-amber-100' : 'border-amber-300 bg-amber-50'}`}>
-                        <span className="opacity-70">{summary.extraLabel}:</span>
-                        <span className="tabular-nums">{summary.extraValue}</span>
                     </span>
                     {summary.extraLabel2 ? (
                         <span className={`${summaryChipBase} ${dark ? 'border-rose-400/30 bg-rose-500/10 text-rose-100' : 'border-rose-300 bg-rose-50'}`}>

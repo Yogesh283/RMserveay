@@ -96,10 +96,10 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('20.00', (string) $closing->payout_usd);
 
         $user->refresh();
-        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg leftover carries forward (25-20=5)');
-        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Lower leg leftover lapsed');
-        $this->assertSame(2, (int) $closing->right_lapsed, 'Lapsed amount recorded (22-20=2)');
-        $this->assertSame(0, (int) $closing->left_lapsed);
+        $this->assertSame(3, (int) $user->panel_match_carry_left, 'Strong leg keeps diff only (25-22=3)');
+        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Weak leg fully consumed');
+        $this->assertSame(2, (int) $closing->right_lapsed, 'Weak surplus lapses (22-20=2)');
+        $this->assertSame(2, (int) $closing->left_lapsed, 'Strong surplus above diff lapses (25-20-3=2)');
     }
 
     public function test_no_pair_when_one_leg_is_zero(): void
@@ -194,8 +194,8 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertTrue((bool) $closing->cap_hit);
 
         $user->refresh();
-        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg keeps 10-5=5');
-        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Equal leg leftover lapses (lower side)');
+        $this->assertSame(0, (int) $user->panel_match_carry_left, 'Matched pairs consumed; equal legs → no diff carry');
+        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Equal legs → no diff carry');
     }
 
     public function test_artisan_command_runs_closing_and_returns_success(): void
@@ -263,22 +263,25 @@ class BinaryDailyClosingTest extends TestCase
 
     public function test_closing_also_fires_sub_panel_milestone_income_per_matched_pair(): void
     {
+        $leftLeg = User::factory()->create(['sub_panel_count' => 2]);
+        $rightLeg = User::factory()->create(['sub_panel_count' => 2]);
         $earner = User::factory()->create([
             'user_type' => 'normal',
             'activation_fee_paid_at' => now(),
             'minimum_panel_fee_paid_at' => now(),
             'sub_panel_count' => 9,
+            'left_child_id' => $leftLeg->id,
+            'right_child_id' => $rightLeg->id,
             'panel_match_carry_left' => 1,
             'panel_match_carry_right' => 1,
             'wallet_balance' => '0.00',
         ]);
 
-        // 1 pair → +2 cumulative panels → milestone "2" pays $2 (per sub_panel_matching config defaults).
+        // Weak leg lifetime min(2,2)=2 → milestone $2; plus $1 per-pair for 1 matched pair.
         app(BinaryDailyClosingService::class)
             ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
 
         $earner->refresh();
-        // Expected: $1 (per-pair commission) + $2 (milestone) = $3.00
         $this->assertSame('3.00', (string) $earner->wallet_balance);
 
         $this->assertDatabaseHas('wallet_transactions', [

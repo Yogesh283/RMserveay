@@ -59,4 +59,28 @@ class BinaryDailyClosing extends Model
     {
         return $this->belongsTo(WalletTransaction::class);
     }
+
+    /**
+     * Latest closing row for UI: prefer a run credited today (wallet cron), else
+     * the most recent audit row for this scope.
+     */
+    public static function latestForDisplay(int $userId, string $scope): ?self
+    {
+        $todayRun = static::query()
+            ->where('user_id', $userId)
+            ->where('scope', $scope)
+            ->whereDate('created_at', now()->toDateString())
+            ->latest('id')
+            ->first();
+
+        if ($todayRun !== null) {
+            return $todayRun;
+        }
+
+        return static::query()
+            ->where('user_id', $userId)
+            ->where('scope', $scope)
+            ->latest('id')
+            ->first();
+    }
 }
