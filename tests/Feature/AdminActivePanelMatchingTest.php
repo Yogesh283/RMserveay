@@ -68,6 +68,21 @@ class AdminActivePanelMatchingTest extends TestCase
         $this->assertSame('1.00', (string) $earner->wallet_balance);
     }
 
+    public function test_inactive_sub_earner_status_exposes_binary_carry_both_sides(): void
+    {
+        $earner = User::factory()->create([
+            'sub_panel_count' => 3,
+            'panel_match_carry_left' => 7,
+            'panel_match_carry_right' => 4,
+        ]);
+
+        $status = app(\App\Services\SubPanelMatchingService::class)->status($earner);
+
+        $this->assertFalse($status['eligible']);
+        $this->assertSame(7, $status['carry_left']);
+        $this->assertSame(4, $status['carry_right']);
+    }
+
     public function test_inactive_earner_keeps_carry_and_gets_no_active_panel_closing_payout(): void
     {
         $inactiveEarner = User::factory()->create([

@@ -1,4 +1,4 @@
-import { isPowerLegCarryVisible, teamCarryForwardFromLegTotals } from '../lib/powerLegCarry';
+import { isCarryChipVisible, isPowerLegCarryVisible, matchingCarryDisplay, teamCarryForwardFromLegTotals } from '../lib/powerLegCarry';
 
 /**
  * Shared 4-column milestone table: Panel match table | L | R | Income
@@ -184,22 +184,27 @@ export function MatchingIncomeTable({
             );
         });
     } else if (variant === 'sub' && subData) {
-        const totalL = (panelData?.total_left_subs ?? subData.total_left_subs ?? panelData?.carry_left ?? 0) | 0;
-        const totalR = (panelData?.total_right_subs ?? subData.total_right_subs ?? panelData?.carry_right ?? 0) | 0;
+        const totalL = (subData.total_left_subs ?? 0) | 0;
+        const totalR = (subData.total_right_subs ?? 0) | 0;
+        const subEligible = subData.eligible === true;
         const currentMilestone = subData.current_milestone ?? 0;
         const incomeLocked = subData.income_projection_locked === true;
         const tiers = subData.tier_rows ?? [];
-        const carry = teamCarryForwardFromLegTotals(
-            panelData?.total_left_subs ?? subData.total_left_subs ?? 0,
-            panelData?.total_right_subs ?? subData.total_right_subs ?? 0,
-            subData.today_left_carry_out,
-            subData.today_right_carry_out,
-        );
+        const carry = matchingCarryDisplay({
+            eligible: subEligible,
+            carryLeft: subData.carry_left ?? panelData?.carry_left,
+            carryRight: subData.carry_right ?? panelData?.carry_right,
+            legLeft: totalL,
+            legRight: totalR,
+            closingLeftOut: subData.today_left_carry_out,
+            closingRightOut: subData.today_right_carry_out,
+        });
         summary = {
             l: totalL,
             r: totalR,
             carryL: carry.left,
             carryR: carry.right,
+            carryBilateral: !subEligible,
             extraLabel2: 'Lapsed today',
             extraValue2: subData.today_weak_lapsed ?? 0,
         };
@@ -220,22 +225,27 @@ export function MatchingIncomeTable({
             );
         });
     } else if (variant === 'super' && superData) {
-        const totalL = (superData.total_left_supers ?? superData.carry_left) | 0;
-        const totalR = (superData.total_right_supers ?? superData.carry_right) | 0;
+        const totalL = (superData.total_left_supers ?? 0) | 0;
+        const totalR = (superData.total_right_supers ?? 0) | 0;
+        const superEligible = superData.eligible === true;
         const currentMilestone = superData.current_milestone ?? 0;
         const incomeLocked = superData.income_projection_locked === true;
         const tiers = superData.tier_rows ?? [];
-        const carry = teamCarryForwardFromLegTotals(
-            superData.total_left_supers ?? superData.carry_left,
-            superData.total_right_supers ?? superData.carry_right,
-            superData.today_left_carry_out,
-            superData.today_right_carry_out,
-        );
+        const carry = matchingCarryDisplay({
+            eligible: superEligible,
+            carryLeft: superData.carry_left,
+            carryRight: superData.carry_right,
+            legLeft: totalL,
+            legRight: totalR,
+            closingLeftOut: superData.today_left_carry_out,
+            closingRightOut: superData.today_right_carry_out,
+        });
         summary = {
             l: totalL,
             r: totalR,
             carryL: carry.left,
             carryR: carry.right,
+            carryBilateral: !superEligible,
             extraLabel2: 'Lapsed today',
             extraValue2: superData.today_weak_lapsed ?? 0,
         };
@@ -297,14 +307,27 @@ export function MatchingIncomeTable({
         ? 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:text-xs'
         : 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-slate-700 sm:text-xs';
 
+    const carryChipVisible = (side) =>
+        isCarryChipVisible(side === 'L' ? summary?.carryL : summary?.carryR, {
+            bilateral: summary?.carryBilateral === true,
+        });
+
+    const showCarrySummary =
+        summary &&
+        (!hideLiveData ||
+            summary.carryBilateral ||
+            isPowerLegCarryVisible(summary.carryL) ||
+            isPowerLegCarryVisible(summary.carryR));
+
     return (
         <div className={card}>
-            {summary && !hideLiveData ? (
+            {showCarrySummary ? (
                 <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {!hideLiveData ? (
                     <span className={`${summaryChipBase} ${dark ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50'}`}>
                         <span className="opacity-70">Left:</span>
                         <span className="tabular-nums">{summary.l}</span>
-                        {isPowerLegCarryVisible(summary.carryL) ? (
+                        {carryChipVisible('L') ? (
                             <>
                                 <span className="opacity-50">·</span>
                                 <span className="text-[10px] opacity-70">carry</span>
@@ -312,10 +335,12 @@ export function MatchingIncomeTable({
                             </>
                         ) : null}
                     </span>
+                    ) : null}
+                    {!hideLiveData ? (
                     <span className={`${summaryChipBase} ${dark ? 'border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-100' : 'border-fuchsia-300 bg-fuchsia-50'}`}>
                         <span className="opacity-70">Right:</span>
                         <span className="tabular-nums">{summary.r}</span>
-                        {isPowerLegCarryVisible(summary.carryR) ? (
+                        {carryChipVisible('R') ? (
                             <>
                                 <span className="opacity-50">·</span>
                                 <span className="text-[10px] opacity-70">carry</span>
@@ -323,7 +348,20 @@ export function MatchingIncomeTable({
                             </>
                         ) : null}
                     </span>
-                    {summary.extraLabel2 ? (
+                    ) : null}
+                    {hideLiveData && carryChipVisible('L') ? (
+                        <span className={`${summaryChipBase} ${dark ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50'}`}>
+                            <span className="opacity-70">Left carry:</span>
+                            <span className="tabular-nums">{summary.carryL}</span>
+                        </span>
+                    ) : null}
+                    {hideLiveData && carryChipVisible('R') ? (
+                        <span className={`${summaryChipBase} ${dark ? 'border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-100' : 'border-fuchsia-300 bg-fuchsia-50'}`}>
+                            <span className="opacity-70">Right carry:</span>
+                            <span className="tabular-nums">{summary.carryR}</span>
+                        </span>
+                    ) : null}
+                    {!hideLiveData && summary.extraLabel2 ? (
                         <span className={`${summaryChipBase} ${dark ? 'border-rose-400/30 bg-rose-500/10 text-rose-100' : 'border-rose-300 bg-rose-50'}`}>
                             <span className="opacity-70">{summary.extraLabel2}:</span>
                             <span className="tabular-nums">{summary.extraValue2 ?? 0}</span>

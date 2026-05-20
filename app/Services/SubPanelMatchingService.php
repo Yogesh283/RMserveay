@@ -199,8 +199,14 @@ class SubPanelMatchingService
             }
         }
 
+        $carryL = (int) $earner->panel_match_carry_left;
+        $carryR = (int) $earner->panel_match_carry_right;
+
         return [
             'eligible' => $earner->qualifiesForPanelMatchingIncome(),
+            'carry_left' => $carryL,
+            'carry_right' => $carryR,
+            'pairs_available' => min($carryL, $carryR),
             'income_mode' => 'milestone_table',
             'daily_cap_usd' => $cap,
             'earned_today_usd' => $earned,

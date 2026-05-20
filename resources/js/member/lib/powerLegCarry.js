@@ -61,7 +61,48 @@ export function powerLegCarryForwardDisplay(left, right, data) {
     );
 }
 
+/**
+ * Sub/super: inactive earners show live binary queue on both legs.
+ * Eligible earners use power-leg diff from team leg totals (+ closing carry_out).
+ *
+ * @param {{
+ *   eligible?: boolean,
+ *   carryLeft?: number|string,
+ *   carryRight?: number|string,
+ *   legLeft?: number|string,
+ *   legRight?: number|string,
+ *   closingLeftOut?: number|string,
+ *   closingRightOut?: number|string,
+ * }} opts
+ */
+export function matchingCarryDisplay(opts = {}) {
+    const eligible = opts.eligible === true;
+
+    if (!eligible) {
+        return {
+            left: Number(opts.carryLeft) | 0,
+            right: Number(opts.carryRight) | 0,
+        };
+    }
+
+    return teamCarryForwardFromLegTotals(
+        opts.legLeft,
+        opts.legRight,
+        opts.closingLeftOut,
+        opts.closingRightOut,
+    );
+}
+
 /** True when this column should show a carry-forward value (power leg only). */
 export function isPowerLegCarryVisible(value) {
     return value !== DASH && value !== 0 && value !== '0' && value != null && value !== '';
+}
+
+/** Show carry chip when inactive (both sides) or power-leg carry > 0. */
+export function isCarryChipVisible(value, { bilateral = false } = {}) {
+    if (bilateral) {
+        return value !== DASH && value != null && value !== '';
+    }
+
+    return isPowerLegCarryVisible(value);
 }
