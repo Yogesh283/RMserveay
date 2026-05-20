@@ -44,6 +44,29 @@ export function MatchingIncomeTable({
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
     }
 
+    /** After daily closing in this cycle, hide projected tier income (paid row only). */
+    function incomeCell(stripe, paid, amount, locked) {
+        if (locked && !paid) {
+            return (
+                <td className={cellIncome(stripe, false)}>
+                    <span className="opacity-50">—</span>
+                </td>
+            );
+        }
+        return (
+            <td className={cellIncome(stripe, paid)}>
+                <span className="tabular-nums">{fmtUsd(amount)}</span>
+                {paid ? (
+                    <span
+                        className={`ml-2 inline-block rounded-md bg-emerald-500/25 px-1.5 py-0.5 font-bold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-400/40 ${comfortable ? 'text-[11px]' : 'text-[10px]'}`}
+                    >
+                        Paid
+                    </span>
+                ) : null}
+            </td>
+        );
+    }
+
     function tierPaid(mask, index) {
         const m = Number(mask) || 0;
         return (m & (1 << index)) !== 0;
@@ -158,6 +181,7 @@ export function MatchingIncomeTable({
         const totalL = (panelData?.total_left_subs ?? subData.total_left_subs ?? panelData?.carry_left ?? 0) | 0;
         const totalR = (panelData?.total_right_subs ?? subData.total_right_subs ?? panelData?.carry_right ?? 0) | 0;
         const currentMilestone = subData.current_milestone ?? 0;
+        const incomeLocked = subData.income_projection_locked === true;
         const tiers = subData.tier_rows ?? [];
         summary = {
             l: totalL,
@@ -179,16 +203,7 @@ export function MatchingIncomeTable({
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
                     {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
                     {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
-                    <td className={cellIncome(stripe, paid)}>
-                        <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
-                        {paid ? (
-                            <span
-                                className={`ml-2 inline-block rounded-md bg-emerald-500/25 px-1.5 py-0.5 font-bold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-400/40 ${comfortable ? 'text-[11px]' : 'text-[10px]'}`}
-                            >
-                                Paid
-                            </span>
-                        ) : null}
-                    </td>
+                    {incomeCell(stripe, paid, row.income_usd, incomeLocked)}
                 </tr>
             );
         });
@@ -196,6 +211,7 @@ export function MatchingIncomeTable({
         const totalL = (superData.total_left_supers ?? superData.carry_left) | 0;
         const totalR = (superData.total_right_supers ?? superData.carry_right) | 0;
         const currentMilestone = superData.current_milestone ?? 0;
+        const incomeLocked = superData.income_projection_locked === true;
         const tiers = superData.tier_rows ?? [];
         summary = {
             l: totalL,
@@ -217,16 +233,7 @@ export function MatchingIncomeTable({
                     <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
                     {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
                     {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
-                    <td className={cellIncome(stripe, paid)}>
-                        <span className="tabular-nums">{fmtUsd(row.income_usd)}</span>
-                        {paid ? (
-                            <span
-                                className={`ml-2 inline-block rounded-md bg-emerald-500/25 px-1.5 py-0.5 font-bold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-400/40 ${comfortable ? 'text-[11px]' : 'text-[10px]'}`}
-                            >
-                                Paid
-                            </span>
-                        ) : null}
-                    </td>
+                    {incomeCell(stripe, paid, row.income_usd, incomeLocked)}
                 </tr>
             );
         });

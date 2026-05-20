@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BinaryClosingCalendar;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -61,26 +62,30 @@ class BinaryDailyClosing extends Model
     }
 
     /**
-     * Latest closing row for UI: prefer a run credited today (wallet cron), else
-     * the most recent audit row for this scope.
+     * Latest closing row for the current accrual cycle (closing_time → closing_time).
      */
     public static function latestForDisplay(int $userId, string $scope): ?self
     {
-        $todayRun = static::query()
-            ->where('user_id', $userId)
-            ->where('scope', $scope)
-            ->whereDate('created_at', now()->toDateString())
-            ->latest('id')
-            ->first();
-
-        if ($todayRun !== null) {
-            return $todayRun;
-        }
-
         return static::query()
             ->where('user_id', $userId)
             ->where('scope', $scope)
+            ->where('created_at', '>=', BinaryClosingCalendar::currentCycleStart())
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * First closing in this cycle that actually paid (wallet credit).
+     * Used to lock income on the member UI — admin re-runs must not inflate displayed income.
+     */
+    public static function firstPaidInCurrentCycle(int $userId, string $scope): ?self
+    {
+        return \App\Support\BinaryClosingDisplay::firstPaidInCurrentCycle($userId, $scope);
+    }
+
+    /** @deprecated Use {@see firstPaidInCurrentCycle()} or {@see \App\Support\BinaryClosingDisplay::incomeLockedInCurrentCycle()} */
+    public static function hasRunInCurrentCycle(int $userId, string $scope): bool
+    {
+        return \App\Support\BinaryClosingDisplay::incomeLockedInCurrentCycle($userId, $scope);
     }
 }

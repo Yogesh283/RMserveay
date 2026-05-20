@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\BinaryDailyClosing;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\BinaryClosingCalendar;
+use App\Support\BinaryClosingDisplay;
 use App\Support\BinaryWeakSideLapse;
 use Illuminate\Support\Facades\DB;
 
@@ -157,7 +159,7 @@ class ActivePanelMatchingService
         $sum = WalletTransaction::query()
             ->where('user_id', $userId)
             ->where('type', WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING)
-            ->whereDate('created_at', now()->toDateString())
+            ->where('created_at', '>=', BinaryClosingCalendar::currentCycleStart())
             ->get()
             ->sum(fn (WalletTransaction $t) => (int) ($t->meta['pairs'] ?? 0));
 
@@ -219,22 +221,35 @@ class ActivePanelMatchingService
         $available = min($carryL, $carryR);
         $lifetime = $this->lifetimeActivePanelistsInLegs($earner);
         $weakLeg = min($lifetime['left'], $lifetime['right']);
-        $todayClosing = BinaryDailyClosing::latestForDisplay(
+        $structureClosing = BinaryDailyClosing::latestForDisplay(
             $earner->id,
             BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
         );
-        // Team table aligns carry/lapse with lifetime active panelists (33/36), not raw match-queue buckets.
+        $firstPaidClosing = BinaryClosingDisplay::firstPaidInCurrentCycle(
+            $earner->id,
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
+        );
+        $incomeLocked = BinaryClosingDisplay::incomeLockedInCurrentCycle(
+            $earner->id,
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
+        );
+        // Before payout: projected pairs from lifetime legs; after payout: closing audit only.
         $display = BinaryWeakSideLapse::splitFromLegCounts(
             $lifetime['left'],
             $lifetime['right'],
             $max,
         );
+        $structureWeak = BinaryWeakSideLapse::fromClosing($structureClosing);
 
-        $earnedToday = WalletTransaction::query()
-            ->where('user_id', $earner->id)
-            ->where('type', WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING)
-            ->whereDate('created_at', now()->toDateString())
-            ->sum('amount');
+        $earnedToday = $incomeLocked
+            ? BinaryClosingDisplay::lockedPayoutUsd($firstPaidClosing)
+            : BinaryClosingCalendar::sumWalletCreditsSinceCycleStart(
+                $earner->id,
+                WalletTransaction::TYPE_ACTIVE_PANEL_MATCHING,
+            );
+        $pairsPaidToday = $incomeLocked
+            ? (int) $firstPaidClosing->pairs_matched
+            : $used;
 
         $tierRows = [];
         for ($p = 1; $p <= $max; $p++) {
@@ -249,29 +264,48 @@ class ActivePanelMatchingService
             'income_mode' => 'per_pair_daily_cap',
             'carry_left' => $carryL,
             'carry_right' => $carryR,
-            'display_carry_left' => $display['left_out'],
-            'display_carry_right' => $display['right_out'],
             'total_left_active_panels' => $lifetime['left'],
             'total_right_active_panels' => $lifetime['right'],
             'weak_leg' => $weakLeg,
             'strong_leg_carry_diff' => abs($lifetime['left'] - $lifetime['right']),
             'pairs_available' => $available,
-            'pairs_paid_today' => $used,
-            'pairs_matched_last_closing' => (int) ($todayClosing?->pairs_matched ?? 0),
-            'display_pairs_matched_today' => $display['pairs_matched'],
-            'today_weak_side' => $display['weak_side'],
-            'today_weak_lapsed' => $display['weak_lapsed'],
-            'today_left_lapsed' => $display['weak_side'] === 'left' ? $display['weak_lapsed'] : 0,
-            'today_right_lapsed' => $display['weak_side'] === 'right' ? $display['weak_lapsed'] : 0,
-            'today_left_carry_out' => $display['left_out'],
-            'today_right_carry_out' => $display['right_out'],
-            'earned_today_usd' => number_format((float) ($earnedToday ?? 0), 2, '.', ''),
-            'pairs_remaining_today' => max(0, $max - $used),
-            'pairs_payable_today' => min($available, max(0, $max - $used)),
+            'pairs_paid_today' => $pairsPaidToday,
+            'pairs_matched_last_closing' => (int) ($structureClosing?->pairs_matched ?? 0),
+            'display_pairs_matched_today' => $incomeLocked
+                ? (int) ($structureClosing?->pairs_matched ?? $firstPaidClosing->pairs_matched)
+                : $display['pairs_matched'],
+            'display_carry_left' => $incomeLocked
+                ? (int) ($structureClosing?->left_carry_out ?? $carryL)
+                : $display['left_out'],
+            'display_carry_right' => $incomeLocked
+                ? (int) ($structureClosing?->right_carry_out ?? $carryR)
+                : $display['right_out'],
+            'today_weak_side' => $incomeLocked
+                ? ($structureWeak['side'] ?? $display['weak_side'])
+                : $display['weak_side'],
+            'today_weak_lapsed' => $incomeLocked
+                ? $structureWeak['lapsed']
+                : $display['weak_lapsed'],
+            'today_left_lapsed' => $incomeLocked
+                ? (int) ($structureClosing?->left_lapsed ?? 0)
+                : ($display['weak_side'] === 'left' ? $display['weak_lapsed'] : 0),
+            'today_right_lapsed' => $incomeLocked
+                ? (int) ($structureClosing?->right_lapsed ?? 0)
+                : ($display['weak_side'] === 'right' ? $display['weak_lapsed'] : 0),
+            'today_left_carry_out' => $incomeLocked
+                ? (int) ($structureClosing?->left_carry_out ?? 0)
+                : $display['left_out'],
+            'today_right_carry_out' => $incomeLocked
+                ? (int) ($structureClosing?->right_carry_out ?? 0)
+                : $display['right_out'],
+            'earned_today_usd' => $earnedToday,
+            'pairs_remaining_today' => $incomeLocked ? 0 : max(0, $max - $used),
+            'pairs_payable_today' => $incomeLocked ? 0 : min($available, max(0, $max - $used)),
+            'income_projection_locked' => $incomeLocked,
             'max_pairs_per_day' => $max,
             'per_pair_income_usd' => $perPair,
             'tier_rows' => $tierRows,
-            'last_closing_date' => $todayClosing?->closing_date?->toDateString(),
+            'last_closing_date' => $structureClosing?->closing_date?->toDateString(),
         ];
     }
 
