@@ -104,6 +104,10 @@ class ActivePanelMatchingService
      */
     private function matchPairsRealtime(User $earner): void
     {
+        if (! $earner->qualifiesActivePanelistIncome()) {
+            return;
+        }
+
         $perPair = $this->normalizeUsd((string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'));
         $maxPairs = max(0, (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20));
 

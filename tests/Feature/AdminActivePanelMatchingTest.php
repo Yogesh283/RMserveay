@@ -68,6 +68,27 @@ class AdminActivePanelMatchingTest extends TestCase
         $this->assertSame('1.00', (string) $earner->wallet_balance);
     }
 
+    public function test_inactive_earner_keeps_carry_and_gets_no_active_panel_closing_payout(): void
+    {
+        $inactiveEarner = User::factory()->create([
+            'activation_fee_paid_at' => null,
+            'minimum_panel_fee_paid_at' => null,
+            'active_panel_match_carry_left' => 5,
+            'active_panel_match_carry_right' => 3,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($inactiveEarner, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
+
+        $this->assertNull($closing);
+
+        $inactiveEarner->refresh();
+        $this->assertSame(5, (int) $inactiveEarner->active_panel_match_carry_left);
+        $this->assertSame(3, (int) $inactiveEarner->active_panel_match_carry_right);
+        $this->assertSame('0.00', (string) $inactiveEarner->wallet_balance);
+    }
+
     public function test_admin_activate_without_binary_parent_skips_carry_but_does_not_error(): void
     {
         $orphan = User::factory()->create([

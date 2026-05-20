@@ -191,6 +191,13 @@ class BinaryDailyClosingService
                 return null;
             }
 
+            // Active-panel matching income only for active panelists ($1+$10 paid).
+            // Inactive IDs keep left/right carry buckets untouched so spillover
+            // continues to accumulate until they activate.
+            if ($scope === BinaryDailyClosing::SCOPE_ACTIVE_PANEL
+                && ! $user->qualifiesActivePanelistIncome()) {
+                return null;
+            }
             if ($scope === BinaryDailyClosing::SCOPE_PANEL
                 && ! $user->qualifiesForPanelMatchingIncome()) {
                 return null;
