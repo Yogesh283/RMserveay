@@ -1,3 +1,5 @@
+import { isPowerLegCarryVisible, powerLegCarryForwardDisplay } from '../lib/powerLegCarry';
+
 /**
  * Shared 4-column milestone table: Panel match table | L | R | Income
  * Used by /member/panel-matching, sub-panel-matching, super-sub-panel-matching.
@@ -157,11 +159,12 @@ export function MatchingIncomeTable({
         const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
         const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
         const perPair = panelData.per_pair_income_usd;
+        const carry = powerLegCarryForwardDisplay(panelData.carry_left, panelData.carry_right, panelData);
         summary = {
             l: totalL,
             r: totalR,
-            carryL: panelData.carry_left | 0,
-            carryR: panelData.carry_right | 0,
+            carryL: carry.left,
+            carryR: carry.right,
         };
         rows = MILESTONES.map((m, i) => {
             const stripe = i % 2 === 1;
@@ -183,11 +186,16 @@ export function MatchingIncomeTable({
         const currentMilestone = subData.current_milestone ?? 0;
         const incomeLocked = subData.income_projection_locked === true;
         const tiers = subData.tier_rows ?? [];
+        const carry = powerLegCarryForwardDisplay(
+            subData.today_left_carry_out ?? panelData?.carry_left ?? 0,
+            subData.today_right_carry_out ?? panelData?.carry_right ?? 0,
+            subData,
+        );
         summary = {
             l: totalL,
             r: totalR,
-            carryL: (panelData?.carry_left ?? 0) | 0,
-            carryR: (panelData?.carry_right ?? 0) | 0,
+            carryL: carry.left,
+            carryR: carry.right,
             extraLabel2: 'Lapsed today',
             extraValue2: subData.today_weak_lapsed ?? 0,
         };
@@ -213,11 +221,16 @@ export function MatchingIncomeTable({
         const currentMilestone = superData.current_milestone ?? 0;
         const incomeLocked = superData.income_projection_locked === true;
         const tiers = superData.tier_rows ?? [];
+        const carry = powerLegCarryForwardDisplay(
+            superData.today_left_carry_out ?? superData.carry_left ?? 0,
+            superData.today_right_carry_out ?? superData.carry_right ?? 0,
+            superData,
+        );
         summary = {
             l: totalL,
             r: totalR,
-            carryL: superData.carry_left | 0,
-            carryR: superData.carry_right | 0,
+            carryL: carry.left,
+            carryR: carry.right,
             extraLabel2: 'Lapsed today',
             extraValue2: superData.today_weak_lapsed ?? 0,
         };
@@ -261,9 +274,15 @@ export function MatchingIncomeTable({
 
         return (
             <div className={card}>
-                <div className="grid grid-cols-2 gap-2">
-                    {carryCard('Left', summary?.carryL ?? 0, 'left')}
-                    {carryCard('Right', summary?.carryR ?? 0, 'right')}
+                <div
+                    className={
+                        isPowerLegCarryVisible(summary?.carryL) && isPowerLegCarryVisible(summary?.carryR)
+                            ? 'grid grid-cols-2 gap-2'
+                            : 'grid max-w-[200px] grid-cols-1 gap-2'
+                    }
+                >
+                    {isPowerLegCarryVisible(summary?.carryL) ? carryCard('Left', summary.carryL, 'left') : null}
+                    {isPowerLegCarryVisible(summary?.carryR) ? carryCard('Right', summary.carryR, 'right') : null}
                 </div>
             </div>
         );
@@ -280,16 +299,24 @@ export function MatchingIncomeTable({
                     <span className={`${summaryChipBase} ${dark ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50'}`}>
                         <span className="opacity-70">Left:</span>
                         <span className="tabular-nums">{summary.l}</span>
-                        <span className="opacity-50">·</span>
-                        <span className="text-[10px] opacity-70">unmatched</span>
-                        <span className="tabular-nums">{summary.carryL}</span>
+                        {isPowerLegCarryVisible(summary.carryL) ? (
+                            <>
+                                <span className="opacity-50">·</span>
+                                <span className="text-[10px] opacity-70">carry</span>
+                                <span className="tabular-nums">{summary.carryL}</span>
+                            </>
+                        ) : null}
                     </span>
                     <span className={`${summaryChipBase} ${dark ? 'border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-100' : 'border-fuchsia-300 bg-fuchsia-50'}`}>
                         <span className="opacity-70">Right:</span>
                         <span className="tabular-nums">{summary.r}</span>
-                        <span className="opacity-50">·</span>
-                        <span className="text-[10px] opacity-70">unmatched</span>
-                        <span className="tabular-nums">{summary.carryR}</span>
+                        {isPowerLegCarryVisible(summary.carryR) ? (
+                            <>
+                                <span className="opacity-50">·</span>
+                                <span className="text-[10px] opacity-70">carry</span>
+                                <span className="tabular-nums">{summary.carryR}</span>
+                            </>
+                        ) : null}
                     </span>
                     {summary.extraLabel2 ? (
                         <span className={`${summaryChipBase} ${dark ? 'border-rose-400/30 bg-rose-500/10 text-rose-100' : 'border-rose-300 bg-rose-50'}`}>

@@ -5,6 +5,7 @@ import { prepareSanctum } from '../../lib/auth';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
 import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../../lib/branding';
+import { powerLegCarryForwardDisplay } from '../lib/powerLegCarry';
 
 function fmtUsd(s, lang) {
     const n = Number.parseFloat(s);
@@ -368,14 +369,17 @@ function buildActiveLegRows(legs, t, activeMatching) {
     const L = legs.left;
     const R = legs.right;
     const am = activeMatching ?? {};
-    const carryL = Number(am.display_carry_left ?? am.today_left_carry_out ?? 0) | 0;
-    const carryR = Number(am.display_carry_right ?? am.today_right_carry_out ?? 0) | 0;
+    const carry = powerLegCarryForwardDisplay(
+        am.display_carry_left ?? am.today_left_carry_out ?? 0,
+        am.display_carry_right ?? am.today_right_carry_out ?? 0,
+        am,
+    );
     const weakLapse = weakSideLapseDisplay(am);
     const payoutToday = am.earned_today_usd ?? '0.00';
     return [
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
         { label: t('member.team.rowActivePanelists'), left: L.active, right: R.active },
-        { label: 'Active carry forward', left: carryL, right: carryR },
+        { label: 'Active carry forward', left: carry.left, right: carry.right },
         { label: 'Payout today', left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
         { label: 'Lapsed today', left: weakLapse.left, right: weakLapse.right },
     ];
@@ -389,8 +393,11 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const R = legs.right;
     const pm = panelMatching ?? {};
     const sm = subMatching ?? {};
-    const carryL = Number(pm.carry_left ?? 0) | 0;
-    const carryR = Number(pm.carry_right ?? 0) | 0;
+    const carry = powerLegCarryForwardDisplay(
+        sm.today_left_carry_out ?? pm.carry_left ?? 0,
+        sm.today_right_carry_out ?? pm.carry_right ?? 0,
+        sm,
+    );
     const weakLapse = weakSideLapseDisplay(sm);
     const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     return [
@@ -401,8 +408,8 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
         },
         {
             label: 'Sub carry forward',
-            left: carryL,
-            right: carryR,
+            left: carry.left,
+            right: carry.right,
         },
         {
             label: 'Payout today',
@@ -424,8 +431,11 @@ function buildSuperLegRows(legs, t, superMatching) {
     const L = legs.left;
     const R = legs.right;
     const sup = superMatching ?? {};
-    const carryL = Number(sup.carry_left ?? 0) | 0;
-    const carryR = Number(sup.carry_right ?? 0) | 0;
+    const carry = powerLegCarryForwardDisplay(
+        sup.today_left_carry_out ?? sup.carry_left ?? 0,
+        sup.today_right_carry_out ?? sup.carry_right ?? 0,
+        sup,
+    );
     const weakLapse = weakSideLapseDisplay(sup);
     const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     return [
@@ -436,8 +446,8 @@ function buildSuperLegRows(legs, t, superMatching) {
         },
         {
             label: 'Super carry forward',
-            left: carryL,
-            right: carryR,
+            left: carry.left,
+            right: carry.right,
         },
         {
             label: 'Payout today',
