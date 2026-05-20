@@ -151,7 +151,7 @@ class BinaryDailyClosingService
                     $totals['pairs_matched'] += (int) $closing->pairs_matched;
                     $totals['payout_usd'] = bcadd($totals['payout_usd'], (string) $closing->payout_usd, 2);
 
-                    if ((int) $closing->pairs_matched > 0) {
+                    if (bccomp((string) $closing->payout_usd, '0.00', 2) > 0) {
                         $totals['paid_users']++;
                     }
                 }
@@ -163,8 +163,9 @@ class BinaryDailyClosingService
     /**
      * Atomically close one (user, scope, date).
      *
-     * Testing requirement: same date can be closed multiple times. Each run
-     * consumes the user's current carry and records a fresh audit row.
+     * First paid run for this closing_date distributes income and consumes carry.
+     * Later cron/admin re-runs for the same date refresh structure audit only
+     * (no wallet credit, carry columns on the user are left unchanged).
      */
     private function processOne(int $userId, string $scope, array $cfg, CarbonImmutable $date): ?BinaryDailyClosing
     {
@@ -174,8 +175,9 @@ class BinaryDailyClosingService
         $maxPairs = max(0, (int) $cfg['max_pairs_per_day']);
         $txType = (string) $cfg['wallet_tx_type'];
         $strategy = (string) ($cfg['lapse_strategy'] ?? 'no_lapse_both_carry');
+        $closingDate = $date->toDateString();
 
-        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $date) {
+        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $closingDate) {
             /** @var User|null $user */
             $user = User::query()->whereKey($userId)->lockForUpdate()->first();
             if ($user === null) {
@@ -189,14 +191,6 @@ class BinaryDailyClosingService
                 return null;
             }
 
-            // Eligibility-skip for sub / super scopes.
-            // If the earner has not qualified for this scope (e.g. sub_panel_count
-            // < required for panel, super_sub_panel_count < required for super),
-            // SKIP the closing entirely — do NOT consume carries, do NOT lapse,
-            // do NOT create an audit row. Their carries stay intact until they
-            // qualify; once they do, the next closing will pay on the full carry.
-            // Active-panel scope has no such gate (it pays $1/pair to anyone with
-            // a carry), so this only applies to milestone-driven scopes.
             if ($scope === BinaryDailyClosing::SCOPE_PANEL
                 && ! $user->qualifiesForPanelMatchingIncome()) {
                 return null;
@@ -206,166 +200,265 @@ class BinaryDailyClosingService
                 return null;
             }
 
-            $pairsAvailable = min($leftIn, $rightIn);
-            $pairsMatched = min($pairsAvailable, $maxPairs);
-            $capHit = $pairsAvailable > $maxPairs;
+            $split = $this->computeCarrySplit($leftIn, $rightIn, $maxPairs, $strategy);
 
-            $payout = bcmul((string) $pairsMatched, $perPair, 2);
+            $existingPaid = BinaryDailyClosing::firstPaidForClosingDate($userId, $scope, $closingDate);
+            if ($existingPaid !== null) {
+                return $this->recordStructureOnlyClosing(
+                    $user,
+                    $scope,
+                    $closingDate,
+                    $perPair,
+                    $leftIn,
+                    $rightIn,
+                    $split,
+                    $existingPaid,
+                );
+            }
 
-            // Carry / lapse split — strategy-driven so different scopes can
-            // follow their own MLM rule. See config/binary_closing.php for
-            // the per-scope `lapse_strategy` value.
-            if ($strategy === 'weak_lapse_strong_diff') {
-                // Classical binary MLM (Active Panel rule):
-                //   - weak leg fully consumed (any leftover LAPSES);
-                //   - strong leg carries only the diff = strong - weak;
-                //   - cap-induced surplus on strong (when weak > max_pairs)
-                //     also LAPSES — only the "diff" part carries.
-                $diff = abs($leftIn - $rightIn);
-                if ($leftIn >= $rightIn) {
-                    $leftOut = $diff;
-                    $rightOut = 0;
-                } else {
-                    $leftOut = 0;
-                    $rightOut = $diff;
-                }
-                $leftLapsed = max(0, $leftIn - $pairsMatched - $leftOut);
-                $rightLapsed = max(0, $rightIn - $pairsMatched - $rightOut);
+            return $this->recordPaidClosing(
+                $user,
+                $scope,
+                $closingDate,
+                $leftCol,
+                $rightCol,
+                $perPair,
+                $txType,
+                $split,
+            );
+        });
+    }
+
+    /**
+     * @return array{
+     *     pairs_available:int,
+     *     pairs_matched:int,
+     *     cap_hit:bool,
+     *     payout:string,
+     *     left_out:int,
+     *     right_out:int,
+     *     left_lapsed:int,
+     *     right_lapsed:int
+     * }
+     */
+    private function computeCarrySplit(int $leftIn, int $rightIn, int $maxPairs, string $strategy): array
+    {
+        $pairsAvailable = min($leftIn, $rightIn);
+        $pairsMatched = min($pairsAvailable, $maxPairs);
+        $capHit = $pairsAvailable > $maxPairs;
+
+        if ($strategy === 'weak_lapse_strong_diff') {
+            $diff = abs($leftIn - $rightIn);
+            if ($leftIn >= $rightIn) {
+                $leftOut = $diff;
+                $rightOut = 0;
             } else {
-                // 'no_lapse_both_carry' (Sub / Super rule): any unmatched
-                // pairs on EITHER side roll forward; the milestone-side
-                // lapse is handled inside Sub/SuperSubPanelMatchingService.
-                $leftOut = $leftIn - $pairsMatched;
-                $rightOut = $rightIn - $pairsMatched;
-                $leftLapsed = 0;
-                $rightLapsed = 0;
+                $leftOut = 0;
+                $rightOut = $diff;
             }
+            $leftLapsed = max(0, $leftIn - $pairsMatched - $leftOut);
+            $rightLapsed = max(0, $rightIn - $pairsMatched - $rightOut);
+        } else {
+            $leftOut = $leftIn - $pairsMatched;
+            $rightOut = $rightIn - $pairsMatched;
+            $leftLapsed = 0;
+            $rightLapsed = 0;
+        }
 
-            $walletTxId = null;
-            $balanceAfter = (string) $user->wallet_balance;
+        return [
+            'pairs_available' => $pairsAvailable,
+            'pairs_matched' => $pairsMatched,
+            'cap_hit' => $capHit,
+            'left_out' => $leftOut,
+            'right_out' => $rightOut,
+            'left_lapsed' => $leftLapsed,
+            'right_lapsed' => $rightLapsed,
+        ];
+    }
 
-            // Per-pair stream — only paid when scope has a non-zero pair_income.
-            // Sub-panel and super-sub-panel scopes set pair_income_usd to "0.00"
-            // so they pay only the tier-based milestone instead.
-            $perPairPayout = $payout;
-            if (bccomp($perPairPayout, '0.00', 2) > 0) {
-                $balanceAfter = bcadd($balanceAfter, $perPairPayout, 2);
-                $user->wallet_balance = $balanceAfter;
+    /**
+     * Re-run for same closing_date after income was already paid: audit snapshot only.
+     */
+    private function recordStructureOnlyClosing(
+        User $user,
+        string $scope,
+        string $closingDate,
+        string $perPair,
+        int $leftIn,
+        int $rightIn,
+        array $split,
+        BinaryDailyClosing $existingPaid,
+    ): BinaryDailyClosing {
+        return BinaryDailyClosing::create([
+            'user_id' => $user->id,
+            'closing_date' => $closingDate,
+            'scope' => $scope,
+            'left_carry_in' => $leftIn,
+            'right_carry_in' => $rightIn,
+            'pairs_matched' => (int) $split['pairs_matched'],
+            'cap_hit' => (bool) $split['cap_hit'],
+            'per_pair_usd' => $perPair,
+            'payout_usd' => '0.00',
+            'balance_after_usd' => (string) $user->wallet_balance,
+            'left_carry_out' => (int) $split['left_out'],
+            'right_carry_out' => (int) $split['right_out'],
+            'left_lapsed' => (int) $split['left_lapsed'],
+            'right_lapsed' => (int) $split['right_lapsed'],
+            'wallet_transaction_id' => null,
+            'meta' => $this->structureOnlyMeta($split, $existingPaid),
+        ]);
+    }
 
-                $tx = WalletTransaction::create([
-                    'user_id' => $user->id,
-                    'type' => $txType,
-                    'amount' => $perPairPayout,
-                    'balance_after' => $balanceAfter,
-                    'meta' => [
-                        'source' => 'binary_daily_closing',
-                        'scope' => $scope,
-                        'pairs' => $pairsMatched,
-                        'per_pair_usd' => $perPair,
-                        'closing_date' => $date->toDateString(),
-                        'cap_hit' => $capHit,
-                    ],
-                ]);
+    /**
+     * First paid run: wallet credit, carry consumption, milestone payout.
+     */
+    private function recordPaidClosing(
+        User $user,
+        string $scope,
+        string $closingDate,
+        string $leftCol,
+        string $rightCol,
+        string $perPair,
+        string $txType,
+        array $split,
+    ): BinaryDailyClosing {
+        $leftIn = (int) $user->{$leftCol};
+        $rightIn = (int) $user->{$rightCol};
+        $pairsMatched = (int) $split['pairs_matched'];
+        $payout = bcmul((string) $pairsMatched, $perPair, 2);
 
-                $walletTxId = $tx->id;
-            }
+        $walletTxId = null;
+        $balanceAfter = (string) $user->wallet_balance;
 
-            $user->{$leftCol} = $leftOut;
-            $user->{$rightCol} = $rightOut;
-            $user->save();
+        if (bccomp($payout, '0.00', 2) > 0) {
+            $balanceAfter = bcadd($balanceAfter, $payout, 2);
+            $user->wallet_balance = $balanceAfter;
 
-            // Tier-based milestone payout for sub-panel and super-sub-panel scopes.
-            // Milestone tier is driven by the weaker binary leg's lifetime panel
-            // count (min of left/right subtree totals), not today's pair cap alone.
-            // Mutates the in-memory user; we save after the call.
-            $milestonePaidUsd = '0.00';
-            $milestoneMeta = [];
-            if ($pairsMatched > 0) {
-                if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
-                    $lifetime = $this->panelMatching->lifetimeSubPanelBuys($user);
-                    $weakLeg = min($lifetime['left'], $lifetime['right']);
-                    $r = $this->subPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
-                    $milestonePaidUsd = (string) $r['payout_usd'];
-                    $milestoneMeta = $r;
-                } elseif ($scope === BinaryDailyClosing::SCOPE_SUPER) {
-                    $lifetime = $this->superSubPanelMatching->lifetimeSuperSubPanelBuys($user);
-                    $weakLeg = min($lifetime['left'], $lifetime['right']);
-                    $r = $this->superSubPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
-                    $milestonePaidUsd = (string) $r['payout_usd'];
-                    $milestoneMeta = $r;
-                }
-                $user->save();
-                $balanceAfter = (string) $user->wallet_balance;
-            }
-
-            $totalPayout = bcadd($payout, $milestonePaidUsd, 2);
-
-            $closing = BinaryDailyClosing::create([
+            $tx = WalletTransaction::create([
                 'user_id' => $user->id,
-                'closing_date' => $date->toDateString(),
-                'scope' => $scope,
-                'left_carry_in' => $leftIn,
-                'right_carry_in' => $rightIn,
-                'pairs_matched' => $pairsMatched,
-                'cap_hit' => $capHit,
-                'per_pair_usd' => $perPair,
-                'payout_usd' => $totalPayout,
-                'balance_after_usd' => $balanceAfter,
-                'left_carry_out' => $leftOut,
-                'right_carry_out' => $rightOut,
-                'left_lapsed' => $leftLapsed,
-                'right_lapsed' => $rightLapsed,
-                'wallet_transaction_id' => $walletTxId,
+                'type' => $txType,
+                'amount' => $payout,
+                'balance_after' => $balanceAfter,
                 'meta' => [
-                    'pairs_available' => $pairsAvailable,
-                    'max_pairs_per_day' => $maxPairs,
-                    'timezone' => $this->timezone(),
-                    'per_pair_paid_usd' => $payout,
-                    'milestone_paid_usd' => $milestonePaidUsd,
-                    'milestone' => $milestoneMeta['milestone'] ?? null,
-                    'milestone_pairs_today' => $milestoneMeta['pairs_today'] ?? null,
-                    'milestone_weak_leg' => $milestoneMeta['weak_leg'] ?? null,
-                    'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
+                    'source' => 'binary_daily_closing',
+                    'scope' => $scope,
+                    'pairs' => $pairsMatched,
+                    'per_pair_usd' => $perPair,
+                    'closing_date' => $closingDate,
+                    'cap_hit' => (bool) $split['cap_hit'],
                 ],
             ]);
 
-            // Paid-users-only ledger: only insert when this closing actually
-            // moved money. Idempotent via the (user_id, scope, closing_date)
-            // unique index — same-day re-runs hit the existing row.
-            if (bccomp((string) $totalPayout, '0.00', 2) > 0) {
-                // For sub / super scopes the milestone wallet_transaction is
-                // created INSIDE applyMatchedPairs (we don't have its id here).
-                // Pick it up from the wallet log so the payout row links back.
-                $linkedTxId = $walletTxId;
-                if ($linkedTxId === null && bccomp($milestonePaidUsd, '0.00', 2) > 0) {
-                    $linkedTxId = WalletTransaction::query()
-                        ->where('user_id', $user->id)
-                        ->where('type', $txType)
-                        ->latest('id')
-                        ->value('id');
-                }
+            $walletTxId = $tx->id;
+        }
 
-                MatchingPayout::query()->create([
-                    'user_id' => $user->id,
-                    'scope' => $scope,
-                    'closing_date' => $date->toDateString(),
-                    'pairs_matched' => $pairsMatched,
-                    'milestone' => $milestoneMeta['milestone'] ?? null,
-                    'lapsed_pairs' => (int) ($milestoneMeta['lapsed_pairs'] ?? ($leftLapsed + $rightLapsed)),
-                    'payout_usd' => $totalPayout,
-                    'balance_after_usd' => $balanceAfter,
-                    'binary_daily_closing_id' => $closing->id,
-                    'wallet_transaction_id' => $linkedTxId,
-                    'meta' => [
-                        'per_pair_paid_usd' => $payout,
-                        'milestone_paid_usd' => $milestonePaidUsd,
-                        'cap_hit' => $capHit,
-                    ],
-                ]);
+        $user->{$leftCol} = (int) $split['left_out'];
+        $user->{$rightCol} = (int) $split['right_out'];
+        $user->save();
+
+        $milestonePaidUsd = '0.00';
+        $milestoneMeta = [];
+        if ($pairsMatched > 0) {
+            if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
+                $lifetime = $this->panelMatching->lifetimeSubPanelBuys($user);
+                $weakLeg = min($lifetime['left'], $lifetime['right']);
+                $r = $this->subPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
+                $milestonePaidUsd = (string) $r['payout_usd'];
+                $milestoneMeta = $r;
+            } elseif ($scope === BinaryDailyClosing::SCOPE_SUPER) {
+                $lifetime = $this->superSubPanelMatching->lifetimeSuperSubPanelBuys($user);
+                $weakLeg = min($lifetime['left'], $lifetime['right']);
+                $r = $this->superSubPanelMatching->applyMatchedPairs($user, $pairsMatched, $weakLeg);
+                $milestonePaidUsd = (string) $r['payout_usd'];
+                $milestoneMeta = $r;
+            }
+            $user->save();
+            $balanceAfter = (string) $user->wallet_balance;
+        }
+
+        $totalPayout = bcadd($payout, $milestonePaidUsd, 2);
+
+        $closing = BinaryDailyClosing::create([
+            'user_id' => $user->id,
+            'closing_date' => $closingDate,
+            'scope' => $scope,
+            'left_carry_in' => $leftIn,
+            'right_carry_in' => $rightIn,
+            'pairs_matched' => $pairsMatched,
+            'cap_hit' => (bool) $split['cap_hit'],
+            'per_pair_usd' => $perPair,
+            'payout_usd' => $totalPayout,
+            'balance_after_usd' => $balanceAfter,
+            'left_carry_out' => (int) $split['left_out'],
+            'right_carry_out' => (int) $split['right_out'],
+            'left_lapsed' => (int) $split['left_lapsed'],
+            'right_lapsed' => (int) $split['right_lapsed'],
+            'wallet_transaction_id' => $walletTxId,
+            'meta' => [
+                'pairs_available' => (int) $split['pairs_available'],
+                'max_pairs_per_day' => (int) ($this->scopeConfig($scope)['max_pairs_per_day'] ?? 20),
+                'timezone' => $this->timezone(),
+                'per_pair_paid_usd' => $payout,
+                'milestone_paid_usd' => $milestonePaidUsd,
+                'milestone' => $milestoneMeta['milestone'] ?? null,
+                'milestone_pairs_today' => $milestoneMeta['pairs_today'] ?? null,
+                'milestone_weak_leg' => $milestoneMeta['weak_leg'] ?? null,
+                'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
+            ],
+        ]);
+
+        if (bccomp($totalPayout, '0.00', 2) > 0) {
+            $linkedTxId = $walletTxId;
+            if ($linkedTxId === null && bccomp($milestonePaidUsd, '0.00', 2) > 0) {
+                $linkedTxId = WalletTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('type', $txType)
+                    ->latest('id')
+                    ->value('id');
             }
 
-            return $closing;
-        });
+            MatchingPayout::query()->create([
+                'user_id' => $user->id,
+                'scope' => $scope,
+                'closing_date' => $closingDate,
+                'pairs_matched' => $pairsMatched,
+                'milestone' => $milestoneMeta['milestone'] ?? null,
+                'lapsed_pairs' => (int) ($milestoneMeta['lapsed_pairs'] ?? ((int) $split['left_lapsed'] + (int) $split['right_lapsed'])),
+                'payout_usd' => $totalPayout,
+                'balance_after_usd' => $balanceAfter,
+                'binary_daily_closing_id' => $closing->id,
+                'wallet_transaction_id' => $linkedTxId,
+                'meta' => [
+                    'per_pair_paid_usd' => $payout,
+                    'milestone_paid_usd' => $milestonePaidUsd,
+                    'cap_hit' => (bool) $split['cap_hit'],
+                ],
+            ]);
+        }
+
+        return $closing;
+    }
+
+    /**
+     * @param  array<string, mixed>  $split
+     * @return array<string, mixed>
+     */
+    private function structureOnlyMeta(array $split, BinaryDailyClosing $existingPaid): array
+    {
+        $paidMeta = $existingPaid->meta ?? [];
+
+        return [
+            'structure_only_refresh' => true,
+            'income_closing_id' => $existingPaid->id,
+            'pairs_available' => (int) $split['pairs_available'],
+            'timezone' => $this->timezone(),
+            'per_pair_paid_usd' => '0.00',
+            'milestone_paid_usd' => (string) ($paidMeta['milestone_paid_usd'] ?? '0.00'),
+            'milestone' => $paidMeta['milestone'] ?? null,
+            'milestone_pairs_today' => $paidMeta['milestone_pairs_today'] ?? null,
+            'milestone_weak_leg' => $paidMeta['milestone_weak_leg'] ?? null,
+            'milestone_lapsed_pairs' => $paidMeta['milestone_lapsed_pairs'] ?? null,
+        ];
     }
 
     /**

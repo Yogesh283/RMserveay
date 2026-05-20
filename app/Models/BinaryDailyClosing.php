@@ -88,4 +88,16 @@ class BinaryDailyClosing extends Model
     {
         return \App\Support\BinaryClosingDisplay::incomeLockedInCurrentCycle($userId, $scope);
     }
+
+    /** First wallet-paid closing for this calendar closing_date (cron / admin date param). */
+    public static function firstPaidForClosingDate(int $userId, string $scope, string $closingDate): ?self
+    {
+        return static::query()
+            ->where('user_id', $userId)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $closingDate)
+            ->where('payout_usd', '>', 0)
+            ->orderBy('id')
+            ->first();
+    }
 }

@@ -119,22 +119,41 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('0.00', (string) $user->wallet_balance, 'No wallet credit when no pair forms');
     }
 
-    public function test_running_closing_twice_for_same_date_is_idempotent(): void
+    public function test_running_closing_twice_for_same_date_does_not_pay_twice(): void
     {
-        $user = $this->makeUser(2, 2);
+        $user = $this->makeUser(left: 25, right: 22);
         $date = Carbon::parse('2026-05-08', 'Asia/Kolkata');
 
         $first = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
         $this->assertNotNull($first);
+        $this->assertTrue(bccomp((string) $first->payout_usd, '0.00', 2) > 0);
+
+        $user->refresh();
+        $carryLeftAfterPay = (int) $user->panel_match_carry_left;
+        $carryRightAfterPay = (int) $user->panel_match_carry_right;
+        $walletCountAfterFirst = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->whereIn('type', [
+                WalletTransaction::TYPE_PANEL_MATCHING,
+                WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+            ])
+            ->count();
 
         $second = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
         $this->assertNotNull($second);
-        $this->assertSame($first->id, $second->id, 'Same closing row returned, not a duplicate');
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertSame('0.00', (string) $second->payout_usd);
+        $this->assertTrue((bool) ($second->meta['structure_only_refresh'] ?? false));
 
-        $this->assertSame(1, BinaryDailyClosing::query()->where('user_id', $user->id)->count());
-        $this->assertSame(1, WalletTransaction::query()
+        $user->refresh();
+        $this->assertSame($carryLeftAfterPay, (int) $user->panel_match_carry_left);
+        $this->assertSame($carryRightAfterPay, (int) $user->panel_match_carry_right);
+        $this->assertSame($walletCountAfterFirst, WalletTransaction::query()
             ->where('user_id', $user->id)
-            ->where('type', WalletTransaction::TYPE_PANEL_MATCHING)
+            ->whereIn('type', [
+                WalletTransaction::TYPE_PANEL_MATCHING,
+                WalletTransaction::TYPE_SUB_PANEL_MATCHING,
+            ])
             ->count());
     }
 

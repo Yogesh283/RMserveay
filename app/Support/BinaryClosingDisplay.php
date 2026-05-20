@@ -8,7 +8,7 @@ use App\Models\BinaryDailyClosing;
  * Member UI: income figures come from the first paid closing in the cycle;
  * carry / lapse structure comes from the latest closing (admin re-runs may refresh structure only).
  *
- * Does not alter binary:daily-closing calculation — display layer only.
+ * Pairs with closing guard: same closing_date re-runs refresh structure only (see BinaryDailyClosingService).
  */
 final class BinaryClosingDisplay
 {
