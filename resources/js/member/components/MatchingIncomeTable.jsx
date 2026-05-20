@@ -1,4 +1,4 @@
-import { isPowerLegCarryVisible, powerLegCarryForwardDisplay } from '../lib/powerLegCarry';
+import { isPowerLegCarryVisible, teamCarryForwardFromLegTotals } from '../lib/powerLegCarry';
 
 /**
  * Shared 4-column milestone table: Panel match table | L | R | Income
@@ -159,7 +159,10 @@ export function MatchingIncomeTable({
         const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
         const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
         const perPair = panelData.per_pair_income_usd;
-        const carry = powerLegCarryForwardDisplay(panelData.carry_left, panelData.carry_right, panelData);
+        const carry = teamCarryForwardFromLegTotals(
+            panelData.total_left_subs ?? panelData.carry_left,
+            panelData.total_right_subs ?? panelData.carry_right,
+        );
         summary = {
             l: totalL,
             r: totalR,
@@ -186,10 +189,11 @@ export function MatchingIncomeTable({
         const currentMilestone = subData.current_milestone ?? 0;
         const incomeLocked = subData.income_projection_locked === true;
         const tiers = subData.tier_rows ?? [];
-        const carry = powerLegCarryForwardDisplay(
-            subData.today_left_carry_out ?? panelData?.carry_left ?? 0,
-            subData.today_right_carry_out ?? panelData?.carry_right ?? 0,
-            subData,
+        const carry = teamCarryForwardFromLegTotals(
+            panelData?.total_left_subs ?? subData.total_left_subs ?? 0,
+            panelData?.total_right_subs ?? subData.total_right_subs ?? 0,
+            subData.today_left_carry_out,
+            subData.today_right_carry_out,
         );
         summary = {
             l: totalL,
@@ -221,10 +225,11 @@ export function MatchingIncomeTable({
         const currentMilestone = superData.current_milestone ?? 0;
         const incomeLocked = superData.income_projection_locked === true;
         const tiers = superData.tier_rows ?? [];
-        const carry = powerLegCarryForwardDisplay(
-            superData.today_left_carry_out ?? superData.carry_left ?? 0,
-            superData.today_right_carry_out ?? superData.carry_right ?? 0,
-            superData,
+        const carry = teamCarryForwardFromLegTotals(
+            superData.total_left_supers ?? superData.carry_left,
+            superData.total_right_supers ?? superData.carry_right,
+            superData.today_left_carry_out,
+            superData.today_right_carry_out,
         );
         summary = {
             l: totalL,

@@ -5,7 +5,7 @@ import { prepareSanctum } from '../../lib/auth';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
 import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../../lib/branding';
-import { powerLegCarryForwardDisplay } from '../lib/powerLegCarry';
+import { teamCarryForwardFromLegTotals } from '../lib/powerLegCarry';
 
 function fmtUsd(s, lang) {
     const n = Number.parseFloat(s);
@@ -369,10 +369,11 @@ function buildActiveLegRows(legs, t, activeMatching) {
     const L = legs.left;
     const R = legs.right;
     const am = activeMatching ?? {};
-    const carry = powerLegCarryForwardDisplay(
-        am.display_carry_left ?? am.today_left_carry_out ?? 0,
-        am.display_carry_right ?? am.today_right_carry_out ?? 0,
-        am,
+    const carry = teamCarryForwardFromLegTotals(
+        L.active,
+        R.active,
+        am.today_left_carry_out ?? am.display_carry_left,
+        am.today_right_carry_out ?? am.display_carry_right,
     );
     const weakLapse = weakSideLapseDisplay(am);
     const payoutToday = am.earned_today_usd ?? '0.00';
@@ -393,10 +394,11 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const R = legs.right;
     const pm = panelMatching ?? {};
     const sm = subMatching ?? {};
-    const carry = powerLegCarryForwardDisplay(
-        sm.today_left_carry_out ?? pm.carry_left ?? 0,
-        sm.today_right_carry_out ?? pm.carry_right ?? 0,
-        sm,
+    const carry = teamCarryForwardFromLegTotals(
+        L.sub_panels,
+        R.sub_panels,
+        sm.today_left_carry_out,
+        sm.today_right_carry_out,
     );
     const weakLapse = weakSideLapseDisplay(sm);
     const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
@@ -431,10 +433,11 @@ function buildSuperLegRows(legs, t, superMatching) {
     const L = legs.left;
     const R = legs.right;
     const sup = superMatching ?? {};
-    const carry = powerLegCarryForwardDisplay(
-        sup.today_left_carry_out ?? sup.carry_left ?? 0,
-        sup.today_right_carry_out ?? sup.carry_right ?? 0,
-        sup,
+    const carry = teamCarryForwardFromLegTotals(
+        L.super_sub_panels,
+        R.super_sub_panels,
+        sup.today_left_carry_out,
+        sup.today_right_carry_out,
     );
     const weakLapse = weakSideLapseDisplay(sup);
     const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';

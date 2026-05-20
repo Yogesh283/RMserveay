@@ -1,34 +1,64 @@
 /**
- * Carry forward is shown only on the stronger (power) leg — never on both sides.
+ * Carry forward = strong (power) leg par sirf difference.
+ * Weak leg par — (kuch nahi).
+ *
+ * Team table uses lifetime leg totals (active panelists / sub panels / super panels).
+ * Agar closing carry_out sirf ek side par ho to wahi use hota hai jab wo power leg se match kare.
  */
 
 const DASH = '—';
 
-/** @returns {{ left: number|string, right: number|string }} */
-export function powerLegCarryForwardDisplay(left, right, data) {
-    const l = Number(left) | 0;
-    const r = Number(right) | 0;
+/**
+ * @param {number|string} legLeft  Lifetime count under left leg (team table)
+ * @param {number|string} legRight Lifetime count under right leg
+ * @param {number|string} [closingLeftOut]  Optional closing left_carry_out
+ * @param {number|string} [closingRightOut] Optional closing right_carry_out
+ * @returns {{ left: number|string, right: number|string }}
+ */
+export function teamCarryForwardFromLegTotals(legLeft, legRight, closingLeftOut, closingRightOut) {
+    const l = Number(legLeft) | 0;
+    const r = Number(legRight) | 0;
 
     if (l === 0 && r === 0) {
         return { left: 0, right: 0 };
     }
 
-    const weakSide = data?.today_weak_side;
+    const powerIsLeft = l > r;
+    const powerIsRight = r > l;
 
-    if (weakSide === 'left') {
-        return { left: DASH, right: r };
-    }
-    if (weakSide === 'right') {
-        return { left: l, right: DASH };
-    }
-    if (l > r) {
-        return { left: l, right: DASH };
-    }
-    if (r > l) {
-        return { left: DASH, right: r };
+    if (!powerIsLeft && !powerIsRight) {
+        return { left: 0, right: 0 };
     }
 
-    return { left: l, right: DASH };
+    const diff = Math.abs(l - r);
+    const clo = Number(closingLeftOut) | 0;
+    const cro = Number(closingRightOut) | 0;
+
+    let value = diff;
+    if (powerIsLeft && clo > 0 && cro === 0) {
+        value = clo;
+    } else if (powerIsRight && cro > 0 && clo === 0) {
+        value = cro;
+    }
+
+    if (powerIsLeft) {
+        return { left: value, right: DASH };
+    }
+
+    return { left: DASH, right: value };
+}
+
+/** @deprecated Use teamCarryForwardFromLegTotals for team table rows */
+export function powerLegCarryForwardDisplay(left, right, data) {
+    const legL = data?.total_left_active_panels ?? data?.total_left_subs ?? data?.total_left_supers ?? left;
+    const legR = data?.total_right_active_panels ?? data?.total_right_subs ?? data?.total_right_supers ?? right;
+
+    return teamCarryForwardFromLegTotals(
+        legL,
+        legR,
+        data?.today_left_carry_out ?? data?.display_carry_left,
+        data?.today_right_carry_out ?? data?.display_carry_right,
+    );
 }
 
 /** True when this column should show a carry-forward value (power leg only). */
