@@ -228,6 +228,9 @@ export default function MemberProfilePage() {
         return null;
     }
 
+    const sponsorPlacementUid =
+        user.sponsor_login_uid || (user.sponsor_id != null ? `#${user.sponsor_id}` : null);
+
     return (
         <div className="relative mx-auto max-w-lg space-y-3 sm:space-y-4">
             <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-violet-600/15 blur-[85px]" />
@@ -267,10 +270,11 @@ export default function MemberProfilePage() {
                         <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#C4B5FD] sm:text-[10px]">Network placement</p>
                         <p className="mt-1.5 text-xs leading-snug text-[#E2E8F0] sm:text-sm sm:leading-relaxed">
                             You joined on the <strong className="text-white">{user.binary_side === 'left' ? 'Left' : 'Right'}</strong> leg
-                            {user.sponsor_name ? (
+                            {sponsorPlacementUid ? (
                                 <>
                                     {' '}
-                                    under <span className="font-semibold text-[#C4B5FD]">{user.sponsor_name}</span>
+                                    under{' '}
+                                    <span className="font-mono font-semibold text-[#C4B5FD]">{sponsorPlacementUid}</span>
                                 </>
                             ) : null}
                             {user.sponsor_referral_code ? (

@@ -206,7 +206,10 @@ class User extends Authenticatable implements FilamentUser
         }
 
         $data['sponsor_referral_code'] = $this->sponsor?->referral_code;
-        $data['sponsor_name'] = $this->sponsor?->name;
+        $sponsor = $this->sponsor;
+        $data['sponsor_login_uid'] = ($sponsor !== null && $sponsor->login_uid !== null && $sponsor->login_uid !== '')
+            ? strtoupper((string) $sponsor->login_uid)
+            : null;
         $data['referral_left_slot_available'] = $this->left_child_id === null;
         $data['referral_right_slot_available'] = $this->right_child_id === null;
 
