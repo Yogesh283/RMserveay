@@ -104,6 +104,19 @@ final class BinaryClosingCalendar
     }
 
     /**
+     * Start/end of a calendar closing_date in the configured timezone (00:00:00 → 23:59:59).
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    public static function dateLocalBounds(string $dateYmd): array
+    {
+        $start = Carbon::parse($dateYmd, self::timezone())->startOfDay();
+        $end = $start->copy()->endOfDay();
+
+        return [$start, $end];
+    }
+
+    /**
      * Sum positive wallet credits since the current closing cycle began.
      *
      * @param  string|list<string>  $types

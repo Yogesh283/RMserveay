@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Pages;
 
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
@@ -110,6 +112,91 @@ class AdminDashboard extends BaseDashboard
                         report($e);
                         Notification::make()
                             ->title('Binary daily closing error')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
+            Action::make('reverseBinaryDailyClosing')
+                ->label('Reverse closing')
+                ->icon(Heroicon::OutlinedArrowUturnLeft)
+                ->color('danger')
+                ->modalHeading('Reverse binary daily closing')
+                ->modalDescription(
+                    'Undoes closing income for the chosen date: debits wallets, restores carry, deletes closing rows and wallet transactions.'
+                )
+                ->requiresConfirmation(fn (array $data): bool => ! ($data['dry_run'] ?? false))
+                ->modalSubmitActionLabel(fn (array $data): string => ($data['dry_run'] ?? false) ? 'Preview' : 'Reverse now')
+                ->schema([
+                    DatePicker::make('closing_date')
+                        ->label('Closing date to reverse')
+                        ->default(now((string) config('binary_closing.timezone', 'Asia/Kolkata'))->subDay()->toDateString())
+                        ->required()
+                        ->native(false),
+                    Select::make('scopes')
+                        ->label('Scopes (optional)')
+                        ->options([
+                            'active_panel' => 'Active panel',
+                            'panel' => 'Sub panel',
+                            'super' => 'Super sub',
+                        ])
+                        ->multiple()
+                        ->placeholder('All scopes'),
+                    Toggle::make('dry_run')
+                        ->label('Preview only (no database changes)')
+                        ->default(true),
+                ])
+                ->action(function (array $data): void {
+                    $date = $data['closing_date'] ?? null;
+                    if ($date === null || $date === '') {
+                        Notification::make()
+                            ->title('Closing date required')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    $params = [
+                        '--date' => is_string($date) ? $date : $date->format('Y-m-d'),
+                        '--no-interaction' => true,
+                    ];
+
+                    if ($data['dry_run'] ?? false) {
+                        $params['--dry'] = true;
+                    }
+
+                    $scopes = array_values(array_filter((array) ($data['scopes'] ?? [])));
+                    foreach ($scopes as $scope) {
+                        $params['--scope'][] = $scope;
+                    }
+
+                    try {
+                        $exitCode = Artisan::call('binary:reverse-closing', $params);
+                        $output = trim(Artisan::output());
+
+                        if ($exitCode !== 0) {
+                            Notification::make()
+                                ->title('Reverse closing failed')
+                                ->body(Str::limit($output !== '' ? $output : 'Non-zero exit code: '.$exitCode, 4000))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title(($data['dry_run'] ?? false) ? 'Reverse preview complete' : 'Reverse closing complete')
+                            ->body(Str::limit($output !== '' ? $output : 'Completed with no console output.', 4000))
+                            ->success()
+                            ->duration(15000)
+                            ->send();
+                    } catch (Throwable $e) {
+                        report($e);
+                        Notification::make()
+                            ->title('Reverse closing error')
                             ->body($e->getMessage())
                             ->danger()
                             ->persistent()

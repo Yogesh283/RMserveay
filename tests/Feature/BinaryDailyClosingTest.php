@@ -21,6 +21,7 @@ class BinaryDailyClosingTest extends TestCase
 
         config([
             'binary_closing.enabled' => true,
+            'binary_closing.use_daily_carry_ledger' => false,
             'binary_closing.timezone' => 'Asia/Kolkata',
             'binary_closing.closing_time' => '00:00',
             'binary_closing.scopes.panel.enabled' => true,
@@ -96,10 +97,10 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('20.00', (string) $closing->payout_usd);
 
         $user->refresh();
-        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg leftover carries forward (25-20=5)');
-        $this->assertSame(2, (int) $user->panel_match_carry_right, 'Lower leg leftover carries forward (22-20=2)');
-        $this->assertSame(0, (int) $closing->right_lapsed);
-        $this->assertSame(0, (int) $closing->left_lapsed);
+        $this->assertSame(3, (int) $user->panel_match_carry_left, 'Strong leg keeps diff only (25-22=3)');
+        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Weak leg fully consumed');
+        $this->assertSame(2, (int) $closing->right_lapsed);
+        $this->assertSame(2, (int) $closing->left_lapsed);
     }
 
     public function test_no_pair_when_one_leg_is_zero(): void
@@ -193,8 +194,8 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertTrue((bool) $closing->cap_hit);
 
         $user->refresh();
-        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg keeps 10-5=5');
-        $this->assertSame(5, (int) $user->panel_match_carry_right, 'Equal leg leftover carries on both sides');
+        $this->assertSame(0, (int) $user->panel_match_carry_left, 'Equal legs → weak/strong diff is 0 after match');
+        $this->assertSame(0, (int) $user->panel_match_carry_right);
     }
 
     public function test_artisan_command_runs_closing_and_returns_success(): void

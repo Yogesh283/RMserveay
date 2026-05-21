@@ -32,6 +32,7 @@ class BinaryDailyClosingService
     public function __construct(
         protected SubPanelMatchingService $subPanelMatching,
         protected SuperSubPanelMatchingService $superSubPanelMatching,
+        protected BinaryClosingDailyCarryService $dailyCarry,
     ) {}
 
     /**
@@ -111,9 +112,6 @@ class BinaryDailyClosingService
      */
     private function closeScope(string $scope, array $cfg, CarbonImmutable $date): array
     {
-        $leftCol = $cfg['left_column'];
-        $rightCol = $cfg['right_column'];
-
         $totals = [
             'processed' => 0,
             'paid_users' => 0,
@@ -121,48 +119,80 @@ class BinaryDailyClosingService
             'payout_usd' => '0.00',
         ];
 
-        User::query()
-            ->where(function ($q) use ($leftCol, $rightCol) {
-                $q->where($leftCol, '>', 0)->orWhere($rightCol, '>', 0);
-            })
-            ->orderBy('id')
-            ->select(['id'])
-            ->chunkById(500, function ($chunk) use (&$totals, $scope, $cfg, $date) {
-                foreach ($chunk as $row) {
-                    try {
-                        $closing = $this->processOne((int) $row->id, $scope, $cfg, $date);
-                    } catch (Throwable $e) {
-                        Log::error('binary_closing.user_failed', [
-                            'user_id' => (int) $row->id,
-                            'scope' => $scope,
-                            'closing_date' => $date->toDateString(),
-                            'error' => $e->getMessage(),
-                        ]);
+        $userIds = $this->userIdsToClose($scope, $cfg, $date);
 
-                        continue;
-                    }
+        foreach (array_chunk($userIds, 500) as $chunk) {
+            foreach ($chunk as $userId) {
+                try {
+                    $closing = $this->processOne((int) $userId, $scope, $cfg, $date);
+                } catch (Throwable $e) {
+                    Log::error('binary_closing.user_failed', [
+                        'user_id' => (int) $userId,
+                        'scope' => $scope,
+                        'closing_date' => $date->toDateString(),
+                        'error' => $e->getMessage(),
+                    ]);
 
-                    if ($closing === null) {
-                        continue;
-                    }
-
-                    $totals['processed']++;
-                    $totals['pairs_matched'] += (int) $closing->pairs_matched;
-                    $totals['payout_usd'] = bcadd($totals['payout_usd'], (string) $closing->payout_usd, 2);
-
-                    if ((int) $closing->pairs_matched > 0) {
-                        $totals['paid_users']++;
-                    }
+                    continue;
                 }
-            });
+
+                if ($closing === null) {
+                    continue;
+                }
+
+                $totals['processed']++;
+                $totals['pairs_matched'] += (int) $closing->pairs_matched;
+                $totals['payout_usd'] = bcadd($totals['payout_usd'], (string) $closing->payout_usd, 2);
+
+                if ((int) $closing->pairs_matched > 0) {
+                    $totals['paid_users']++;
+                }
+            }
+        }
 
         return $totals;
     }
 
     /**
+     * @return list<int>
+     */
+    private function userIdsToClose(string $scope, array $cfg, CarbonImmutable $date): array
+    {
+        if ($this->usesDailyCarryLedger()) {
+            $ids = [];
+            foreach ($this->dailyCarry->incrementsForClosingDate($scope, $date) as $userId => $sides) {
+                if (((int) $sides['left']) > 0 || ((int) $sides['right']) > 0) {
+                    $ids[] = (int) $userId;
+                }
+            }
+
+            sort($ids);
+
+            return $ids;
+        }
+
+        $leftCol = $cfg['left_column'];
+        $rightCol = $cfg['right_column'];
+
+        return User::query()
+            ->where(function ($q) use ($leftCol, $rightCol) {
+                $q->where($leftCol, '>', 0)->orWhere($rightCol, '>', 0);
+            })
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function usesDailyCarryLedger(): bool
+    {
+        return (bool) config('binary_closing.use_daily_carry_ledger', true);
+    }
+
+    /**
      * Atomically close one (user, scope, date).
      *
-     * Each run consumes the user's current carry and records a fresh audit row.
+     * Matches pairs for `closing_date` only (daily ledger) and updates stored carry.
      */
     private function processOne(int $userId, string $scope, array $cfg, CarbonImmutable $date): ?BinaryDailyClosing
     {
@@ -172,16 +202,26 @@ class BinaryDailyClosingService
         $maxPairs = max(0, (int) $cfg['max_pairs_per_day']);
         $txType = (string) $cfg['wallet_tx_type'];
         $strategy = (string) ($cfg['lapse_strategy'] ?? 'no_lapse_both_carry');
+        $useDailyLedger = $this->usesDailyCarryLedger();
 
-        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $date) {
+        return DB::transaction(function () use ($userId, $scope, $leftCol, $rightCol, $perPair, $maxPairs, $txType, $strategy, $date, $useDailyLedger) {
             /** @var User|null $user */
             $user = User::query()->whereKey($userId)->lockForUpdate()->first();
             if ($user === null) {
                 return null;
             }
 
-            $leftIn = (int) $user->{$leftCol};
-            $rightIn = (int) $user->{$rightCol};
+            $storedLeft = (int) $user->{$leftCol};
+            $storedRight = (int) $user->{$rightCol};
+
+            if ($useDailyLedger) {
+                $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
+                $leftIn = (int) $daily['left'];
+                $rightIn = (int) $daily['right'];
+            } else {
+                $leftIn = $storedLeft;
+                $rightIn = $storedRight;
+            }
 
             if ($leftIn <= 0 && $rightIn <= 0) {
                 return null;
@@ -196,11 +236,26 @@ class BinaryDailyClosingService
                 return null;
             }
 
+            $closingDateStr = $date->toDateString();
+
+            if ($this->alreadyPaidForClosingDate($userId, $scope, $closingDateStr)) {
+                Log::info('binary_closing.skip_already_paid', [
+                    'user_id' => $userId,
+                    'scope' => $scope,
+                    'closing_date' => $closingDateStr,
+                ]);
+
+                return null;
+            }
+
             $pairsAvailable = min($leftIn, $rightIn);
             $pairsMatched = min($pairsAvailable, $maxPairs);
             $capHit = $pairsAvailable > $maxPairs;
 
             $payout = bcmul((string) $pairsMatched, $perPair, 2);
+
+            $expectedMilestoneUsd = $this->expectedMilestonePayoutUsd($user, $scope, $pairsMatched);
+            $expectedTotalUsd = bcadd($payout, $expectedMilestoneUsd, 2);
 
             if ($strategy === 'weak_lapse_strong_diff') {
                 $diff = abs($leftIn - $rightIn);
@@ -246,8 +301,13 @@ class BinaryDailyClosingService
                 $walletTxId = $tx->id;
             }
 
-            $user->{$leftCol} = $leftOut;
-            $user->{$rightCol} = $rightOut;
+            if ($useDailyLedger) {
+                $user->{$leftCol} = max(0, $storedLeft - $leftIn + $leftOut);
+                $user->{$rightCol} = max(0, $storedRight - $rightIn + $rightOut);
+            } else {
+                $user->{$leftCol} = $leftOut;
+                $user->{$rightCol} = $rightOut;
+            }
             $user->save();
 
             $milestonePaidUsd = '0.00';
@@ -267,6 +327,27 @@ class BinaryDailyClosingService
             }
 
             $totalPayout = bcadd($payout, $milestonePaidUsd, 2);
+
+            if (! $this->payoutMatchesExpected($expectedTotalUsd, $totalPayout, $expectedMilestoneUsd, $milestonePaidUsd, $payout)) {
+                Log::error('binary_closing.payout_mismatch', [
+                    'user_id' => $userId,
+                    'scope' => $scope,
+                    'closing_date' => $closingDateStr,
+                    'expected_total' => $expectedTotalUsd,
+                    'actual_total' => $totalPayout,
+                    'expected_per_pair' => $payout,
+                    'actual_per_pair' => $payout,
+                    'expected_milestone' => $expectedMilestoneUsd,
+                    'actual_milestone' => $milestonePaidUsd,
+                ]);
+
+                throw new \RuntimeException(sprintf(
+                    'Closing payout verification failed for user %d scope %s date %s',
+                    $userId,
+                    $scope,
+                    $closingDateStr,
+                ));
+            }
 
             $closing = BinaryDailyClosing::create([
                 'user_id' => $user->id,
@@ -293,6 +374,9 @@ class BinaryDailyClosingService
                     'milestone' => $milestoneMeta['milestone'] ?? null,
                     'milestone_pairs_today' => $milestoneMeta['pairs_today'] ?? null,
                     'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
+                    'daily_carry_ledger' => $useDailyLedger,
+                    'stored_carry_left_before' => $storedLeft,
+                    'stored_carry_right_before' => $storedRight,
                 ],
             ]);
 
@@ -383,5 +467,98 @@ class BinaryDailyClosingService
         }
 
         return number_format((float) $clean, 2, '.', '');
+    }
+
+    private function alreadyPaidForClosingDate(int $userId, string $scope, string $closingDate): bool
+    {
+        return BinaryDailyClosing::query()
+            ->where('user_id', $userId)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $closingDate)
+            ->where('payout_usd', '>', 0)
+            ->exists();
+    }
+
+    /**
+     * Milestone table income for this closing only (today's matched pairs — no extra tier).
+     */
+    private function expectedMilestonePayoutUsd(User $user, string $scope, int $pairsMatched): string
+    {
+        if ($pairsMatched <= 0) {
+            return '0.00';
+        }
+
+        if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
+            if (! $user->qualifiesForPanelMatchingIncome()) {
+                return '0.00';
+            }
+
+            $highest = $this->highestMilestoneTier($pairsMatched, 'sub_panel_matching.milestones');
+            if ($highest <= 0) {
+                return '0.00';
+            }
+
+            return $this->applyMilestoneDailyCap($user->id, (string) $highest, WalletTransaction::TYPE_SUB_PANEL_MATCHING, 'sub_panel_matching.daily_cap_usd');
+        }
+
+        if ($scope === BinaryDailyClosing::SCOPE_SUPER) {
+            if (! $user->qualifiesForSuperSubPanelMatchingIncome()) {
+                return '0.00';
+            }
+
+            $highest = $this->highestMilestoneTier($pairsMatched, 'super_sub_panel_matching.milestones');
+            if ($highest <= 0) {
+                return '0.00';
+            }
+
+            $raw = bcmul((string) $highest, (string) config('super_sub_panel_matching.income_multiplier', '10'), 2);
+
+            return $this->applyMilestoneDailyCap($user->id, $raw, WalletTransaction::TYPE_SUPER_SUB_PANEL_MATCHING, 'super_sub_panel_matching.daily_cap_usd');
+        }
+
+        return '0.00';
+    }
+
+    private function highestMilestoneTier(int $pairsToday, string $configKey): int
+    {
+        $milestones = (array) config($configKey, []);
+        rsort($milestones, SORT_NUMERIC);
+
+        foreach ($milestones as $m) {
+            $m = (int) $m;
+            if ($m > 0 && $pairsToday >= $m) {
+                return $m;
+            }
+        }
+
+        return 0;
+    }
+
+    private function applyMilestoneDailyCap(int $userId, string $payout, string $txType, string $capConfigKey): string
+    {
+        $cap = (string) config($capConfigKey, '256.00');
+        $earnedToday = BinaryClosingCalendar::sumWalletCreditsSinceCycleStart($userId, $txType);
+        $remaining = bcsub($cap, $earnedToday, 2);
+        if (bccomp($payout, $remaining, 2) > 0) {
+            return bccomp($remaining, '0.00', 2) > 0 ? $remaining : '0.00';
+        }
+
+        return $payout;
+    }
+
+    /**
+     * Second check: expected (pre-calculated) must equal actual wallet credits.
+     */
+    private function payoutMatchesExpected(
+        string $expectedTotal,
+        string $actualTotal,
+        string $expectedMilestone,
+        string $actualMilestone,
+        string $expectedPerPair,
+        string $actualPerPair,
+    ): bool {
+        return bccomp($expectedTotal, $actualTotal, 2) === 0
+            && bccomp($expectedMilestone, $actualMilestone, 2) === 0
+            && bccomp($expectedPerPair, $actualPerPair, 2) === 0;
     }
 }
