@@ -96,10 +96,10 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('20.00', (string) $closing->payout_usd);
 
         $user->refresh();
-        $this->assertSame(3, (int) $user->panel_match_carry_left, 'Strong leg keeps diff only (25-22=3)');
-        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Weak leg fully consumed');
-        $this->assertSame(2, (int) $closing->right_lapsed, 'Weak surplus lapses (22-20=2)');
-        $this->assertSame(2, (int) $closing->left_lapsed, 'Strong surplus above diff lapses (25-20-3=2)');
+        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg leftover carries forward (25-20=5)');
+        $this->assertSame(2, (int) $user->panel_match_carry_right, 'Lower leg leftover carries forward (22-20=2)');
+        $this->assertSame(0, (int) $closing->right_lapsed);
+        $this->assertSame(0, (int) $closing->left_lapsed);
     }
 
     public function test_no_pair_when_one_leg_is_zero(): void
@@ -119,41 +119,21 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame('0.00', (string) $user->wallet_balance, 'No wallet credit when no pair forms');
     }
 
-    public function test_running_closing_twice_for_same_date_does_not_pay_twice(): void
+    public function test_running_closing_twice_for_same_date_skips_when_carry_exhausted(): void
     {
-        $user = $this->makeUser(left: 25, right: 22);
+        $user = $this->makeUser(2, 2);
         $date = Carbon::parse('2026-05-08', 'Asia/Kolkata');
 
         $first = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
         $this->assertNotNull($first);
-        $this->assertTrue(bccomp((string) $first->payout_usd, '0.00', 2) > 0);
-
-        $user->refresh();
-        $carryLeftAfterPay = (int) $user->panel_match_carry_left;
-        $carryRightAfterPay = (int) $user->panel_match_carry_right;
-        $walletCountAfterFirst = WalletTransaction::query()
-            ->where('user_id', $user->id)
-            ->whereIn('type', [
-                WalletTransaction::TYPE_PANEL_MATCHING,
-                WalletTransaction::TYPE_SUB_PANEL_MATCHING,
-            ])
-            ->count();
 
         $second = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
-        $this->assertNotNull($second);
-        $this->assertNotSame($first->id, $second->id);
-        $this->assertSame('0.00', (string) $second->payout_usd);
-        $this->assertTrue((bool) ($second->meta['structure_only_refresh'] ?? false));
+        $this->assertNull($second, 'No carry left — nothing to close again');
 
-        $user->refresh();
-        $this->assertSame($carryLeftAfterPay, (int) $user->panel_match_carry_left);
-        $this->assertSame($carryRightAfterPay, (int) $user->panel_match_carry_right);
-        $this->assertSame($walletCountAfterFirst, WalletTransaction::query()
+        $this->assertSame(1, BinaryDailyClosing::query()->where('user_id', $user->id)->count());
+        $this->assertSame(1, WalletTransaction::query()
             ->where('user_id', $user->id)
-            ->whereIn('type', [
-                WalletTransaction::TYPE_PANEL_MATCHING,
-                WalletTransaction::TYPE_SUB_PANEL_MATCHING,
-            ])
+            ->where('type', WalletTransaction::TYPE_PANEL_MATCHING)
             ->count());
     }
 
@@ -213,8 +193,8 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertTrue((bool) $closing->cap_hit);
 
         $user->refresh();
-        $this->assertSame(0, (int) $user->panel_match_carry_left, 'Matched pairs consumed; equal legs → no diff carry');
-        $this->assertSame(0, (int) $user->panel_match_carry_right, 'Equal legs → no diff carry');
+        $this->assertSame(5, (int) $user->panel_match_carry_left, 'Higher leg keeps 10-5=5');
+        $this->assertSame(5, (int) $user->panel_match_carry_right, 'Equal leg leftover carries on both sides');
     }
 
     public function test_artisan_command_runs_closing_and_returns_success(): void
@@ -268,8 +248,8 @@ class BinaryDailyClosingTest extends TestCase
             ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
 
         $earner->refresh();
-        // 1 pair × $1 (per-pair) + $2 (sub-panel milestone tier 2) = $3.00
-        $this->assertSame('3.00', (string) $earner->wallet_balance);
+        // 1 pair × $1 per-pair (milestone tier 2 needs 2+ pairs in one closing day).
+        $this->assertSame('1.00', (string) $earner->wallet_balance);
         $this->assertSame(0, (int) $earner->panel_match_carry_left);
         $this->assertSame(4, (int) $earner->panel_match_carry_right, '5-1 carries forward');
 
@@ -296,17 +276,17 @@ class BinaryDailyClosingTest extends TestCase
             'wallet_balance' => '0.00',
         ]);
 
-        // Weak leg lifetime min(2,2)=2 → milestone $2; plus $1 per-pair for 1 matched pair.
+        // 1 pair → per-pair $1 only (milestone tier 2 needs 2+ pairs today).
         app(BinaryDailyClosingService::class)
             ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
 
         $earner->refresh();
-        $this->assertSame('3.00', (string) $earner->wallet_balance);
+        $this->assertSame('1.00', (string) $earner->wallet_balance);
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $earner->id,
-            'type' => WalletTransaction::TYPE_SUB_PANEL_MATCHING,
-            'amount' => '2.00',
+            'type' => WalletTransaction::TYPE_PANEL_MATCHING,
+            'amount' => '1.00',
         ]);
     }
 }
