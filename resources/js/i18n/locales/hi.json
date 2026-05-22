@@ -509,6 +509,8 @@
             "rowTotalCarryAfterMatch": "Total carry after match (ab tak)",
             "rowYesterdayMatchBuckets": "Kal match (aapke L/R buckets)",
             "rowPairsMatchedYesterday": "Pairs matched (kal)",
+            "payoutYesterdayBlocked": "Income (kal) — pehle active panel",
+            "inactivePanelistCarryOnly": "Aap abhi active panelist nahi hain. Left/right carry aur pairs update honge; matching income tab tak $0 jab tak activation + minimum panel fee na ho.",
             "directReferrals": "Direct referrals",
             "bySponsorHint": "By sponsor (not binary).",
             "thName": "Name",

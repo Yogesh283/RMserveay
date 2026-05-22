@@ -176,6 +176,8 @@ class MemberTeamService
             ->orderByDesc('id')
             ->first();
 
+        $incomeEligible = $user->qualifiesActivePanelistIncome();
+
         if ($closing !== null) {
             $pairsMatched = (int) $closing->pairs_matched;
             $carryForwardL = (int) $closing->left_carry_out;
@@ -192,12 +194,14 @@ class MemberTeamService
             $carryForwardR = (int) $matchSplit['right_out'];
             $matchLeft = (int) $inputs['left_in'];
             $matchRight = (int) $inputs['right_in'];
-            $milestoneUsd = $this->projectedMilestoneUsd($scope, $pairsMatched);
+            $milestoneUsd = $incomeEligible ? $this->projectedMilestoneUsd($scope, $pairsMatched) : '0.00';
             $perPair = match ($scope) {
                 BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'),
                 default => '0.00',
             };
-            $payoutUsd = bcadd(bcmul((string) $pairsMatched, $perPair, 2), $milestoneUsd, 2);
+            $payoutUsd = $incomeEligible
+                ? bcadd(bcmul((string) $pairsMatched, $perPair, 2), $milestoneUsd, 2)
+                : '0.00';
             $weak = [
                 'side' => $matchSplit['weak_side'],
                 'lapsed' => $matchSplit['weak_lapsed'],
@@ -226,6 +230,7 @@ class MemberTeamService
             'today_weak_lapsed' => (int) ($weak['lapsed'] ?? 0),
             'today_left_lapsed' => ($weak['side'] ?? '') === 'left' ? (int) ($weak['lapsed'] ?? 0) : 0,
             'today_right_lapsed' => ($weak['side'] ?? '') === 'right' ? (int) ($weak['lapsed'] ?? 0) : 0,
+            'income_eligible' => $incomeEligible,
         ];
     }
 
@@ -269,6 +274,9 @@ class MemberTeamService
         $weakSide = $snap['today_weak_side'] ?? null;
 
         return array_merge($status, [
+            'eligible' => (bool) $snap['income_eligible'],
+            'income_eligible' => (bool) $snap['income_eligible'],
+            'income_blocked_reason' => $snap['income_eligible'] ? null : 'inactive_panelist',
             'earned_today_usd' => $snap['payout_usd'],
             'today_milestone_paid_usd' => $snap['milestone_paid_usd'],
             'today_left_carry_in' => $snap['yesterday_match_left'],

@@ -30,6 +30,11 @@ return [
      */
     'use_daily_carry_ledger' => filter_var(env('BINARY_CLOSING_USE_DAILY_LEDGER', true), FILTER_VALIDATE_BOOLEAN),
 
+    /**
+     * Matching income (active / sub / super) requires activation_fee + minimum_panel_fee on the earner.
+     * Carry on both legs still accrues and closing still updates carry_out when inactive.
+     */
+
     /** IANA timezone for the daily cut-off. Default: India Standard Time. */
     'timezone' => env('BINARY_CLOSING_TIMEZONE', 'Asia/Kolkata'),
 

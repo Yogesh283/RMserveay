@@ -40,6 +40,9 @@ class BinaryDailyClosingTest extends TestCase
             'panel_match_carry_left' => $left,
             'panel_match_carry_right' => $right,
             'wallet_balance' => $balance,
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => (int) config('self_survey.max_sub_panels', 9),
         ]);
     }
 

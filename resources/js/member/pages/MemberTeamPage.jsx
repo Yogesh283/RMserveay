@@ -362,6 +362,17 @@ function fmtUsdShort(s) {
 
 const CARRY_DASH = '—';
 
+function payoutYesterdayRow(t, legMatch) {
+    const m = legMatch ?? {};
+    const eligible = m.income_eligible === true;
+    const amount = eligible ? (m.payout_usd ?? '0.00') : '0.00';
+    return {
+        label: eligible ? t('member.team.payoutYesterday') : t('member.team.payoutYesterdayBlocked'),
+        left: fmtUsdShort(amount),
+        right: fmtUsdShort(amount),
+    };
+}
+
 /** Strong leg par carry number; weak leg par — (0 nahi). */
 function carryOutDisplay(left, right) {
     const l = Number(left) | 0;
@@ -386,8 +397,8 @@ function buildActiveLegRows(legs, t, activeMatching, legMatch) {
     const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
     const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
     const weakLapse = weakSideLapseDisplay(am);
-    const payoutToday = m.payout_usd ?? am.earned_today_usd ?? '0.00';
     const pairs = m.pairs_matched ?? 0;
+    const payoutRow = payoutYesterdayRow(t, m);
     return [
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
         {
@@ -420,7 +431,7 @@ function buildActiveLegRows(legs, t, activeMatching, legMatch) {
             left: carryForward.left,
             right: carryForward.right,
         },
-        { label: t('member.team.payoutYesterday'), left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
+        payoutRow,
         { label: t('member.team.lapsedYesterday'), left: weakLapse.left, right: weakLapse.right },
     ];
 }
@@ -436,8 +447,8 @@ function buildSubLegRows(legs, t, subMatching, legMatch) {
     const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
     const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
     const weakLapse = weakSideLapseDisplay(sm);
-    const payoutToday = m.payout_usd ?? sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     const pairs = m.pairs_matched ?? 0;
+    const payoutRow = payoutYesterdayRow(t, m);
     return [
         {
             label: t('member.team.rowTotalSubPanels'),
@@ -469,11 +480,7 @@ function buildSubLegRows(legs, t, subMatching, legMatch) {
             left: carryForward.left,
             right: carryForward.right,
         },
-        {
-            label: t('member.team.payoutYesterday'),
-            left: fmtUsdShort(payoutToday),
-            right: fmtUsdShort(payoutToday),
-        },
+        payoutRow,
         {
             label: t('member.team.lapsedYesterday'),
             left: weakLapse.left,
@@ -493,8 +500,8 @@ function buildSuperLegRows(legs, t, superMatching, legMatch) {
     const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
     const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
     const weakLapse = weakSideLapseDisplay(sup);
-    const payoutToday = m.payout_usd ?? sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     const pairs = m.pairs_matched ?? 0;
+    const payoutRow = payoutYesterdayRow(t, m);
     return [
         {
             label: t('member.team.rowTotalSuperPanels'),
@@ -526,11 +533,7 @@ function buildSuperLegRows(legs, t, superMatching, legMatch) {
             left: carryForward.left,
             right: carryForward.right,
         },
-        {
-            label: t('member.team.payoutYesterday'),
-            left: fmtUsdShort(payoutToday),
-            right: fmtUsdShort(payoutToday),
-        },
+        payoutRow,
         {
             label: t('member.team.lapsedYesterday'),
             left: weakLapse.left,
@@ -1151,6 +1154,11 @@ export default function MemberTeamPage() {
                                 Super Panel
                             </button>
                         </div>
+                        {data.self?.is_active === false ? (
+                            <p className="mt-2 rounded-lg border border-amber-400/35 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-100/95">
+                                {t('member.team.inactivePanelistCarryOnly')}
+                            </p>
+                        ) : null}
                         <div className="mt-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
                             <LegsCompareTable
                                 rows={totalTeamRows}
