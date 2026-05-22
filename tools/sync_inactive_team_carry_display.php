@@ -1,11 +1,11 @@
 <?php
 
 /**
- * One-time: team-page carry for income-ineligible users (Active / Sub / Super).
+ * One-time: inactive users only — set carry = team leg totals (same as simple SQL).
  *
- * Target carry (matches My Team totals row + today new):
- *   Left  = total_left  + yesterday_left  (e.g. 18 + 9 = 27)
- *   Right = total_right (full leg, e.g. 68 — not post-match 50)
+ *   Super:  SUM(downline super_sub_panel_count)  LEFT | RIGHT
+ *   Sub:    SUM(downline sub_panel_count)         LEFT | RIGHT
+ *   Active: COUNT(active panelists in downline)  LEFT | RIGHT
  *
  * Wallet / payout / pairs_matched on closings are NOT changed.
  *
@@ -40,24 +40,12 @@ $scopes = [
     BinaryDailyClosing::SCOPE_SUPER => ['left' => 'super_panel_match_carry_left', 'right' => 'super_panel_match_carry_right'],
 ];
 
-/**
- * @param  array<string, mixed>  $inputs
- * @return array{0: int, 1: int}
- */
-function teamDisplayCarry(array $inputs): array
-{
-    $left = (int) $inputs['total_left'] + (int) $inputs['yesterday_left'];
-    $right = (int) $inputs['total_right'];
-
-    return [$left, $right];
-}
-
 $volume = app(BinarySubtreeVolumeService::class);
 $today = CarbonImmutable::parse(BinaryClosingCalendar::todayDateString(), BinaryClosingCalendar::timezone());
 
 echo $dry ? "=== DRY RUN ===\n" : "=== APPLY ===\n";
 echo "Today (IST): {$today->toDateString()}\n";
-echo "Display rule: carry L = total_left + today_new, carry R = total_right\n\n";
+echo "Rule: carry L|R = team leg total (same as SUM in tree SQL)\n\n";
 
 $userQuery = User::query()->select('id');
 if ($userFilter !== null && $userFilter !== '') {
@@ -106,15 +94,16 @@ $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void
             }
 
             $stats['scope_syncs']++;
-            $inputsToday = $volume->closingMatchInputs($user, $scope, $today);
-            [$targetLeft, $targetRight] = teamDisplayCarry($inputsToday);
+            $legTotals = $volume->lifetimeLegVolumes($user, $scope);
+            $targetLeft = (int) $legTotals['left'];
+            $targetRight = (int) $legTotals['right'];
             $reason = $user->binaryClosingIncomeBlockedReason($scope) ?? 'ineligible';
 
             $curLeft = (int) $user->{$cols['left']};
             $curRight = (int) $user->{$cols['right']};
             if ($curLeft !== $targetLeft || $curRight !== $targetRight) {
                 echo sprintf(
-                    "  user #%d (%s) scope=%s [%s] carry %d|%d → %d|%d (total %d|%d +new %d|%d)\n",
+                    "  user #%d (%s) scope=%s [%s] carry %d|%d → %d|%d (team SQL L|R)\n",
                     $user->id,
                     $user->login_uid,
                     $scope,
@@ -123,10 +112,6 @@ $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void
                     $curRight,
                     $targetLeft,
                     $targetRight,
-                    $inputsToday['total_left'],
-                    $inputsToday['total_right'],
-                    $inputsToday['yesterday_left'],
-                    $inputsToday['yesterday_right'],
                 );
                 if (! $dry) {
                     $user->{$cols['left']} = $targetLeft;
@@ -145,12 +130,8 @@ $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void
                 ->get();
 
             foreach ($closings as $closing) {
-                $closingDate = CarbonImmutable::parse(
-                    $closing->closing_date->toDateString(),
-                    BinaryClosingCalendar::timezone(),
-                );
-                $inputs = $volume->closingMatchInputs($user, $scope, $closingDate);
-                [$wantL, $wantR] = teamDisplayCarry($inputs);
+                $wantL = $targetLeft;
+                $wantR = $targetRight;
 
                 if ($wantL === (int) $closing->left_carry_out && $wantR === (int) $closing->right_carry_out) {
                     continue;
