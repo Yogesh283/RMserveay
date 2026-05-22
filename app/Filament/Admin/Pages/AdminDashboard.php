@@ -70,25 +70,13 @@ class AdminDashboard extends BaseDashboard
                 ->icon(Heroicon::OutlinedBolt)
                 ->color('warning')
                 ->modalHeading('Run binary daily closing')
-                ->modalDescription('Runs `binary:daily-closing` for the chosen calendar date (app timezone).')
-                ->schema([
-                    Select::make('date_mode')
-                        ->label('Closing date')
-                        ->options([
-                            'yesterday' => 'Yesterday (default)',
-                            'today' => 'Today',
-                        ])
-                        ->default('yesterday')
-                        ->required(),
-                ])
-                ->action(function (array $data): void {
-                    $params = [];
-                    if (($data['date_mode'] ?? '') === 'today') {
-                        $params['--date'] = 'today';
-                    }
-
+                ->modalDescription(
+                    'Runs `binary:daily-closing` for yesterday only (active, sub, super). Same as daily cron.'
+                )
+                ->requiresConfirmation()
+                ->action(function (): void {
                     try {
-                        $exitCode = Artisan::call('binary:daily-closing', $params);
+                        $exitCode = Artisan::call('binary:daily-closing');
                         $output = trim(Artisan::output());
 
                         if ($exitCode !== 0) {

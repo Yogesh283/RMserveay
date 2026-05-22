@@ -23,9 +23,10 @@ return [
     'enabled' => filter_var(env('BINARY_CLOSING_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
 
     /**
-     * When true (default), closing matches only carry that accrued on `closing_date`
-     * (from wallet purchase events that day — e.g. 21 May run for 20 May uses 20 May only).
-     * When false, uses cumulative carry columns on the user row (legacy).
+     * When true (default, required in production): active_panel, panel, and super all
+     * match only wallet purchases on the calendar `closing_date` (not cumulative carry).
+     * Cron/command default closing date is yesterday in `timezone` (e.g. 21 May run → 20 May).
+     * Set false only for legacy tests/backfill — do not disable on live.
      */
     'use_daily_carry_ledger' => filter_var(env('BINARY_CLOSING_USE_DAILY_LEDGER', true), FILTER_VALIDATE_BOOLEAN),
 

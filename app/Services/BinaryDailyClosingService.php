@@ -186,6 +186,10 @@ class BinaryDailyClosingService
 
     private function usesDailyCarryLedger(): bool
     {
+        if (! app()->runningUnitTests()) {
+            return true;
+        }
+
         return (bool) config('binary_closing.use_daily_carry_ledger', true);
     }
 

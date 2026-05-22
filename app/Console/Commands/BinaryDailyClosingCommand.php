@@ -16,13 +16,12 @@ use Illuminate\Support\Carbon;
  *  php artisan binary:daily-closing --scope=active_panel           # only active-panel matching ($1/pair)
  *  php artisan binary:daily-closing --scope=panel                  # only sub-panel milestone matching
  *  php artisan binary:daily-closing --scope=super                  # only super-sub-panel milestone matching
- *  php artisan binary:daily-closing --scope=active_panel --date=today
  *  php artisan binary:daily-closing --report                       # only print latest report (no work)
  */
 class BinaryDailyClosingCommand extends Command
 {
     protected $signature = 'binary:daily-closing
-        {--date= : Closing date (YYYY-MM-DD) in the configured timezone. Use "today" for the current day. Defaults to "yesterday".}
+        {--date= : Closing date (YYYY-MM-DD) in the configured timezone. Defaults to yesterday (kal).}
         {--scope=* : Limit closing to specific scopes (active_panel, panel, super). Repeatable.}
         {--report : Skip processing — only print the report for the given (or latest) date.}';
 
@@ -41,7 +40,9 @@ class BinaryDailyClosingCommand extends Command
         if ($dateOpt === null || $dateOpt === '') {
             $date = Carbon::now($tz)->subDay()->startOfDay();
         } elseif (strtolower((string) $dateOpt) === 'today') {
-            $date = Carbon::now($tz)->startOfDay();
+            $this->warn('Closing uses yesterday only (active/sub/super). --date=today ignored.');
+
+            $date = Carbon::now($tz)->subDay()->startOfDay();
         } else {
             $date = Carbon::parse($dateOpt, $tz)->startOfDay();
         }

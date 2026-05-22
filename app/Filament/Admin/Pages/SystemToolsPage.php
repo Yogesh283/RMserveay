@@ -191,25 +191,13 @@ class SystemToolsPage extends Page
                             ->icon(Heroicon::OutlinedBolt)
                             ->color('warning')
                             ->modalHeading('Run binary daily closing')
-                            ->modalDescription('Runs the same Artisan command as the daily schedule. Choose which calendar date to close in the configured timezone.')
-                            ->schema([
-                                Select::make('date_mode')
-                                    ->label('Closing date')
-                                    ->options([
-                                        'yesterday' => 'Yesterday (default — matches unattended cron)',
-                                        'today' => 'Today',
-                                    ])
-                                    ->default('yesterday')
-                                    ->required(),
-                            ])
-                            ->action(function (array $data): void {
-                                $params = [];
-                                if (($data['date_mode'] ?? '') === 'today') {
-                                    $params['--date'] = 'today';
-                                }
-
+                            ->modalDescription(
+                                'Runs `binary:daily-closing` for yesterday only (active, sub, super — purchases on that calendar day). Same as cron.'
+                            )
+                            ->requiresConfirmation()
+                            ->action(function (): void {
                                 try {
-                                    $exitCode = Artisan::call('binary:daily-closing', $params);
+                                    $exitCode = Artisan::call('binary:daily-closing');
                                     $output = trim(Artisan::output());
 
                                     if ($exitCode !== 0) {

@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Artisan;
  *
  * Examples:
  *   GET  https://your-domain.com/cron/binary-daily-closing?token=YOUR_TOKEN
- *   GET  https://your-domain.com/cron/binary-daily-closing?token=YOUR_TOKEN&date=today&scope=active_panel
+ *   GET  https://your-domain.com/cron/binary-daily-closing?token=YOUR_TOKEN&date=2026-05-20
+ *   (no `date` param = yesterday; `date=today` is treated as yesterday)
  */
 class BinaryDailyClosingCronController extends Controller
 {
