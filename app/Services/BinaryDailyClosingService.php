@@ -159,16 +159,28 @@ class BinaryDailyClosingService
     private function userIdsToClose(string $scope, array $cfg, CarbonImmutable $date): array
     {
         if ($this->usesDailyCarryLedger()) {
+            $leftCol = $cfg['left_column'];
+            $rightCol = $cfg['right_column'];
             $ids = [];
+
             foreach ($this->dailyCarry->incrementsForClosingDate($scope, $date) as $userId => $sides) {
                 if (((int) $sides['left']) > 0 || ((int) $sides['right']) > 0) {
-                    $ids[] = (int) $userId;
+                    $ids[(int) $userId] = true;
                 }
             }
 
-            sort($ids);
+            User::query()
+                ->where(function ($q) use ($leftCol, $rightCol) {
+                    $q->where($leftCol, '>', 0)->orWhere($rightCol, '>', 0);
+                })
+                ->orderBy('id')
+                ->pluck('id')
+                ->each(fn ($id) => $ids[(int) $id] = true);
 
-            return $ids;
+            $out = array_keys($ids);
+            sort($out);
+
+            return $out;
         }
 
         $leftCol = $cfg['left_column'];
@@ -218,14 +230,17 @@ class BinaryDailyClosingService
             $storedLeft = (int) $user->{$leftCol};
             $storedRight = (int) $user->{$rightCol};
 
+            $dailyLeft = 0;
+            $dailyRight = 0;
             if ($useDailyLedger) {
                 $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
-                $leftIn = (int) $daily['left'];
-                $rightIn = (int) $daily['right'];
-            } else {
-                $leftIn = $storedLeft;
-                $rightIn = $storedRight;
+                $dailyLeft = (int) $daily['left'];
+                $dailyRight = (int) $daily['right'];
             }
+
+            // Match on current carry buckets (weak/strong rule); meta records yesterday's increments.
+            $leftIn = $storedLeft;
+            $rightIn = $storedRight;
 
             if ($leftIn <= 0 && $rightIn <= 0) {
                 return null;
@@ -305,13 +320,8 @@ class BinaryDailyClosingService
                 $walletTxId = $tx->id;
             }
 
-            if ($useDailyLedger) {
-                $user->{$leftCol} = max(0, $storedLeft - $leftIn + $leftOut);
-                $user->{$rightCol} = max(0, $storedRight - $rightIn + $rightOut);
-            } else {
-                $user->{$leftCol} = $leftOut;
-                $user->{$rightCol} = $rightOut;
-            }
+            $user->{$leftCol} = $leftOut;
+            $user->{$rightCol} = $rightOut;
             $user->save();
 
             $milestonePaidUsd = '0.00';
@@ -379,6 +389,8 @@ class BinaryDailyClosingService
                     'milestone_pairs_today' => $milestoneMeta['pairs_today'] ?? null,
                     'milestone_lapsed_pairs' => $milestoneMeta['lapsed_pairs'] ?? null,
                     'daily_carry_ledger' => $useDailyLedger,
+                    'daily_left' => $dailyLeft,
+                    'daily_right' => $dailyRight,
                     'stored_carry_left_before' => $storedLeft,
                     'stored_carry_right_before' => $storedRight,
                 ],

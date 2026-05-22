@@ -238,12 +238,10 @@ class BinaryClosingReversalService
         $usedDailyLedger = (bool) ($meta['daily_carry_ledger'] ?? false);
 
         if ($usedDailyLedger && $firstPaid !== null) {
-            $leftIn = (int) $firstPaid->left_carry_in;
-            $rightIn = (int) $firstPaid->right_carry_in;
-            $leftOut = (int) $firstPaid->left_carry_out;
-            $rightOut = (int) $firstPaid->right_carry_out;
-            $user->{$leftCol} = max(0, $storedLeft - $leftIn + $leftOut);
-            $user->{$rightCol} = max(0, $storedRight - $rightIn + $rightOut);
+            $beforeL = (int) ($meta['stored_carry_left_before'] ?? $g['left_in']);
+            $beforeR = (int) ($meta['stored_carry_right_before'] ?? $g['right_in']);
+            $user->{$leftCol} = $beforeL;
+            $user->{$rightCol} = $beforeR;
         } else {
             $user->{$leftCol} = $g['left_in'];
             $user->{$rightCol} = $g['right_in'];
