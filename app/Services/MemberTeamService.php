@@ -60,10 +60,9 @@ class MemberTeamService
 
     /**
      * @return array{
-     *     count:int, active:int, sub_panels:int, super_sub_panels:int,
-     *     carry_active_left:int, carry_active_right:int,
-     *     carry_panel_left:int, carry_panel_right:int, carry_super_left:int, carry_super_right:int,
-     *     sub_matching_cumulative_today:int, super_matching_cumulative_today:int
+     *     count:int,
+     *     total_active:int, total_sub_panels:int, total_super_sub_panels:int,
+     *     active:int, sub_panels:int, super_sub_panels:int
      * }
      */
     public function aggregateLeg(User $root, string $leg): array
@@ -74,34 +73,50 @@ class MemberTeamService
         if ($ids === []) {
             return [
                 'count' => 0,
+                'total_active' => 0,
+                'total_sub_panels' => 0,
+                'total_super_sub_panels' => 0,
                 'active' => 0,
                 'sub_panels' => 0,
                 'super_sub_panels' => 0,
-                'carry_active_left' => 0,
-                'carry_active_right' => 0,
-                'carry_panel_left' => 0,
-                'carry_panel_right' => 0,
-                'carry_super_left' => 0,
-                'carry_super_right' => 0,
-                'sub_matching_cumulative_today' => 0,
-                'super_matching_cumulative_today' => 0,
             ];
+        }
+
+        $rows = User::query()
+            ->whereIn('id', $ids)
+            ->get([
+                'id',
+                'sub_panel_count',
+                'super_sub_panel_count',
+                'activation_fee_paid_at',
+                'minimum_panel_fee_paid_at',
+            ]);
+
+        $totalActive = 0;
+        $totalSub = 0;
+        $totalSuper = 0;
+        foreach ($rows as $u) {
+            if ($u->qualifiesActivePanelistIncome()) {
+                $totalActive++;
+            }
+            $totalSub += (int) $u->sub_panel_count;
+            $totalSuper += (int) $u->super_sub_panel_count;
         }
 
         [$start, $end] = $this->yesterdayBounds();
 
-        $active = User::query()
+        $activeYesterday = User::query()
             ->whereIn('id', $ids)
             ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
             ->count();
 
-        $subPanels = WalletTransaction::query()
+        $subYesterday = WalletTransaction::query()
             ->whereIn('user_id', $ids)
             ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
             ->whereBetween('created_at', [$start, $end])
             ->count();
 
-        $superSub = WalletTransaction::query()
+        $superYesterday = WalletTransaction::query()
             ->whereIn('user_id', $ids)
             ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
             ->whereBetween('created_at', [$start, $end])
@@ -109,17 +124,12 @@ class MemberTeamService
 
         return [
             'count' => count($ids),
-            'active' => $active,
-            'sub_panels' => $subPanels,
-            'super_sub_panels' => $superSub,
-            'carry_active_left' => 0,
-            'carry_active_right' => 0,
-            'carry_panel_left' => 0,
-            'carry_panel_right' => 0,
-            'carry_super_left' => 0,
-            'carry_super_right' => 0,
-            'sub_matching_cumulative_today' => 0,
-            'super_matching_cumulative_today' => 0,
+            'total_active' => $totalActive,
+            'total_sub_panels' => $totalSub,
+            'total_super_sub_panels' => $totalSuper,
+            'active' => $activeYesterday,
+            'sub_panels' => $subYesterday,
+            'super_sub_panels' => $superYesterday,
         ];
     }
 
@@ -162,6 +172,8 @@ class MemberTeamService
             return array_merge($status, [
                 'earned_today_usd' => $payout,
                 'today_milestone_paid_usd' => $milestonePaid,
+                'today_left_carry_in' => (int) $closing->left_carry_in,
+                'today_right_carry_in' => (int) $closing->right_carry_in,
                 'today_left_carry_out' => (int) $closing->left_carry_out,
                 'today_right_carry_out' => (int) $closing->right_carry_out,
                 'today_left_lapsed' => (int) $closing->left_lapsed,
@@ -182,6 +194,8 @@ class MemberTeamService
         return array_merge($status, [
             'earned_today_usd' => '0.00',
             'today_milestone_paid_usd' => '0.00',
+            'today_left_carry_in' => $legLeft,
+            'today_right_carry_in' => $legRight,
             'today_left_carry_out' => $projected['left_out'],
             'today_right_carry_out' => $projected['right_out'],
             'today_left_lapsed' => $projected['weak_side'] === 'left' ? $weakLapsed : 0,

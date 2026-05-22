@@ -5,8 +5,6 @@ import { prepareSanctum } from '../../lib/auth';
 import { MatchingIncomeTable } from '../components/MatchingIncomeTable';
 import { RmsCard } from '../components/rms';
 import { APP_LOGO_URL, APP_NAME_FALLBACK } from '../../lib/branding';
-import { matchingCarryDisplay, teamCarryForwardFromLegTotals } from '../lib/powerLegCarry';
-
 function fmtUsd(s, lang) {
     const n = Number.parseFloat(s);
     if (Number.isNaN(n)) return s ?? '—';
@@ -362,6 +360,15 @@ function fmtUsdShort(s) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 }
 
+/** Yesterday closing carry_out on your left / right binary legs (both columns show numbers). */
+function yesterdayCarryRow(matching) {
+    const m = matching ?? {};
+    return {
+        left: Number(m.today_left_carry_out ?? 0) | 0,
+        right: Number(m.today_right_carry_out ?? 0) | 0,
+    };
+}
+
 function buildActiveLegRows(legs, t, activeMatching) {
     if (!legs?.left || !legs?.right) {
         return [];
@@ -369,18 +376,26 @@ function buildActiveLegRows(legs, t, activeMatching) {
     const L = legs.left;
     const R = legs.right;
     const am = activeMatching ?? {};
-    const carry = teamCarryForwardFromLegTotals(
-        L.active,
-        R.active,
-        am.today_left_carry_out ?? am.display_carry_left,
-        am.today_right_carry_out ?? am.display_carry_right,
-    );
+    const carryYesterday = yesterdayCarryRow(am);
     const weakLapse = weakSideLapseDisplay(am);
     const payoutToday = am.earned_today_usd ?? '0.00';
     return [
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
-        { label: t('member.team.rowActivePanelists'), left: L.active, right: R.active },
-        { label: 'Active carry forward', left: carry.left, right: carry.right },
+        {
+            label: t('member.team.rowTotalActivePanelists'),
+            left: L.total_active ?? 0,
+            right: R.total_active ?? 0,
+        },
+        {
+            label: t('member.team.rowYesterdayActivePanelists'),
+            left: L.active,
+            right: R.active,
+        },
+        {
+            label: t('member.team.rowCarryYesterday'),
+            left: carryYesterday.left,
+            right: carryYesterday.right,
+        },
         { label: t('member.team.payoutYesterday'), left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
         { label: t('member.team.lapsedYesterday'), left: weakLapse.left, right: weakLapse.right },
     ];
@@ -392,29 +407,25 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     }
     const L = legs.left;
     const R = legs.right;
-    const pm = panelMatching ?? {};
     const sm = subMatching ?? {};
-    const carry = matchingCarryDisplay({
-        eligible: sm.eligible === true,
-        carryLeft: sm.carry_left ?? pm.carry_left,
-        carryRight: sm.carry_right ?? pm.carry_right,
-        legLeft: L.sub_panels,
-        legRight: R.sub_panels,
-        closingLeftOut: sm.today_left_carry_out,
-        closingRightOut: sm.today_right_carry_out,
-    });
+    const carryYesterday = yesterdayCarryRow(sm);
     const weakLapse = weakSideLapseDisplay(sm);
     const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     return [
         {
-            label: t('member.team.rowTeamSubPanels'),
+            label: t('member.team.rowTotalSubPanels'),
+            left: L.total_sub_panels ?? 0,
+            right: R.total_sub_panels ?? 0,
+        },
+        {
+            label: t('member.team.rowYesterdaySubPanels'),
             left: L.sub_panels,
             right: R.sub_panels,
         },
         {
-            label: 'Sub carry forward',
-            left: carry.left,
-            right: carry.right,
+            label: t('member.team.rowCarryYesterday'),
+            left: carryYesterday.left,
+            right: carryYesterday.right,
         },
         {
             label: t('member.team.payoutYesterday'),
@@ -436,27 +447,24 @@ function buildSuperLegRows(legs, t, superMatching) {
     const L = legs.left;
     const R = legs.right;
     const sup = superMatching ?? {};
-    const carry = matchingCarryDisplay({
-        eligible: sup.eligible === true,
-        carryLeft: sup.carry_left,
-        carryRight: sup.carry_right,
-        legLeft: L.super_sub_panels,
-        legRight: R.super_sub_panels,
-        closingLeftOut: sup.today_left_carry_out,
-        closingRightOut: sup.today_right_carry_out,
-    });
+    const carryYesterday = yesterdayCarryRow(sup);
     const weakLapse = weakSideLapseDisplay(sup);
     const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     return [
         {
-            label: t('member.team.rowTeamSuperSub'),
+            label: t('member.team.rowTotalSuperPanels'),
+            left: L.total_super_sub_panels ?? 0,
+            right: R.total_super_sub_panels ?? 0,
+        },
+        {
+            label: t('member.team.rowYesterdaySuperPanels'),
             left: L.super_sub_panels,
             right: R.super_sub_panels,
         },
         {
-            label: 'Super carry forward',
-            left: carry.left,
-            right: carry.right,
+            label: t('member.team.rowCarryYesterday'),
+            left: carryYesterday.left,
+            right: carryYesterday.right,
         },
         {
             label: t('member.team.payoutYesterday'),
