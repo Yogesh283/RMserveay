@@ -73,6 +73,21 @@ class BinarySubtreeVolumeService
     }
 
     /**
+     * @return array{left: int, right: int}
+     */
+    public function todayLegVolumes(User $user, string $scope, ?CarbonInterface $date = null): array
+    {
+        $dateStr = $date !== null
+            ? CarbonImmutable::instance($date)->setTimezone(BinaryClosingCalendar::timezone())->toDateString()
+            : BinaryClosingCalendar::todayDateString();
+
+        return [
+            'left' => $this->legVolumeForDate($user, 'left', $scope, $dateStr),
+            'right' => $this->legVolumeForDate($user, 'right', $scope, $dateStr),
+        ];
+    }
+
+    /**
      * @return array{
      *     left_in: int,
      *     right_in: int,
@@ -129,24 +144,8 @@ class BinarySubtreeVolumeService
             $dateStr = $date !== null
                 ? CarbonImmutable::instance($date)->setTimezone(BinaryClosingCalendar::timezone())->toDateString()
                 : BinaryClosingCalendar::yesterdayDateString();
-            [$start, $end] = BinaryClosingCalendar::dateLocalBounds($dateStr);
 
-            return match ($scope) {
-                BinaryDailyClosing::SCOPE_ACTIVE_PANEL => User::query()
-                    ->whereIn('id', $ids)
-                    ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
-                    ->count(),
-                BinaryDailyClosing::SCOPE_SUPER => (int) WalletTransaction::query()
-                    ->whereIn('user_id', $ids)
-                    ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
-                    ->whereBetween('created_at', [$start, $end])
-                    ->count(),
-                default => (int) WalletTransaction::query()
-                    ->whereIn('user_id', $ids)
-                    ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
-                    ->whereBetween('created_at', [$start, $end])
-                    ->count(),
-            };
+            return $this->legVolumeForDate($user, $leg, $scope, $dateStr);
         }
 
         if ($scope === BinaryDailyClosing::SCOPE_ACTIVE_PANEL) {
@@ -160,5 +159,34 @@ class BinarySubtreeVolumeService
         $column = $scope === BinaryDailyClosing::SCOPE_SUPER ? 'super_sub_panel_count' : 'sub_panel_count';
 
         return (int) User::query()->whereIn('id', $ids)->sum($column);
+    }
+
+    private function legVolumeForDate(User $user, string $leg, string $scope, string $dateStr): int
+    {
+        $leg = strtolower($leg);
+        $startId = $leg === 'left' ? $user->left_child_id : $user->right_child_id;
+        $ids = $this->collectBinarySubtreeIds($startId !== null ? (int) $startId : null);
+        if ($ids === []) {
+            return 0;
+        }
+
+        [$start, $end] = BinaryClosingCalendar::dateLocalBounds($dateStr);
+
+        return match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => User::query()
+                ->whereIn('id', $ids)
+                ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
+                ->count(),
+            BinaryDailyClosing::SCOPE_SUPER => (int) WalletTransaction::query()
+                ->whereIn('user_id', $ids)
+                ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
+                ->whereBetween('created_at', [$start, $end])
+                ->count(),
+            default => (int) WalletTransaction::query()
+                ->whereIn('user_id', $ids)
+                ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
+                ->whereBetween('created_at', [$start, $end])
+                ->count(),
+        };
     }
 }

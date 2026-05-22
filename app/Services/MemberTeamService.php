@@ -208,8 +208,17 @@ class MemberTeamService
             ];
         }
 
+        [$carryL, $carryR] = $this->scopeCarryBuckets($user, $scope);
+        $todayLeg = $this->subtreeVolumes->todayLegVolumes($user, $scope);
+        $todayNewL = (int) $todayLeg['left'];
+        $todayNewR = (int) $todayLeg['right'];
+        $todayMatchL = $carryL + $todayNewL;
+        $todayMatchR = $carryR + $todayNewR;
+        $todaySplit = BinaryWeakSideLapse::splitFromLegCounts($todayMatchL, $todayMatchR, $maxPairs);
+
         return [
             'team_volume_date' => $yesterday,
+            'today_date' => BinaryClosingCalendar::todayDateString(),
             'total_left' => $totalL,
             'total_right' => $totalR,
             'total_pairs_matched' => min(min($totalL, $totalR), $maxPairs),
@@ -230,8 +239,34 @@ class MemberTeamService
             'today_weak_lapsed' => (int) ($weak['lapsed'] ?? 0),
             'today_left_lapsed' => ($weak['side'] ?? '') === 'left' ? (int) ($weak['lapsed'] ?? 0) : 0,
             'today_right_lapsed' => ($weak['side'] ?? '') === 'right' ? (int) ($weak['lapsed'] ?? 0) : 0,
+            'today_new_left' => $todayNewL,
+            'today_new_right' => $todayNewR,
+            'today_match_left' => $todayMatchL,
+            'today_match_right' => $todayMatchR,
+            'today_pairs_matched' => (int) $todaySplit['pairs_matched'],
             'income_eligible' => $incomeEligible,
         ];
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function scopeCarryBuckets(User $user, string $scope): array
+    {
+        return match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => [
+                (int) $user->active_panel_match_carry_left,
+                (int) $user->active_panel_match_carry_right,
+            ],
+            BinaryDailyClosing::SCOPE_SUPER => [
+                (int) $user->super_panel_match_carry_left,
+                (int) $user->super_panel_match_carry_right,
+            ],
+            default => [
+                (int) $user->panel_match_carry_left,
+                (int) $user->panel_match_carry_right,
+            ],
+        };
     }
 
     private function projectedMilestoneUsd(string $scope, int $pairsMatched): string
@@ -429,6 +464,7 @@ class MemberTeamService
             'team_volume' => [
                 'period' => 'yesterday',
                 'date' => $yesterdayDate,
+                'today_date' => BinaryClosingCalendar::todayDateString(),
             ],
             'leg_match' => [
                 'active_panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $leftLeg, $rightLeg),
