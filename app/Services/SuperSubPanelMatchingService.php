@@ -52,6 +52,12 @@ class SuperSubPanelMatchingService
         DB::transaction(function () use ($buyer) {
             $touchedAncestorIds = [];
 
+            // Daily closing + subtree ledger: carry is set only by `binary:daily-closing`
+            // from team totals (e.g. 29|80 → 0|51), not +1 per buy on users.*_carry_*.
+            if ($this->isDailyClosingActive()) {
+                return;
+            }
+
             $childSide = strtolower((string) $buyer->binary_side);
             $parentId = (int) $buyer->binary_parent_id;
 
@@ -80,12 +86,6 @@ class SuperSubPanelMatchingService
 
                 $childSide = strtolower((string) $ancestor->binary_side);
                 $parentId = (int) ($ancestor->binary_parent_id ?? 0);
-            }
-
-            // Daily-closing source-of-truth for super-sub-panel scope: skip the
-            // real-time pair-matching loop and let the midnight cron credit pairs.
-            if ($this->isDailyClosingActive()) {
-                return;
             }
 
             // Real-time fallback: try to match pairs at every ancestor we touched.

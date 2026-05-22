@@ -34,6 +34,10 @@ class PanelMatchingService
         DB::transaction(function () use ($buyer) {
             $touchedAncestorIds = [];
 
+            if ($this->isDailyClosingActive()) {
+                return;
+            }
+
             $childSide = strtolower((string) $buyer->binary_side);
             $parentId = (int) $buyer->binary_parent_id;
 
@@ -64,14 +68,6 @@ class PanelMatchingService
 
                 $childSide = strtolower((string) $ancestor->binary_side);
                 $parentId = (int) ($ancestor->binary_parent_id ?? 0);
-            }
-
-            // When the daily closing system is the source-of-truth for panel matching,
-            // we MUST NOT consume pairs in real-time — otherwise the midnight closing
-            // would only see one-sided leftovers. Carry just accumulates here and the
-            // `binary:daily-closing` cron does the matching + wallet credit at 12:00 AM IST.
-            if ($this->isDailyClosingActive()) {
-                return;
             }
 
             // Real-time fallback: try to match pairs at every ancestor we touched.

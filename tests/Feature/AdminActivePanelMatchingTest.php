@@ -29,23 +29,25 @@ class AdminActivePanelMatchingTest extends TestCase
         ]);
     }
 
-    public function test_admin_mark_active_panel_paid_increments_upline_carry_for_daily_closing(): void
+    public function test_admin_mark_active_panel_paid_does_not_increment_carry_when_daily_closing_owns_scope(): void
     {
+        $closingDay = Carbon::parse('2026-05-08 12:00:00', 'Asia/Kolkata');
+
         $earner = User::factory()->create([
-            'activation_fee_paid_at' => now(),
-            'minimum_panel_fee_paid_at' => now(),
+            'activation_fee_paid_at' => $closingDay,
+            'minimum_panel_fee_paid_at' => $closingDay,
             'active_panel_match_carry_left' => 0,
             'active_panel_match_carry_right' => 0,
         ]);
 
         $leftBuyer = User::factory()->create([
-            'activation_fee_paid_at' => now(),
+            'activation_fee_paid_at' => $closingDay,
             'binary_parent_id' => $earner->id,
             'binary_side' => 'left',
         ]);
 
         $rightBuyer = User::factory()->create([
-            'activation_fee_paid_at' => now(),
+            'activation_fee_paid_at' => $closingDay,
             'binary_parent_id' => $earner->id,
             'binary_side' => 'right',
         ]);
@@ -54,11 +56,11 @@ class AdminActivePanelMatchingTest extends TestCase
         app(AdminMemberAccountService::class)->activateMinimumPanel($rightBuyer);
 
         $earner->refresh();
-        $this->assertSame(1, (int) $earner->active_panel_match_carry_left);
-        $this->assertSame(1, (int) $earner->active_panel_match_carry_right);
+        $this->assertSame(0, (int) $earner->active_panel_match_carry_left);
+        $this->assertSame(0, (int) $earner->active_panel_match_carry_right);
 
         $closing = app(BinaryDailyClosingService::class)
-            ->closeForUser($earner, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, Carbon::parse('2026-05-08', 'Asia/Kolkata'));
+            ->closeForUser($earner, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $closingDay);
 
         $this->assertNotNull($closing);
         $this->assertSame(1, (int) $closing->pairs_matched);

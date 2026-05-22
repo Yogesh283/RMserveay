@@ -177,3 +177,9 @@ SELECT
     28 - 20 AS L_minus_pairs,
     41 - 20 AS R_minus_pairs,
     'DB shows L_out=8, R_out=21 (weak-leg rule alag ho sakta hai)' AS note;
+
+-- =============================================================================
+-- FIX — 33 ko 51 banana (team 29|80, sahi carry = 0|51)
+-- Pehle reverse closing + duplicate rows delete, phir nayi code se closing.
+-- Sirf display fix (temporary, recommended nahi):
+-- UPDATE users SET super_panel_match_carry_left = 0, super_panel_match_carry_right = 51 WHERE id = 128;

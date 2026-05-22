@@ -46,6 +46,10 @@ class ActivePanelMatchingService
         DB::transaction(function () use ($user) {
             $touchedAncestorIds = [];
 
+            if ($this->isDailyClosingActive()) {
+                return;
+            }
+
             $childId = (int) $user->id;
             $childSide = strtolower((string) $user->binary_side);
             $parentId = (int) $user->binary_parent_id;
@@ -76,14 +80,6 @@ class ActivePanelMatchingService
                 $childId = (int) $ancestor->id;
                 $childSide = strtolower((string) $ancestor->binary_side);
                 $parentId = (int) ($ancestor->binary_parent_id ?? 0);
-            }
-
-            // When the binary daily-closing job owns the active_panel scope we
-            // MUST NOT consume pairs in real-time — otherwise the midnight
-            // closing would only see one-sided leftovers. The carry just
-            // accumulates and the cron does the matching + payout at 12:00 AM IST.
-            if ($this->isDailyClosingActive()) {
-                return;
             }
 
             // Real-time fallback: try to match pairs at every ancestor we
