@@ -247,7 +247,8 @@ class BinaryDailyClosingService
                 return null;
             }
 
-            $incomeEligible = $user->qualifiesActivePanelistIncome();
+            $incomeEligible = $user->qualifiesBinaryClosingIncome($scope);
+            $incomeBlockedReason = $user->binaryClosingIncomeBlockedReason($scope);
 
             if (! $incomeEligible && min($leftIn, $rightIn) > 0) {
                 Log::info('binary_closing.carry_only_inactive_panelist', [
@@ -445,7 +446,7 @@ class BinaryDailyClosingService
                     'stored_carry_left_before' => $storedLeft,
                     'stored_carry_right_before' => $storedRight,
                     'income_eligible' => $incomeEligible,
-                    'income_blocked_reason' => $incomeEligible ? null : 'inactive_panelist',
+                    'income_blocked_reason' => $incomeBlockedReason,
                     'pairs_held' => $incomeEligible ? 0 : $pairsAvailable,
                     'income_already_paid' => $incomeAlreadyPaid,
                     'refreshed_at' => $existingClosing !== null ? now()->toIso8601String() : null,
@@ -626,14 +627,11 @@ class BinaryDailyClosingService
      */
     private function expectedMilestonePayoutUsd(User $user, string $scope, int $pairsMatched): string
     {
-        if ($pairsMatched <= 0 || ! $user->qualifiesActivePanelistIncome()) {
+        if ($pairsMatched <= 0 || ! $user->qualifiesBinaryClosingIncome($scope)) {
             return '0.00';
         }
 
         if ($scope === BinaryDailyClosing::SCOPE_PANEL) {
-            if (! $user->qualifiesForPanelMatchingIncome()) {
-                return '0.00';
-            }
 
             $tier = MatchingMilestoneTable::nearestTierAtOrBelow($pairsMatched, 'sub_panel_matching.milestones');
             if ($tier <= 0) {
@@ -646,10 +644,6 @@ class BinaryDailyClosingService
         }
 
         if ($scope === BinaryDailyClosing::SCOPE_SUPER) {
-            if (! $user->qualifiesForSuperSubPanelMatchingIncome()) {
-                return '0.00';
-            }
-
             $tier = MatchingMilestoneTable::nearestTierAtOrBelow($pairsMatched, 'super_sub_panel_matching.milestones');
             if ($tier <= 0) {
                 return '0.00';

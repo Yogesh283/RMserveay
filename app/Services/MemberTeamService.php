@@ -215,7 +215,8 @@ class MemberTeamService
             $currentCarryRight = (int) $todayClosing->right_carry_out;
         }
 
-        $incomeEligible = $user->qualifiesActivePanelistIncome();
+        $incomeEligible = $user->qualifiesBinaryClosingIncome($scope);
+        $incomeBlockedReason = $user->binaryClosingIncomeBlockedReason($scope);
 
         $pairsHeld = 0;
 
@@ -295,6 +296,7 @@ class MemberTeamService
             'today_match_right' => (int) $todayInputs['right_in'],
             'today_pairs_matched' => (int) $todaySplit['pairs_matched'],
             'income_eligible' => $incomeEligible,
+            'income_blocked_reason' => $incomeBlockedReason,
             'current_carry_left' => $currentCarryLeft,
             'current_carry_right' => $currentCarryRight,
             'today_closing_recorded' => $todayClosing !== null,
@@ -383,7 +385,7 @@ class MemberTeamService
         return array_merge($status, [
             'eligible' => (bool) $snap['income_eligible'],
             'income_eligible' => (bool) $snap['income_eligible'],
-            'income_blocked_reason' => $snap['income_eligible'] ? null : 'inactive_panelist',
+            'income_blocked_reason' => $snap['income_blocked_reason'] ?? ($snap['income_eligible'] ? null : 'inactive_panelist'),
             'earned_today_usd' => $snap['payout_usd'],
             'today_milestone_paid_usd' => $snap['milestone_paid_usd'],
             'today_left_carry_in' => $snap['yesterday_match_left'],

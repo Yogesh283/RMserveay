@@ -464,6 +464,7 @@ class BinaryDailyClosingTest extends TestCase
 
         $inactive->activation_fee_paid_at = now();
         $inactive->minimum_panel_fee_paid_at = now();
+        $inactive->sub_panel_count = (int) config('self_survey.max_sub_panels', 9);
         $inactive->save();
 
         $day2 = Carbon::parse('2026-06-11', 'Asia/Kolkata');
@@ -473,5 +474,32 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame(0, (int) $c2->left_carry_out);
         $this->assertSame(0, (int) $c2->right_carry_out);
         $this->assertSame('8.00', (string) $c2->payout_usd, '10 pairs → milestone tier 8');
+    }
+
+    public function test_active_panelist_without_nine_sub_panels_holds_sub_income(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => false]);
+
+        $user = User::factory()->create([
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 5,
+            'panel_match_carry_left' => 8,
+            'panel_match_carry_right' => 8,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-06-15', 'Asia/Kolkata'));
+
+        $this->assertNotNull($closing);
+        $this->assertSame(0, (int) $closing->pairs_matched);
+        $this->assertSame('0.00', (string) $closing->payout_usd);
+        $this->assertSame('incomplete_sub_panels', $closing->meta['income_blocked_reason'] ?? null);
+        $this->assertSame(8, (int) $closing->left_carry_out);
+        $this->assertSame(8, (int) $closing->right_carry_out);
+
+        $user->refresh();
+        $this->assertSame('0.00', (string) $user->wallet_balance);
     }
 }

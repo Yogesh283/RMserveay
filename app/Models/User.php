@@ -507,4 +507,39 @@ class User extends Authenticatable implements FilamentUser
 
         return (int) $this->super_sub_panel_count >= $required;
     }
+
+    /**
+     * Whether this user may receive binary closing income for a scope.
+     *
+     * @param  string  $scope  `active_panel` | `panel` | `super`
+     */
+    public function qualifiesBinaryClosingIncome(string $scope): bool
+    {
+        return match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => $this->qualifiesActivePanelistIncome(),
+            BinaryDailyClosing::SCOPE_PANEL => $this->qualifiesForPanelMatchingIncome(),
+            BinaryDailyClosing::SCOPE_SUPER => $this->qualifiesForSuperSubPanelMatchingIncome(),
+            default => false,
+        };
+    }
+
+    /**
+     * @param  string  $scope  `active_panel` | `panel` | `super`
+     */
+    public function binaryClosingIncomeBlockedReason(string $scope): ?string
+    {
+        if ($this->qualifiesBinaryClosingIncome($scope)) {
+            return null;
+        }
+
+        return match ($scope) {
+            BinaryDailyClosing::SCOPE_PANEL => $this->qualifiesActivePanelistIncome()
+                ? 'incomplete_sub_panels'
+                : 'inactive_panelist',
+            BinaryDailyClosing::SCOPE_SUPER => $this->qualifiesActivePanelistIncome()
+                ? 'incomplete_super_panels'
+                : 'inactive_panelist',
+            default => 'inactive_panelist',
+        };
+    }
 }

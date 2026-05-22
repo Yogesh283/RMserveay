@@ -31,8 +31,10 @@ return [
     'use_daily_carry_ledger' => filter_var(env('BINARY_CLOSING_USE_DAILY_LEDGER', true), FILTER_VALIDATE_BOOLEAN),
 
     /**
-     * Matching income (active / sub / super) requires activation_fee + minimum_panel_fee on the earner.
-     * Carry on both legs still accrues and closing still updates carry_out when inactive.
+     * Matching income eligibility per scope (carry still accrues; payout held until eligible):
+     *  - active_panel: activation_fee + minimum_panel_fee ($11 active panelist).
+     *  - panel (sub): earner completed all sub-panel slots (default 9/9).
+     *  - super: earner completed all super-sub-panel slots (default 9/9).
      */
 
     /** IANA timezone for the daily cut-off. Default: India Standard Time. */
