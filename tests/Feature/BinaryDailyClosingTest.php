@@ -294,7 +294,7 @@ class BinaryDailyClosingTest extends TestCase
         ]);
     }
 
-    public function test_daily_ledger_matches_from_stored_carry_buckets(): void
+    public function test_daily_ledger_skips_when_no_purchases_on_closing_date(): void
     {
         config(['binary_closing.use_daily_carry_ledger' => true]);
 
@@ -303,12 +303,10 @@ class BinaryDailyClosingTest extends TestCase
         $closing = app(BinaryDailyClosingService::class)
             ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
 
-        $this->assertNotNull($closing);
-        $this->assertSame(2, (int) $closing->pairs_matched);
-        $this->assertSame('2.00', (string) $closing->payout_usd);
+        $this->assertNull($closing);
     }
 
-    public function test_daily_ledger_skips_one_sided_carry_without_pairs(): void
+    public function test_daily_ledger_skips_one_sided_daily_or_stored_only(): void
     {
         config(['binary_closing.use_daily_carry_ledger' => true]);
 

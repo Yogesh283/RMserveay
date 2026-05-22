@@ -170,14 +170,6 @@ class BinaryDailyClosingService
                 }
             }
 
-            User::query()
-                ->where(function ($q) use ($leftCol, $rightCol) {
-                    $q->where($leftCol, '>', 0)->orWhere($rightCol, '>', 0);
-                })
-                ->orderBy('id')
-                ->pluck('id')
-                ->each(fn ($id) => $ids[(int) $id] = true);
-
             $out = array_keys($ids);
             sort($out);
 
@@ -231,13 +223,18 @@ class BinaryDailyClosingService
             $storedLeft = (int) $user->{$leftCol};
             $storedRight = (int) $user->{$rightCol};
 
+            $bucketLeft = $storedLeft;
+            $bucketRight = $storedRight;
+
             if ($useDailyLedger) {
-                // Production: stored carry buckets + purchases on `closing_date` only (see config comment).
+                // Income pairs = purchases on `closing_date` only; carry_out uses stored + that day.
                 $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
                 $dailyLeft = (int) $daily['left'];
                 $dailyRight = (int) $daily['right'];
-                $leftIn = $storedLeft + $dailyLeft;
-                $rightIn = $storedRight + $dailyRight;
+                $bucketLeft = $storedLeft + $dailyLeft;
+                $bucketRight = $storedRight + $dailyRight;
+                $leftIn = $dailyLeft;
+                $rightIn = $dailyRight;
                 $matchInputs = [
                     'left_in' => $leftIn,
                     'right_in' => $rightIn,
@@ -245,8 +242,8 @@ class BinaryDailyClosingService
                     'opening_right_out' => $storedRight,
                     'yesterday_left' => $dailyLeft,
                     'yesterday_right' => $dailyRight,
-                    'total_left' => $leftIn,
-                    'total_right' => $rightIn,
+                    'total_left' => $bucketLeft,
+                    'total_right' => $bucketRight,
                 ];
             } else {
                 $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
@@ -256,17 +253,22 @@ class BinaryDailyClosingService
                 $dailyRight = (int) $matchInputs['yesterday_right'];
             }
 
-            if ($leftIn <= 0 && $rightIn <= 0) {
-                return null;
-            }
-
-            if ($useDailyLedger && min($leftIn, $rightIn) <= 0) {
+            if ($useDailyLedger) {
+                if ($dailyLeft <= 0 && $dailyRight <= 0) {
+                    return null;
+                }
+                if (min($dailyLeft, $dailyRight) <= 0) {
+                    return null;
+                }
+            } elseif ($leftIn <= 0 && $rightIn <= 0) {
                 return null;
             }
 
             $incomeEligible = $user->qualifiesActivePanelistIncome();
 
-            if (! $incomeEligible && min($leftIn, $rightIn) > 0) {
+            $pairsFromDaily = $useDailyLedger && min($dailyLeft, $dailyRight) > 0;
+
+            if (! $incomeEligible && ($pairsFromDaily || min($leftIn, $rightIn) > 0)) {
                 Log::info('binary_closing.carry_only_inactive_panelist', [
                     'user_id' => $userId,
                     'scope' => $scope,
@@ -288,9 +290,14 @@ class BinaryDailyClosingService
                 return null;
             }
 
-            $pairsAvailable = min($leftIn, $rightIn);
+            $pairsAvailable = $useDailyLedger
+                ? min($dailyLeft, $dailyRight)
+                : min($leftIn, $rightIn);
             $pairsMatched = min($pairsAvailable, $maxPairs);
             $capHit = $pairsAvailable > $maxPairs;
+
+            $carryLeft = $useDailyLedger ? $bucketLeft : $leftIn;
+            $carryRight = $useDailyLedger ? $bucketRight : $rightIn;
 
             $payout = $incomeEligible
                 ? bcmul((string) $pairsMatched, $perPair, 2)
@@ -302,19 +309,19 @@ class BinaryDailyClosingService
             $expectedTotalUsd = bcadd($payout, $expectedMilestoneUsd, 2);
 
             if ($strategy === 'weak_lapse_strong_diff') {
-                $diff = abs($leftIn - $rightIn);
-                if ($leftIn >= $rightIn) {
+                $diff = abs($carryLeft - $carryRight);
+                if ($carryLeft >= $carryRight) {
                     $leftOut = $diff;
                     $rightOut = 0;
                 } else {
                     $leftOut = 0;
                     $rightOut = $diff;
                 }
-                $leftLapsed = max(0, $leftIn - $pairsMatched - $leftOut);
-                $rightLapsed = max(0, $rightIn - $pairsMatched - $rightOut);
+                $leftLapsed = max(0, $carryLeft - $pairsMatched - $leftOut);
+                $rightLapsed = max(0, $carryRight - $pairsMatched - $rightOut);
             } else {
-                $leftOut = $leftIn - $pairsMatched;
-                $rightOut = $rightIn - $pairsMatched;
+                $leftOut = $carryLeft - $pairsMatched;
+                $rightOut = $carryRight - $pairsMatched;
                 $leftLapsed = 0;
                 $rightLapsed = 0;
             }
