@@ -33,6 +33,7 @@ class BinaryDailyClosingService
         protected SubPanelMatchingService $subPanelMatching,
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected BinaryClosingDailyCarryService $dailyCarry,
+        protected BinarySubtreeVolumeService $subtreeVolumes,
     ) {}
 
     /**
@@ -230,17 +231,11 @@ class BinaryDailyClosingService
             $storedLeft = (int) $user->{$leftCol};
             $storedRight = (int) $user->{$rightCol};
 
-            $dailyLeft = 0;
-            $dailyRight = 0;
-            if ($useDailyLedger) {
-                $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
-                $dailyLeft = (int) $daily['left'];
-                $dailyRight = (int) $daily['right'];
-            }
-
-            // Match on current carry buckets (weak/strong rule); meta records yesterday's increments.
-            $leftIn = $storedLeft;
-            $rightIn = $storedRight;
+            $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
+            $leftIn = (int) $matchInputs['left_in'];
+            $rightIn = (int) $matchInputs['right_in'];
+            $dailyLeft = (int) $matchInputs['yesterday_left'];
+            $dailyRight = (int) $matchInputs['yesterday_right'];
 
             if ($leftIn <= 0 && $rightIn <= 0) {
                 return null;
@@ -391,6 +386,10 @@ class BinaryDailyClosingService
                     'daily_carry_ledger' => $useDailyLedger,
                     'daily_left' => $dailyLeft,
                     'daily_right' => $dailyRight,
+                    'opening_carry_left' => (int) $matchInputs['opening_left_out'],
+                    'opening_carry_right' => (int) $matchInputs['opening_right_out'],
+                    'subtree_total_left' => (int) $matchInputs['total_left'],
+                    'subtree_total_right' => (int) $matchInputs['total_right'],
                     'stored_carry_left_before' => $storedLeft,
                     'stored_carry_right_before' => $storedRight,
                 ],

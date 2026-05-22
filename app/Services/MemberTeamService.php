@@ -17,7 +17,7 @@ class MemberTeamService
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected SurveyLevelIncomeService $surveyLevelIncome,
         protected ActivePanelMatchingService $activePanelMatching,
-        protected BinaryClosingDailyCarryService $dailyCarry,
+        protected BinarySubtreeVolumeService $subtreeVolumes,
     ) {}
 
     /**
@@ -153,31 +153,21 @@ class MemberTeamService
     private function buildTeamLegMatch(User $user, string $scope, array $leftLeg, array $rightLeg): array
     {
         $yesterday = BinaryClosingCalendar::yesterdayDateString();
-        $closingDate = CarbonImmutable::parse($yesterday, BinaryClosingCalendar::timezone())->startOfDay();
         $maxPairs = match ($scope) {
             BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20),
             BinaryDailyClosing::SCOPE_SUPER => (int) config('binary_closing.scopes.super.max_pairs_per_day', 20),
             default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
         };
 
-        [$leftCol, $rightCol] = match ($scope) {
-            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => ['active_panel_match_carry_left', 'active_panel_match_carry_right'],
-            BinaryDailyClosing::SCOPE_SUPER => ['super_panel_match_carry_left', 'super_panel_match_carry_right'],
-            default => ['panel_match_carry_left', 'panel_match_carry_right'],
-        };
-
-        $storedL = (int) $user->{$leftCol};
-        $storedR = (int) $user->{$rightCol};
-        $daily = $this->dailyCarry->incrementsForUserOnClosingDate($user->id, $scope, $closingDate);
-        $dailyL = (int) $daily['left'];
-        $dailyR = (int) $daily['right'];
-
-        $totalL = $this->legLifetimeVolume($leftLeg, $scope);
-        $totalR = $this->legLifetimeVolume($rightLeg, $scope);
+        $inputs = $this->subtreeVolumes->closingMatchInputs($user, $scope);
+        $totalL = (int) $inputs['total_left'];
+        $totalR = (int) $inputs['total_right'];
         $totalSplit = BinaryWeakSideLapse::splitFromLegCounts($totalL, $totalR, $maxPairs);
-
-        $bucketSplit = BinaryWeakSideLapse::splitFromLegCounts($storedL, $storedR, $maxPairs);
-        $pairsMatched = (int) $bucketSplit['pairs_matched'];
+        $matchSplit = BinaryWeakSideLapse::splitFromLegCounts(
+            (int) $inputs['left_in'],
+            (int) $inputs['right_in'],
+            $maxPairs,
+        );
 
         $closing = BinaryDailyClosing::query()
             ->where('user_id', $user->id)
@@ -197,10 +187,11 @@ class MemberTeamService
             $milestoneUsd = (string) ($meta['milestone_paid_usd'] ?? '0.00');
             $weak = BinaryWeakSideLapse::fromClosing($closing);
         } else {
-            $carryForwardL = (int) $bucketSplit['left_out'];
-            $carryForwardR = (int) $bucketSplit['right_out'];
-            $matchLeft = $storedL;
-            $matchRight = $storedR;
+            $pairsMatched = (int) $matchSplit['pairs_matched'];
+            $carryForwardL = (int) $matchSplit['left_out'];
+            $carryForwardR = (int) $matchSplit['right_out'];
+            $matchLeft = (int) $inputs['left_in'];
+            $matchRight = (int) $inputs['right_in'];
             $milestoneUsd = $this->projectedMilestoneUsd($scope, $pairsMatched);
             $perPair = match ($scope) {
                 BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'),
@@ -208,8 +199,8 @@ class MemberTeamService
             };
             $payoutUsd = bcadd(bcmul((string) $pairsMatched, $perPair, 2), $milestoneUsd, 2);
             $weak = [
-                'side' => $bucketSplit['weak_side'],
-                'lapsed' => $bucketSplit['weak_lapsed'],
+                'side' => $matchSplit['weak_side'],
+                'lapsed' => $matchSplit['weak_lapsed'],
             ];
         }
 
@@ -220,10 +211,12 @@ class MemberTeamService
             'total_pairs_matched' => min(min($totalL, $totalR), $maxPairs),
             'total_carry_left' => (int) $totalSplit['left_out'],
             'total_carry_right' => (int) $totalSplit['right_out'],
-            'yesterday_new_left' => $dailyL,
-            'yesterday_new_right' => $dailyR,
+            'yesterday_new_left' => (int) $inputs['yesterday_left'],
+            'yesterday_new_right' => (int) $inputs['yesterday_right'],
             'yesterday_match_left' => $matchLeft,
             'yesterday_match_right' => $matchRight,
+            'opening_carry_left' => (int) $inputs['opening_left_out'],
+            'opening_carry_right' => (int) $inputs['opening_right_out'],
             'pairs_matched' => $pairsMatched,
             'carry_forward_left' => $carryForwardL,
             'carry_forward_right' => $carryForwardR,
@@ -234,18 +227,6 @@ class MemberTeamService
             'today_left_lapsed' => ($weak['side'] ?? '') === 'left' ? (int) ($weak['lapsed'] ?? 0) : 0,
             'today_right_lapsed' => ($weak['side'] ?? '') === 'right' ? (int) ($weak['lapsed'] ?? 0) : 0,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $leg
-     */
-    private function legLifetimeVolume(array $leg, string $scope): int
-    {
-        return match ($scope) {
-            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) ($leg['total_active'] ?? 0),
-            BinaryDailyClosing::SCOPE_SUPER => (int) ($leg['total_super_sub_panels'] ?? 0),
-            default => (int) ($leg['total_sub_panels'] ?? 0),
-        };
     }
 
     private function projectedMilestoneUsd(string $scope, int $pairsMatched): string
