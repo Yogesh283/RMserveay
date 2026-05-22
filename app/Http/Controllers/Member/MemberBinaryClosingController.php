@@ -54,22 +54,32 @@ class MemberBinaryClosingController extends Controller
                     ])
                     ->values(),
             ],
-            'closings' => $rows->map(fn (BinaryDailyClosing $r) => [
-                'id' => $r->id,
-                'closing_date' => $r->closing_date->toDateString(),
-                'scope' => $r->scope,
-                'left_carry_in' => (int) $r->left_carry_in,
-                'right_carry_in' => (int) $r->right_carry_in,
-                'pairs_matched' => (int) $r->pairs_matched,
-                'cap_hit' => (bool) $r->cap_hit,
-                'per_pair_usd' => (string) $r->per_pair_usd,
-                'payout_usd' => (string) $r->payout_usd,
-                'left_carry_out' => (int) $r->left_carry_out,
-                'right_carry_out' => (int) $r->right_carry_out,
-                'left_lapsed' => (int) $r->left_lapsed,
-                'right_lapsed' => (int) $r->right_lapsed,
-                'created_at' => $r->created_at?->toIso8601String(),
-            ])->values(),
+            'closings' => $rows->map(function (BinaryDailyClosing $r) {
+                $meta = is_array($r->meta) ? $r->meta : [];
+
+                return [
+                    'id' => $r->id,
+                    'closing_date' => $r->closing_date->toDateString(),
+                    'scope' => $r->scope,
+                    'left_carry_in' => (int) $r->left_carry_in,
+                    'right_carry_in' => (int) $r->right_carry_in,
+                    'pairs_matched' => (int) $r->pairs_matched,
+                    'cap_hit' => (bool) $r->cap_hit,
+                    'per_pair_usd' => (string) $r->per_pair_usd,
+                    'payout_usd' => (string) $r->payout_usd,
+                    'left_carry_out' => (int) $r->left_carry_out,
+                    'right_carry_out' => (int) $r->right_carry_out,
+                    'left_lapsed' => (int) $r->left_lapsed,
+                    'right_lapsed' => (int) $r->right_lapsed,
+                    'income_eligible' => (bool) ($meta['income_eligible'] ?? true),
+                    'income_paid' => (bool) ($meta['income_eligible'] ?? true) && bccomp((string) $r->payout_usd, '0.00', 2) > 0,
+                    'income_blocked_reason' => $meta['income_blocked_reason'] ?? null,
+                    'milestone_paid_usd' => (string) ($meta['milestone_paid_usd'] ?? '0.00'),
+                    'per_pair_paid_usd' => (string) ($meta['per_pair_paid_usd'] ?? '0.00'),
+                    'wallet_transaction_id' => $r->wallet_transaction_id,
+                    'created_at' => $r->created_at?->toIso8601String(),
+                ];
+            })->values(),
             'last_closing' => [
                 'date' => $totalsToday->first()?->closing_date?->toDateString(),
                 'pairs_matched_total' => (int) $totalsToday->sum('pairs_matched'),

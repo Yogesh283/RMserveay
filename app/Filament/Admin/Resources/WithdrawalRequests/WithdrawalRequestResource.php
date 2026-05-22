@@ -20,7 +20,7 @@ class WithdrawalRequestResource extends Resource
 {
     protected static ?string $model = WalletTransaction::class;
 
-    protected static ?string $navigationLabel = 'Withdrawals (NOWPayments)';
+    protected static ?string $navigationLabel = 'Withdrawals → NOWPayments';
 
     protected static ?string $modelLabel = 'withdrawal request';
 

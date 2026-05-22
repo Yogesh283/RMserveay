@@ -17,10 +17,13 @@ class ListWithdrawalRequests extends ListRecords
 
     public function getSubheading(): ?string
     {
-        $enabled = config('nowpayments.payouts.enabled') ? 'ON' : 'OFF';
+        if (! config('nowpayments.payouts.enabled')) {
+            return 'Payouts OFF — set NOWPAYMENTS_PAYOUTS_ENABLED=true, NOWPAYMENTS_PAYOUT_EMAIL, NOWPAYMENTS_PAYOUT_PASSWORD in .env, then config:clear';
+        }
+
         $currency = (string) config('nowpayments.payouts.currency', 'usdtbsc');
 
-        return "Process member USDT BEP-20 withdrawals via NOWPayments Mass Payout API · Payouts {$enabled} · currency {$currency}";
+        return "All member withdrawals are paid via NOWPayments Mass Payout (USDT BEP-20) · currency {$currency} · IPN ".url('/api/payments/nowpayments/ipn');
     }
 
     protected function getHeaderActions(): array

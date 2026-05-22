@@ -8,6 +8,7 @@ export function MatchingIncomeTable({
     dark,
     variant,
     panelData,
+    activeData,
     subData,
     superData,
     embedded = false,
@@ -46,19 +47,21 @@ export function MatchingIncomeTable({
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
     }
 
-    /** After daily closing in this cycle, hide projected tier income (paid row only). */
-    function incomeCell(stripe, paid, amount, locked) {
-        if (locked && !paid) {
+    /** Milestone schedule always shows $; active panel may hide future tiers when locked. */
+    function incomeCell(stripe, paid, amount, locked, scope = 'milestone') {
+        if (scope === 'active' && locked && !paid) {
             return (
                 <td className={cellIncome(stripe, false)}>
                     <span className="opacity-50">—</span>
                 </td>
             );
         }
+        const display = amount ?? '0.00';
+        const highlight = paid && !hideEarnedHighlight;
         return (
-            <td className={cellIncome(stripe, paid)}>
-                <span className="tabular-nums">{fmtUsd(amount)}</span>
-                {paid ? (
+            <td className={cellIncome(stripe, highlight)}>
+                <span className="tabular-nums font-semibold">{fmtUsd(display)}</span>
+                {highlight ? (
                     <span
                         className={`ml-2 inline-block rounded-md bg-emerald-500/25 px-1.5 py-0.5 font-bold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-400/40 ${comfortable ? 'text-[11px]' : 'text-[10px]'}`}
                     >
@@ -155,7 +158,61 @@ export function MatchingIncomeTable({
     let rows = null;
     let summary = null;
 
-    if (variant === 'panel' && panelData) {
+    if (variant === 'active' && activeData) {
+        const totalL = (activeData.total_left_active_panels ?? 0) | 0;
+        const totalR = (activeData.total_right_active_panels ?? 0) | 0;
+        const perPair = activeData.per_pair_income_usd ?? '1.00';
+        const maxPairs = (activeData.max_pairs_per_day ?? 20) | 0;
+        const pairsPaid = (activeData.pairs_paid_today ?? activeData.pairs_matched_last_closing ?? 0) | 0;
+        const incomeLocked = activeData.income_projection_locked === true;
+        const carry = matchingCarryDisplay({
+            eligible: activeData.eligible === true,
+            carryLeft: activeData.carry_left,
+            carryRight: activeData.carry_right,
+            legLeft: totalL,
+            legRight: totalR,
+            closingLeftOut: activeData.today_left_carry_out,
+            closingRightOut: activeData.today_right_carry_out,
+        });
+        const tiers = activeData.tier_rows ?? [];
+        summary = {
+            l: totalL,
+            r: totalR,
+            carryL: carry.left,
+            carryR: carry.right,
+            carryBilateral: activeData.eligible !== true,
+            extraLabel2: 'Max pairs/day',
+            extraValue2: maxPairs,
+        };
+        rows = tiers.map((row, idx) => {
+            const pairNo = row.matching_panels | 0;
+            const paid = !hideEarnedHighlight && pairNo > 0 && pairsPaid > 0 && pairNo === pairsPaid;
+            const stripe = idx % 2 === 1;
+            return (
+                <tr key={pairNo} className="transition-colors hover:bg-white/[0.04]">
+                    <td className={cellMilestone(stripe)}>
+                        {pairNo} {pairNo === 1 ? 'pair' : 'pairs'}
+                    </td>
+                    {hideLiveData ? (
+                        <>
+                            <td className={cellL(stripe)}>
+                                <span className="tabular-nums">1 L</span>
+                            </td>
+                            <td className={cellR(stripe)}>
+                                <span className="tabular-nums">1 R</span>
+                            </td>
+                        </>
+                    ) : (
+                        <>
+                            {progressCell(cellL(stripe), (activeData.carry_left ?? 0) | 0, pairNo, 'L', pairNo)}
+                            {progressCell(cellR(stripe), (activeData.carry_right ?? 0) | 0, pairNo, 'R', pairNo)}
+                        </>
+                    )}
+                    {incomeCell(stripe, paid, row.income_usd ?? perPair, incomeLocked, 'active')}
+                </tr>
+            );
+        });
+    } else if (variant === 'panel' && panelData) {
         const totalL = (panelData.total_left_subs ?? panelData.carry_left) | 0;
         const totalR = (panelData.total_right_subs ?? panelData.carry_right) | 0;
         const perPair = panelData.per_pair_income_usd;
@@ -208,22 +265,48 @@ export function MatchingIncomeTable({
             extraLabel2: 'Lapsed today',
             extraValue2: subData.today_weak_lapsed ?? 0,
         };
+        const applicableTier = (currentMilestone | 0) > 0 ? currentMilestone | 0 : 0;
         rows = tiers.map((row, idx) => {
+            const tier = row.matching_panels | 0;
             const paid =
                 !hideEarnedHighlight &&
-                (row.matching_panels | 0) === (currentMilestone | 0) &&
-                (currentMilestone | 0) > 0;
+                tier === applicableTier &&
+                applicableTier > 0;
+            const isApplicable = tier === applicableTier && applicableTier > 0;
             const stripe = idx % 2 === 1;
-            const required = Math.max(1, (row.matching_panels | 0) / 2);
+            const required = Math.max(1, tier / 2);
             return (
-                <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
-                    <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
-                    {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
-                    {incomeCell(stripe, paid, row.income_usd, incomeLocked)}
+                <tr
+                    key={tier}
+                    className={`transition-colors hover:bg-white/[0.04] ${isApplicable ? (dark ? 'ring-1 ring-inset ring-sky-400/45' : 'ring-1 ring-inset ring-sky-400/60') : ''}`}
+                >
+                    <td className={cellMilestone(stripe)}>
+                        {tier}
+                        {isApplicable ? (
+                            <span
+                                className={`ml-1.5 inline-block rounded-md px-1.5 py-0.5 font-bold uppercase tracking-wide ${dark ? 'bg-sky-500/25 text-sky-200 ring-1 ring-sky-400/40' : 'bg-sky-100 text-sky-800'} ${comfortable ? 'text-[10px]' : 'text-[9px]'}`}
+                            >
+                                Today
+                            </span>
+                        ) : null}
+                    </td>
+                    {progressCell(cellL(stripe), totalL, required, 'L', tier)}
+                    {progressCell(cellR(stripe), totalR, required, 'R', tier)}
+                    {incomeCell(stripe, paid, row.income_usd, incomeLocked, 'milestone')}
                 </tr>
             );
         });
+        summary = {
+            ...summary,
+            payoutBanner: {
+                earned: subData.earned_today_usd,
+                projected: subData.table_income_usd ?? subData.today_milestone_paid_usd,
+                milestone: applicableTier,
+                locked: incomeLocked,
+                eligible: subEligible,
+                maxPairs: subData.max_binary_pairs_per_day ?? 20,
+            },
+        };
     } else if (variant === 'super' && superData) {
         const totalL = (superData.total_left_supers ?? 0) | 0;
         const totalR = (superData.total_right_supers ?? 0) | 0;
@@ -249,22 +332,48 @@ export function MatchingIncomeTable({
             extraLabel2: 'Lapsed today',
             extraValue2: superData.today_weak_lapsed ?? 0,
         };
+        const applicableTier = (currentMilestone | 0) > 0 ? currentMilestone | 0 : 0;
         rows = tiers.map((row, idx) => {
+            const tier = row.matching_panels | 0;
             const paid =
                 !hideEarnedHighlight &&
-                (row.matching_panels | 0) === (currentMilestone | 0) &&
-                (currentMilestone | 0) > 0;
+                tier === applicableTier &&
+                applicableTier > 0;
+            const isApplicable = tier === applicableTier && applicableTier > 0;
             const stripe = idx % 2 === 1;
-            const required = Math.max(1, (row.matching_panels | 0) / 2);
+            const required = Math.max(1, tier / 2);
             return (
-                <tr key={row.matching_panels} className="transition-colors hover:bg-white/[0.04]">
-                    <td className={cellMilestone(stripe)}>{row.matching_panels}</td>
-                    {progressCell(cellL(stripe), totalL, required, 'L', row.matching_panels)}
-                    {progressCell(cellR(stripe), totalR, required, 'R', row.matching_panels)}
-                    {incomeCell(stripe, paid, row.income_usd, incomeLocked)}
+                <tr
+                    key={tier}
+                    className={`transition-colors hover:bg-white/[0.04] ${isApplicable ? (dark ? 'ring-1 ring-inset ring-amber-400/45' : 'ring-1 ring-inset ring-amber-400/60') : ''}`}
+                >
+                    <td className={cellMilestone(stripe)}>
+                        {tier}
+                        {isApplicable ? (
+                            <span
+                                className={`ml-1.5 inline-block rounded-md px-1.5 py-0.5 font-bold uppercase tracking-wide ${dark ? 'bg-amber-500/25 text-amber-200 ring-1 ring-amber-400/40' : 'bg-amber-100 text-amber-800'} ${comfortable ? 'text-[10px]' : 'text-[9px]'}`}
+                            >
+                                Today
+                            </span>
+                        ) : null}
+                    </td>
+                    {progressCell(cellL(stripe), totalL, required, 'L', tier)}
+                    {progressCell(cellR(stripe), totalR, required, 'R', tier)}
+                    {incomeCell(stripe, paid, row.income_usd, incomeLocked, 'milestone')}
                 </tr>
             );
         });
+        summary = {
+            ...summary,
+            payoutBanner: {
+                earned: superData.earned_today_usd,
+                projected: superData.table_income_usd ?? superData.today_milestone_paid_usd,
+                milestone: applicableTier,
+                locked: incomeLocked,
+                eligible: superEligible,
+                maxPairs: superData.max_binary_pairs_per_day ?? 20,
+            },
+        };
     }
 
     if (!rows) {
@@ -319,8 +428,48 @@ export function MatchingIncomeTable({
             isPowerLegCarryVisible(summary.carryL) ||
             isPowerLegCarryVisible(summary.carryR));
 
+    const payoutBanner = summary?.payoutBanner;
+    const bannerTone =
+        variant === 'super'
+            ? dark
+                ? 'border-amber-400/35 bg-amber-500/15 text-amber-100'
+                : 'border-amber-300 bg-amber-50 text-amber-900'
+            : dark
+              ? 'border-sky-400/35 bg-sky-500/15 text-sky-100'
+              : 'border-sky-300 bg-sky-50 text-sky-900';
+
     return (
         <div className={card}>
+            {payoutBanner ? (
+                <div className={`mb-3 rounded-xl border px-3 py-2.5 text-sm leading-snug ${bannerTone}`}>
+                    {!payoutBanner.eligible ? (
+                        <p>Activate panel to earn sub-panel matching income.</p>
+                    ) : payoutBanner.locked && Number.parseFloat(String(payoutBanner.earned)) > 0 ? (
+                        <p>
+                            <span className="font-bold">Paid this cycle:</span>{' '}
+                            <span className="tabular-nums text-lg font-black">{fmtUsd(payoutBanner.earned)}</span>
+                            {payoutBanner.milestone > 0 ? (
+                                <span className="opacity-90">
+                                    {' '}
+                                    @ {payoutBanner.milestone} pairs tier (max {payoutBanner.maxPairs} pairs/day)
+                                </span>
+                            ) : null}
+                        </p>
+                    ) : payoutBanner.milestone > 0 ? (
+                        <p>
+                            <span className="font-bold">Today&apos;s tier income:</span>{' '}
+                            <span className="tabular-nums text-lg font-black">{fmtUsd(payoutBanner.projected)}</span>
+                            <span className="opacity-90">
+                                {' '}
+                                when {payoutBanner.milestone} pairs match (nearest lower milestone · max{' '}
+                                {payoutBanner.maxPairs}/day)
+                            </span>
+                        </p>
+                    ) : (
+                        <p>Match at least 2 pairs on both legs to reach the first income tier ($2).</p>
+                    )}
+                </div>
+            ) : null}
             {showCarrySummary ? (
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                     {!hideLiveData ? (
@@ -373,10 +522,20 @@ export function MatchingIncomeTable({
                 <table className={`w-full min-w-[320px] border-collapse ${comfortable ? 'text-base' : 'text-sm'}`}>
                     <thead>
                         <tr>
-                            <th className={`${thBase} rounded-tl-xl ${H.milestone}`}>{hideLiveData ? 'Match' : 'Panel match table'}</th>
+                            <th className={`${thBase} rounded-tl-xl ${H.milestone}`}>
+                                {variant === 'active'
+                                    ? hideLiveData
+                                        ? 'Pairs / day'
+                                        : 'Pairs (max 20/day)'
+                                    : hideLiveData
+                                      ? 'Match'
+                                      : 'Panel match table'}
+                            </th>
                             <th className={`${thBase} text-center ${H.L}`}>{hideLiveData ? 'Left Panels' : 'L'}</th>
                             <th className={`${thBase} text-center ${H.R}`}>{hideLiveData ? 'Right Panels' : 'R'}</th>
-                            <th className={`${thBase} rounded-tr-xl text-right ${H.income}`}>Income</th>
+                            <th className={`${thBase} rounded-tr-xl text-right ${H.income}`}>
+                                {variant === 'sub' || variant === 'super' ? 'Income ($)' : 'Income'}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>{rows}</tbody>

@@ -8,6 +8,7 @@ use App\Models\WalletTransaction;
 use App\Support\BinaryClosingCalendar;
 use App\Support\BinaryClosingDisplay;
 use App\Support\BinaryWeakSideLapse;
+use App\Support\MatchingMilestoneTable;
 
 /**
  * Sub-panel matching ($10 base) — tier-based payout with excess-lapse rule.
@@ -15,27 +16,16 @@ use App\Support\BinaryWeakSideLapse;
  * Rule (daily closing):
  *   - Binary carry uses weak-leg match: min(left, right) up to 20/day; strong
  *     leg keeps only the diff, weak leg surplus lapses.
- *   - Milestone income uses the weaker leg's lifetime subtree sub-panel total:
- *     highest M in {2,4,8,…,256} where weak_leg >= M → payout = $M.
- *   - Excess above M on the weak leg (weak_leg - M) is informational lapse.
+ *   - Milestone income: highest tier M in {2,4,8,…} where M <= today's matched
+ *     pair count (nearest lower table row — e.g. 50 pairs → $32 tier, not $64).
+ *   - Excess matched pairs above that tier lapse for milestone purposes.
  *   - No per-pair $1 stream in closing — only the milestone tier income is paid.
  */
 class SubPanelMatchingService
 {
-    /** Highest milestone tier reached when the weaker leg has $weakLeg panels. */
-    private function highestMilestoneFor(int $weakLeg): int
+    private function highestMilestoneFor(int $pairsMatched): int
     {
-        $milestones = (array) config('sub_panel_matching.milestones', []);
-        rsort($milestones, SORT_NUMERIC);
-
-        foreach ($milestones as $m) {
-            $m = (int) $m;
-            if ($m > 0 && $weakLeg >= $m) {
-                return $m;
-            }
-        }
-
-        return 0;
+        return MatchingMilestoneTable::nearestTierAtOrBelow($pairsMatched, 'sub_panel_matching.milestones');
     }
 
     public function earnedToday(int $userId): string
@@ -52,44 +42,35 @@ class SubPanelMatchingService
      *
      * @return array{milestone:int, payout_usd:string, pairs_today:int, weak_leg:int, lapsed_pairs:int}
      */
-    public function applyMatchedPairs(User $earner, int $pairsToday, ?int $weakLegLifetime = null): array
+    public function applyMatchedPairs(User $earner, int $pairsToday, ?int $weakLegLifetime = null, ?string $closingDate = null): array
     {
-        $today = max(0, (int) $pairsToday);
+        $pairsMatched = max(0, (int) $pairsToday);
         $earner->spm_pair_carry_forward = 0;
 
         $weakLeg = $weakLegLifetime !== null
             ? max(0, (int) $weakLegLifetime)
-            : $today;
+            : $pairsMatched;
 
         $result = [
             'milestone' => 0,
             'payout_usd' => '0.00',
-            'pairs_today' => $today,
+            'pairs_today' => $pairsMatched,
             'weak_leg' => $weakLeg,
-            'lapsed_pairs' => $weakLeg,
+            'lapsed_pairs' => 0,
+            'wallet_transaction_id' => null,
         ];
 
-        if ($today <= 0 || ! $earner->qualifiesForPanelMatchingIncome()) {
+        if ($pairsMatched <= 0 || ! $earner->qualifiesForPanelMatchingIncome()) {
             return $result;
         }
 
-        $milestones = (array) config('sub_panel_matching.milestones', []);
-        rsort($milestones, SORT_NUMERIC);
-
-        $highest = 0;
-        foreach ($milestones as $m) {
-            $m = (int) $m;
-            if ($m > 0 && $weakLeg >= $m) {
-                $highest = $m;
-                break;
-            }
-        }
+        $highest = MatchingMilestoneTable::nearestTierAtOrBelow($pairsMatched, 'sub_panel_matching.milestones');
 
         if ($highest <= 0) {
             return $result;
         }
 
-        $payout = (string) $highest;
+        $payout = MatchingMilestoneTable::payoutUsdForTier($highest, 'panel');
 
         $cap = (string) config('sub_panel_matching.daily_cap_usd', '256.00');
         $earnedToday = $this->earnedToday($earner->id);
@@ -102,30 +83,34 @@ class SubPanelMatchingService
             return $result;
         }
 
-        $lapsed = max(0, $weakLeg - $highest);
+        $lapsed = MatchingMilestoneTable::milestoneLapsedPairs($pairsMatched, $highest);
         $newBalance = bcadd((string) $earner->wallet_balance, $payout, 2);
         $earner->wallet_balance = $newBalance;
 
-        WalletTransaction::create([
+        $tx = WalletTransaction::create([
             'user_id' => $earner->id,
             'type' => WalletTransaction::TYPE_SUB_PANEL_MATCHING,
             'amount' => $payout,
             'balance_after' => $newBalance,
-            'meta' => [
+            'meta' => array_filter([
+                'source' => $closingDate !== null ? 'binary_daily_closing' : null,
+                'closing_date' => $closingDate,
+                'scope' => $closingDate !== null ? BinaryDailyClosing::SCOPE_PANEL : null,
                 'milestone' => $highest,
-                'pairs_today' => $today,
+                'pairs_today' => $pairsMatched,
                 'weak_leg' => $weakLeg,
                 'lapsed_pairs' => $lapsed,
                 'rate' => (string) config('sub_panel_matching.rate', '0.10'),
-            ],
+            ], fn ($v) => $v !== null),
         ]);
 
         return [
             'milestone' => $highest,
             'payout_usd' => $payout,
-            'pairs_today' => $today,
+            'pairs_today' => $pairsMatched,
             'weak_leg' => $weakLeg,
             'lapsed_pairs' => $lapsed,
+            'wallet_transaction_id' => $tx->id,
         ];
     }
 
@@ -141,9 +126,10 @@ class SubPanelMatchingService
         $milestones = config('sub_panel_matching.milestones');
         $tiers = [];
         foreach ($milestones as $panels) {
+            $tier = (int) $panels;
             $tiers[] = [
-                'matching_panels' => $panels,
-                'income_usd' => (string) $panels,
+                'matching_panels' => $tier,
+                'income_usd' => MatchingMilestoneTable::payoutUsdForTier($tier, 'panel'),
             ];
         }
 
@@ -179,7 +165,16 @@ class SubPanelMatchingService
                 $remaining = '0.00';
             }
         }
-        $applicableMilestone = $this->highestMilestoneFor($weakLeg);
+        $todayInputs = app(BinarySubtreeVolumeService::class)->closingMatchInputs(
+            $earner,
+            BinaryDailyClosing::SCOPE_PANEL,
+            \Carbon\CarbonImmutable::parse(BinaryClosingCalendar::todayDateString(), BinaryClosingCalendar::timezone()),
+        );
+        $pairsForTier = min((int) $todayInputs['left_in'], (int) $todayInputs['right_in']);
+        $maxPairs = (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20);
+        $applicableMilestone = $earner->qualifiesActivePanelistIncome()
+            ? $this->highestMilestoneFor(min($pairsForTier, $maxPairs))
+            : 0;
         $paidMilestone = $incomeLocked
             ? BinaryClosingDisplay::lockedMilestone($firstPaidClosing)
             : (int) ($structureClosing?->meta['milestone'] ?? 0);
@@ -199,8 +194,8 @@ class SubPanelMatchingService
             }
         }
 
-        $carryL = (int) $earner->panel_match_carry_left;
-        $carryR = (int) $earner->panel_match_carry_right;
+        $carryL = (int) $todayInputs['left_in'];
+        $carryR = (int) $todayInputs['right_in'];
 
         return [
             'eligible' => $earner->qualifiesForPanelMatchingIncome(),

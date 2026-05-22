@@ -7,8 +7,9 @@
  * For each user with a non-zero left/right carry it:
  *   - matches up to `max_pairs_per_day` pairs (1 left + 1 right = 1 pair),
  *   - active_panel scope: credits `pair_income_usd` per matched pair,
- *   - panel/super scopes: pays the highest milestone tier reached by today's
- *     matched pairs only — excess matched pairs above that milestone LAPSE
+ *   - panel/super scopes: nearest-lower milestone tier from today's matched
+ *     pairs (e.g. 50 pairs → $32 tier if 64 not reached); excess LAPSE
+ *   - inactive panelists: L/R buckets HOLD (no match) until active; then match+lapse
  *     (counter does NOT roll across days),
  *   - deducts matched pairs from BOTH legs,
  *   - carries forward any unmatched leftover on either leg (cap-induced or
@@ -24,7 +25,7 @@ return [
 
     /**
      * When true (default): cron only processes users with sub/super/active volume on `closing_date`.
-     * Pair math always matches the team page: lifetime-leg opening carry + that date's per-leg volume.
+     * Pair math: previous close carry (or lifetime opening) + that date's per-leg volume; matched pairs lapse.
      * Set false only for legacy tests — do not disable on live.
      */
     'use_daily_carry_ledger' => filter_var(env('BINARY_CLOSING_USE_DAILY_LEDGER', true), FILTER_VALIDATE_BOOLEAN),
@@ -37,8 +38,8 @@ return [
     /** IANA timezone for the daily cut-off. Default: India Standard Time. */
     'timezone' => env('BINARY_CLOSING_TIMEZONE', 'Asia/Kolkata'),
 
-    /** 24h "HH:MM" inside `timezone` when the closing must run. Default: 08:00 IST. */
-    'closing_time' => env('BINARY_CLOSING_TIME', '08:00'),
+    /** 24h "HH:MM" inside `timezone` when the closing must run. Default: 23:00 IST (11 PM). */
+    'closing_time' => env('BINARY_CLOSING_TIME', '23:00'),
 
     /** Maximum pairs that can match for a single user in one closing. */
     'max_pairs_per_day' => (int) env('BINARY_CLOSING_MAX_PAIRS_PER_DAY', 20),

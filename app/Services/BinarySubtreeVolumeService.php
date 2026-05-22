@@ -12,7 +12,7 @@ use Carbon\CarbonInterface;
 
 /**
  * Team leg volumes from binary subtrees (left child / right child).
- * Closing match = opening carry from lifetime leg totals + yesterday per leg.
+ * Closing match = opening carry (previous close or lifetime split) + that date's per-leg volume.
  */
 class BinarySubtreeVolumeService
 {
@@ -110,25 +110,77 @@ class BinarySubtreeVolumeService
         $lifetime = $this->lifetimeLegVolumes($user, $scope);
         $yesterday = $this->yesterdayLegVolumes($user, $scope, $date);
 
-        $opening = BinaryWeakSideLapse::splitFromLegCounts(
-            $lifetime['left'],
-            $lifetime['right'],
-            $maxPairs,
-        );
+        $closingDateStr = $date !== null
+            ? CarbonImmutable::instance($date)->setTimezone(BinaryClosingCalendar::timezone())->toDateString()
+            : BinaryClosingCalendar::yesterdayDateString();
 
-        $leftIn = (int) $opening['left_out'] + (int) $yesterday['left'];
-        $rightIn = (int) $opening['right_out'] + (int) $yesterday['right'];
+        $prevDate = CarbonImmutable::parse($closingDateStr, BinaryClosingCalendar::timezone())
+            ->subDay()
+            ->toDateString();
+
+        $prevClosing = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $prevDate)
+            ->orderByDesc('id')
+            ->first(['left_carry_out', 'right_carry_out']);
+
+        if ($prevClosing !== null) {
+            $openingLeft = (int) $prevClosing->left_carry_out;
+            $openingRight = (int) $prevClosing->right_carry_out;
+        } else {
+            $opening = BinaryWeakSideLapse::splitFromLegCounts(
+                $lifetime['left'],
+                $lifetime['right'],
+                $maxPairs,
+            );
+            $openingLeft = (int) $opening['left_out'];
+            $openingRight = (int) $opening['right_out'];
+
+            if ($lifetime['left'] === 0 && $lifetime['right'] === 0) {
+                [$storedLeft, $storedRight] = $this->storedCarryForScope($user, $scope);
+                if ($storedLeft > 0 || $storedRight > 0) {
+                    $openingLeft = $storedLeft;
+                    $openingRight = $storedRight;
+                }
+            }
+        }
+
+        $leftIn = $openingLeft + (int) $yesterday['left'];
+        $rightIn = $openingRight + (int) $yesterday['right'];
 
         return [
             'left_in' => $leftIn,
             'right_in' => $rightIn,
-            'opening_left_out' => (int) $opening['left_out'],
-            'opening_right_out' => (int) $opening['right_out'],
+            'opening_left_out' => $openingLeft,
+            'opening_right_out' => $openingRight,
+            'opening_from_previous_close' => $prevClosing !== null,
             'yesterday_left' => (int) $yesterday['left'],
             'yesterday_right' => (int) $yesterday['right'],
             'total_left' => $lifetime['left'],
             'total_right' => $lifetime['right'],
         ];
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function storedCarryForScope(User $user, string $scope): array
+    {
+        return match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => [
+                (int) $user->active_panel_match_carry_left,
+                (int) $user->active_panel_match_carry_right,
+            ],
+            BinaryDailyClosing::SCOPE_SUPER => [
+                (int) $user->super_panel_match_carry_left,
+                (int) $user->super_panel_match_carry_right,
+            ],
+            default => [
+                (int) $user->panel_match_carry_left,
+                (int) $user->panel_match_carry_right,
+            ],
+        };
     }
 
     private function legVolume(User $user, string $leg, string $scope, bool $yesterdayOnly, ?CarbonInterface $date = null): int

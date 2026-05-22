@@ -362,6 +362,35 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame(162, (int) $closing->right_carry_out);
     }
 
+    public function test_rerun_same_date_refreshes_carry_without_duplicate_wallet(): void
+    {
+        $user = $this->makeUser(6, 4);
+        $date = Carbon::parse('2026-05-20', 'Asia/Kolkata');
+
+        $first = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
+        $this->assertNotNull($first);
+        $this->assertSame(4, (int) $first->pairs_matched);
+        $this->assertSame('4.00', (string) $first->payout_usd);
+
+        $user->panel_match_carry_left = 99;
+        $user->panel_match_carry_right = 99;
+        $user->save();
+
+        $second = app(BinaryDailyClosingService::class)->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, $date);
+        $this->assertNotNull($second);
+        $this->assertSame($first->id, $second->id);
+
+        $user->refresh();
+        $this->assertSame(2, (int) $user->panel_match_carry_left);
+        $this->assertSame(0, (int) $user->panel_match_carry_right);
+        $this->assertSame('4.00', (string) $user->wallet_balance);
+
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', WalletTransaction::TYPE_PANEL_MATCHING)
+            ->count());
+    }
+
     public function test_inactive_panelist_updates_left_right_carry_without_payout(): void
     {
         config(['binary_closing.use_daily_carry_ledger' => true]);
@@ -385,12 +414,64 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertNotNull($closing);
         $this->assertSame(0, (int) $closing->pairs_matched);
         $this->assertSame('0.00', (string) $closing->payout_usd);
-        $this->assertSame(0, (int) $closing->left_carry_out);
-        $this->assertSame(171, (int) $closing->right_carry_out);
+        $this->assertSame((int) $closing->left_carry_in, (int) $closing->left_carry_out, 'Inactive: full L/R held, no match');
+        $this->assertSame((int) $closing->right_carry_in, (int) $closing->right_carry_out);
+        $this->assertSame(min((int) $closing->left_carry_in, (int) $closing->right_carry_in), (int) ($closing->meta['pairs_held'] ?? 0));
 
         $inactive->refresh();
-        $this->assertSame(0, (int) $inactive->panel_match_carry_left);
-        $this->assertSame(171, (int) $inactive->panel_match_carry_right);
+        $this->assertSame((int) $closing->left_carry_out, (int) $inactive->panel_match_carry_left);
+        $this->assertSame((int) $closing->right_carry_out, (int) $inactive->panel_match_carry_right);
         $this->assertSame('0.00', (string) $inactive->wallet_balance);
+    }
+
+    public function test_milestone_pays_nearest_lower_tier_not_higher(): void
+    {
+        $user = $this->makeUser(0, 0);
+        $user->panel_match_carry_left = 50;
+        $user->panel_match_carry_right = 60;
+        $user->save();
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-06-01', 'Asia/Kolkata'));
+
+        $this->assertNotNull($closing);
+        $this->assertSame(20, (int) $closing->pairs_matched, 'Capped at 20 pairs/day');
+        $this->assertSame(0, (int) $closing->left_carry_out);
+        $this->assertSame(40, (int) $closing->right_carry_out, '60-20=40 strong-leg carry');
+        $meta = is_array($closing->meta) ? $closing->meta : [];
+        $this->assertSame(16, (int) ($meta['milestone'] ?? 0), '20 pairs → tier 16 ($16), not 32/64');
+        $this->assertSame('16.00', (string) $closing->payout_usd);
+    }
+
+    public function test_inactive_hold_then_active_day_matches_held_pairs(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => false]);
+
+        $inactive = User::factory()->create([
+            'activation_fee_paid_at' => null,
+            'minimum_panel_fee_paid_at' => null,
+            'panel_match_carry_left' => 10,
+            'panel_match_carry_right' => 10,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $day1 = Carbon::parse('2026-06-10', 'Asia/Kolkata');
+        $c1 = app(BinaryDailyClosingService::class)->closeForUser($inactive, BinaryDailyClosing::SCOPE_PANEL, $day1);
+        $this->assertNotNull($c1);
+        $this->assertSame(0, (int) $c1->pairs_matched);
+        $this->assertSame(10, (int) $c1->left_carry_out);
+        $this->assertSame(10, (int) $c1->right_carry_out);
+
+        $inactive->activation_fee_paid_at = now();
+        $inactive->minimum_panel_fee_paid_at = now();
+        $inactive->save();
+
+        $day2 = Carbon::parse('2026-06-11', 'Asia/Kolkata');
+        $c2 = app(BinaryDailyClosingService::class)->closeForUser($inactive, BinaryDailyClosing::SCOPE_PANEL, $day2);
+        $this->assertNotNull($c2);
+        $this->assertSame(10, (int) $c2->pairs_matched);
+        $this->assertSame(0, (int) $c2->left_carry_out);
+        $this->assertSame(0, (int) $c2->right_carry_out);
+        $this->assertSame('8.00', (string) $c2->payout_usd, '10 pairs → milestone tier 8');
     }
 }

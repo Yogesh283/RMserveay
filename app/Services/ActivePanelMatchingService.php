@@ -216,8 +216,13 @@ class ActivePanelMatchingService
         $perPair = $this->normalizeUsd((string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'));
         $max = (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20);
         $used = $this->matchingPairsUsedToday($earner->id);
-        $carryL = (int) $earner->active_panel_match_carry_left;
-        $carryR = (int) $earner->active_panel_match_carry_right;
+        $todayInputs = app(BinarySubtreeVolumeService::class)->closingMatchInputs(
+            $earner,
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
+            \Carbon\CarbonImmutable::parse(BinaryClosingCalendar::todayDateString(), BinaryClosingCalendar::timezone()),
+        );
+        $carryL = (int) $todayInputs['left_in'];
+        $carryR = (int) $todayInputs['right_in'];
         $available = min($carryL, $carryR);
         $lifetime = $this->lifetimeActivePanelistsInLegs($earner);
         $weakLeg = min($lifetime['left'], $lifetime['right']);
@@ -255,7 +260,7 @@ class ActivePanelMatchingService
         for ($p = 1; $p <= $max; $p++) {
             $tierRows[] = [
                 'matching_panels' => $p,
-                'income_usd' => $perPair,
+                'income_usd' => bcmul((string) $p, $perPair, 2),
             ];
         }
 

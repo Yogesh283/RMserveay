@@ -36,7 +36,7 @@ export function ActivePanelMatchingExplainer({
                         1 Left + 1 Right = 1 Matching Pair
                     </h2>
                     <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-violet-200/80">
-                        Har pair pe instant USDT income. Daily closing 12:00 AM IST par auto wallet credit hota hai.
+                        Har pair pe USDT income. Daily closing raat 11:00 baje (IST) par wallet credit hota hai — har date par sirf ek baar.
                     </p>
                 </div>
                 <BadgeUSDT amount={perPairUsd} />

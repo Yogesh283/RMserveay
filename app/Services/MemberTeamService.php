@@ -152,20 +152,36 @@ class MemberTeamService
      */
     private function buildTeamLegMatch(User $user, string $scope, array $leftLeg, array $rightLeg): array
     {
+        $tz = BinaryClosingCalendar::timezone();
         $yesterday = BinaryClosingCalendar::yesterdayDateString();
+        $today = BinaryClosingCalendar::todayDateString();
         $maxPairs = match ($scope) {
             BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20),
             BinaryDailyClosing::SCOPE_SUPER => (int) config('binary_closing.scopes.super.max_pairs_per_day', 20),
             default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
         };
 
-        $inputs = $this->subtreeVolumes->closingMatchInputs($user, $scope);
-        $totalL = (int) $inputs['total_left'];
-        $totalR = (int) $inputs['total_right'];
-        $totalSplit = BinaryWeakSideLapse::splitFromLegCounts($totalL, $totalR, $maxPairs);
-        $matchSplit = BinaryWeakSideLapse::splitFromLegCounts(
-            (int) $inputs['left_in'],
-            (int) $inputs['right_in'],
+        $yesterdayInputs = $this->subtreeVolumes->closingMatchInputs(
+            $user,
+            $scope,
+            CarbonImmutable::parse($yesterday, $tz),
+        );
+        $todayInputs = $this->subtreeVolumes->closingMatchInputs(
+            $user,
+            $scope,
+            CarbonImmutable::parse($today, $tz),
+        );
+
+        $totalL = (int) $yesterdayInputs['total_left'];
+        $totalR = (int) $yesterdayInputs['total_right'];
+        $yesterdaySplit = BinaryWeakSideLapse::splitFromLegCounts(
+            (int) $yesterdayInputs['left_in'],
+            (int) $yesterdayInputs['right_in'],
+            $maxPairs,
+        );
+        $todaySplit = BinaryWeakSideLapse::splitFromLegCounts(
+            (int) $todayInputs['left_in'],
+            (int) $todayInputs['right_in'],
             $maxPairs,
         );
 
@@ -176,7 +192,35 @@ class MemberTeamService
             ->orderByDesc('id')
             ->first();
 
+        $todayClosing = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $today)
+            ->orderByDesc('id')
+            ->first();
+
+        $latestPaidClosing = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->where('scope', $scope)
+            ->where('payout_usd', '>', 0)
+            ->orderByDesc('closing_date')
+            ->orderByDesc('id')
+            ->first();
+
+        [$storedCarryLeft, $storedCarryRight] = $this->scopeCarryBuckets($user, $scope);
+        $currentCarryLeft = $storedCarryLeft;
+        $currentCarryRight = $storedCarryRight;
+        if ($todayClosing !== null) {
+            $currentCarryLeft = (int) $todayClosing->left_carry_out;
+            $currentCarryRight = (int) $todayClosing->right_carry_out;
+        }
+
         $incomeEligible = $user->qualifiesActivePanelistIncome();
+
+        $pairsHeld = 0;
+
+        $yesterdayLeftLapsed = 0;
+        $yesterdayRightLapsed = 0;
 
         if ($closing !== null) {
             $pairsMatched = (int) $closing->pairs_matched;
@@ -187,13 +231,16 @@ class MemberTeamService
             $payoutUsd = number_format((float) $closing->payout_usd, 2, '.', '');
             $meta = is_array($closing->meta) ? $closing->meta : [];
             $milestoneUsd = (string) ($meta['milestone_paid_usd'] ?? '0.00');
-            $weak = BinaryWeakSideLapse::fromClosing($closing);
+            $pairsHeld = (int) ($meta['pairs_held'] ?? 0);
+            $yesterdayWeak = BinaryWeakSideLapse::fromClosing($closing);
+            $yesterdayLeftLapsed = (int) $closing->left_lapsed;
+            $yesterdayRightLapsed = (int) $closing->right_lapsed;
         } else {
-            $pairsMatched = (int) $matchSplit['pairs_matched'];
-            $carryForwardL = (int) $matchSplit['left_out'];
-            $carryForwardR = (int) $matchSplit['right_out'];
-            $matchLeft = (int) $inputs['left_in'];
-            $matchRight = (int) $inputs['right_in'];
+            $pairsMatched = (int) $yesterdaySplit['pairs_matched'];
+            $carryForwardL = (int) $yesterdaySplit['left_out'];
+            $carryForwardR = (int) $yesterdaySplit['right_out'];
+            $matchLeft = (int) $yesterdayInputs['left_in'];
+            $matchRight = (int) $yesterdayInputs['right_in'];
             $milestoneUsd = $incomeEligible ? $this->projectedMilestoneUsd($scope, $pairsMatched) : '0.00';
             $perPair = match ($scope) {
                 BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'),
@@ -202,49 +249,74 @@ class MemberTeamService
             $payoutUsd = $incomeEligible
                 ? bcadd(bcmul((string) $pairsMatched, $perPair, 2), $milestoneUsd, 2)
                 : '0.00';
-            $weak = [
-                'side' => $matchSplit['weak_side'],
-                'lapsed' => $matchSplit['weak_lapsed'],
+            $yesterdayWeak = [
+                'side' => $yesterdaySplit['weak_side'],
+                'lapsed' => $yesterdaySplit['weak_lapsed'],
             ];
+            $yesterdayLeftLapsed = $yesterdayWeak['side'] === 'left' ? (int) $yesterdayWeak['lapsed'] : 0;
+            $yesterdayRightLapsed = $yesterdayWeak['side'] === 'right' ? (int) $yesterdayWeak['lapsed'] : 0;
+            if (! $incomeEligible) {
+                $pairsHeld = min((int) $yesterdayInputs['left_in'], (int) $yesterdayInputs['right_in']);
+            }
         }
-
-        [$carryL, $carryR] = $this->scopeCarryBuckets($user, $scope);
-        $todayLeg = $this->subtreeVolumes->todayLegVolumes($user, $scope);
-        $todayNewL = (int) $todayLeg['left'];
-        $todayNewR = (int) $todayLeg['right'];
-        $todayMatchL = $carryL + $todayNewL;
-        $todayMatchR = $carryR + $todayNewR;
-        $todaySplit = BinaryWeakSideLapse::splitFromLegCounts($todayMatchL, $todayMatchR, $maxPairs);
 
         return [
             'team_volume_date' => $yesterday,
-            'today_date' => BinaryClosingCalendar::todayDateString(),
+            'today_date' => $today,
             'total_left' => $totalL,
             'total_right' => $totalR,
             'total_pairs_matched' => min(min($totalL, $totalR), $maxPairs),
-            'total_carry_left' => (int) $totalSplit['left_out'],
-            'total_carry_right' => (int) $totalSplit['right_out'],
-            'yesterday_new_left' => (int) $inputs['yesterday_left'],
-            'yesterday_new_right' => (int) $inputs['yesterday_right'],
+            'total_carry_left' => (int) $todayInputs['opening_left_out'],
+            'total_carry_right' => (int) $todayInputs['opening_right_out'],
+            'yesterday_new_left' => (int) $yesterdayInputs['yesterday_left'],
+            'yesterday_new_right' => (int) $yesterdayInputs['yesterday_right'],
             'yesterday_match_left' => $matchLeft,
             'yesterday_match_right' => $matchRight,
-            'opening_carry_left' => (int) $inputs['opening_left_out'],
-            'opening_carry_right' => (int) $inputs['opening_right_out'],
+            'opening_carry_left' => (int) $yesterdayInputs['opening_left_out'],
+            'opening_carry_right' => (int) $yesterdayInputs['opening_right_out'],
             'pairs_matched' => $pairsMatched,
+            'pairs_held' => $pairsHeld,
             'carry_forward_left' => $carryForwardL,
             'carry_forward_right' => $carryForwardR,
             'payout_usd' => $payoutUsd,
             'milestone_paid_usd' => $milestoneUsd,
-            'today_weak_side' => $weak['side'] ?? null,
-            'today_weak_lapsed' => (int) ($weak['lapsed'] ?? 0),
-            'today_left_lapsed' => ($weak['side'] ?? '') === 'left' ? (int) ($weak['lapsed'] ?? 0) : 0,
-            'today_right_lapsed' => ($weak['side'] ?? '') === 'right' ? (int) ($weak['lapsed'] ?? 0) : 0,
-            'today_new_left' => $todayNewL,
-            'today_new_right' => $todayNewR,
-            'today_match_left' => $todayMatchL,
-            'today_match_right' => $todayMatchR,
+            'closing_recorded' => $closing !== null,
+            'yesterday_weak_side' => $yesterdayWeak['side'] ?? null,
+            'yesterday_weak_lapsed' => (int) ($yesterdayWeak['lapsed'] ?? 0),
+            'yesterday_left_lapsed' => $yesterdayLeftLapsed,
+            'yesterday_right_lapsed' => $yesterdayRightLapsed,
+            'today_weak_side' => $todaySplit['weak_side'],
+            'today_weak_lapsed' => (int) $todaySplit['weak_lapsed'],
+            'today_left_lapsed' => $todaySplit['weak_side'] === 'left' ? (int) $todaySplit['weak_lapsed'] : 0,
+            'today_right_lapsed' => $todaySplit['weak_side'] === 'right' ? (int) $todaySplit['weak_lapsed'] : 0,
+            'today_new_left' => (int) $todayInputs['yesterday_left'],
+            'today_new_right' => (int) $todayInputs['yesterday_right'],
+            'today_match_left' => (int) $todayInputs['left_in'],
+            'today_match_right' => (int) $todayInputs['right_in'],
             'today_pairs_matched' => (int) $todaySplit['pairs_matched'],
             'income_eligible' => $incomeEligible,
+            'current_carry_left' => $currentCarryLeft,
+            'current_carry_right' => $currentCarryRight,
+            'today_closing_recorded' => $todayClosing !== null,
+            'today_payout_usd' => $todayClosing !== null
+                ? number_format((float) $todayClosing->payout_usd, 2, '.', '')
+                : '0.00',
+            'today_pairs_matched_closed' => $todayClosing !== null
+                ? (int) $todayClosing->pairs_matched
+                : (int) $todaySplit['pairs_matched'],
+            'today_match_left_closed' => $todayClosing !== null
+                ? (int) $todayClosing->left_carry_in
+                : (int) $todayInputs['left_in'],
+            'today_match_right_closed' => $todayClosing !== null
+                ? (int) $todayClosing->right_carry_in
+                : (int) $todayInputs['right_in'],
+            'latest_paid_date' => $latestPaidClosing?->closing_date?->toDateString(),
+            'latest_paid_usd' => $latestPaidClosing !== null
+                ? number_format((float) $latestPaidClosing->payout_usd, 2, '.', '')
+                : '0.00',
+            'latest_paid_pairs' => $latestPaidClosing !== null
+                ? (int) $latestPaidClosing->pairs_matched
+                : 0,
         ];
     }
 
@@ -502,7 +574,74 @@ class MemberTeamService
                 ),
             ],
             'level_income' => $this->levelIncomeOverviewWithTeamByLevel($user),
+            'closing_income_history' => $this->recentClosingIncomeHistory($user),
         ];
+    }
+
+    /**
+     * Daily closing income for team UI — last N calendar closing dates only (default 2).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function recentClosingIncomeHistory(User $user, int $days = 2): array
+    {
+        $days = max(1, $days);
+        $tz = BinaryClosingCalendar::timezone();
+        $anchor = CarbonImmutable::parse(BinaryClosingCalendar::yesterdayDateString(), $tz);
+        $dates = [];
+        for ($i = 0; $i < $days; $i++) {
+            $dates[] = $anchor->subDays($i)->toDateString();
+        }
+
+        $scopeLabels = [
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => 'active_panel',
+            BinaryDailyClosing::SCOPE_PANEL => 'sub_panel',
+            BinaryDailyClosing::SCOPE_SUPER => 'super_panel',
+        ];
+
+        $closings = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->whereIn('closing_date', $dates)
+            ->orderByDesc('closing_date')
+            ->orderBy('scope')
+            ->orderByDesc('id')
+            ->get();
+
+        $seen = [];
+        $out = [];
+
+        foreach ($closings as $r) {
+            $dateKey = $r->closing_date->toDateString();
+            $dedupeKey = $dateKey.'|'.$r->scope;
+            if (isset($seen[$dedupeKey])) {
+                continue;
+            }
+            $seen[$dedupeKey] = true;
+
+            $meta = is_array($r->meta) ? $r->meta : [];
+            $eligible = (bool) ($meta['income_eligible'] ?? true);
+            $payout = (string) $r->payout_usd;
+
+            $out[] = [
+                'closing_date' => $dateKey,
+                'scope' => $r->scope,
+                'scope_key' => $scopeLabels[$r->scope] ?? $r->scope,
+                'pairs_matched' => (int) $r->pairs_matched,
+                'payout_usd' => $payout,
+                'per_pair_usd' => (string) $r->per_pair_usd,
+                'left_carry_in' => (int) $r->left_carry_in,
+                'right_carry_in' => (int) $r->right_carry_in,
+                'left_carry_out' => (int) $r->left_carry_out,
+                'right_carry_out' => (int) $r->right_carry_out,
+                'income_eligible' => $eligible,
+                'income_paid' => $eligible && bccomp($payout, '0.00', 2) > 0,
+                'income_blocked_reason' => $meta['income_blocked_reason'] ?? null,
+                'milestone_paid_usd' => (string) ($meta['milestone_paid_usd'] ?? '0.00'),
+                'per_pair_paid_usd' => (string) ($meta['per_pair_paid_usd'] ?? '0.00'),
+            ];
+        }
+
+        return $out;
     }
 
     /**

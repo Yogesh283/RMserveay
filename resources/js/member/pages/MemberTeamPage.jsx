@@ -360,29 +360,109 @@ function fmtUsdShort(s) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 }
 
+function closingScopeLabel(t, scope) {
+    if (scope === 'active_panel') return t('member.team.scopeActivePanel');
+    if (scope === 'super') return t('member.team.scopeSuperPanel');
+    return t('member.team.scopeSubPanel');
+}
+
 const CARRY_DASH = '—';
 
-function payoutYesterdayRow(t, legMatch) {
+function matchingIncomeRow(t, legMatch) {
     const m = legMatch ?? {};
     const eligible = m.income_eligible === true;
-    const amount = eligible ? (m.payout_usd ?? '0.00') : '0.00';
+    const useToday = m.today_closing_recorded === true;
+    const amount = eligible
+        ? useToday
+            ? (m.today_payout_usd ?? '0.00')
+            : (m.payout_usd ?? '0.00')
+        : '0.00';
+    const date = useToday ? m.today_date : m.team_volume_date;
     return {
-        label: eligible ? t('member.team.payoutYesterday') : t('member.team.payoutYesterdayBlocked'),
+        label: eligible
+            ? useToday
+                ? t('member.team.rowMatchingIncomeToday', { date })
+                : t('member.team.rowMatchingIncome', { date })
+            : t('member.team.rowMatchingIncomeBlocked'),
         left: fmtUsdShort(amount),
         right: fmtUsdShort(amount),
     };
 }
 
-/** Aaj: left / right leg par naya volume + match pairs (carry + aaj). */
-function todayLegPairsRow(t, legMatch, todayDate) {
+function totalRowLabel(t, scope) {
+    if (scope === 'active_panel') {
+        return t('member.team.rowTotalActiveLr');
+    }
+    if (scope === 'super') {
+        return t('member.team.rowTotalSuperLr');
+    }
+
+    return t('member.team.rowTotalSubLr');
+}
+
+/** Team tables: total, carry in, today new, match (if closed), live carry, income. */
+function buildCompactLegRows(t, legMatch, scope = 'panel') {
     const m = legMatch ?? {};
-    const pairs = Number(m.today_pairs_matched ?? 0) | 0;
-    const date = todayDate ?? m.today_date ?? '';
-    return {
-        label: t('member.team.rowTodayLegPairs', { pairs, date }),
-        left: m.today_new_left ?? 0,
-        right: m.today_new_right ?? 0,
-    };
+    const carryIn = carryOutDisplay(m.total_carry_left ?? 0, m.total_carry_right ?? 0);
+    const carryNow = carryOutDisplay(m.current_carry_left ?? 0, m.current_carry_right ?? 0);
+    const rows = [
+        {
+            label: totalRowLabel(t, scope),
+            left: m.total_left ?? 0,
+            right: m.total_right ?? 0,
+        },
+        {
+            label: t('member.team.rowCarryInToday'),
+            left: carryIn.left,
+            right: carryIn.right,
+        },
+        {
+            label: t('member.team.rowTodayNewLr'),
+            left: m.today_new_left ?? 0,
+            right: m.today_new_right ?? 0,
+        },
+    ];
+
+    if (m.today_closing_recorded === true) {
+        const pairs = Number(m.today_pairs_matched_closed ?? 0) | 0;
+        const matchLabel =
+            pairs > 0
+                ? t('member.team.rowTodayMatchBuckets', { pairs, date: m.today_date })
+                : t('member.team.rowNoMatchToday', { date: m.today_date });
+        rows.push({
+            label: matchLabel,
+            left: m.today_match_left_closed ?? m.today_match_left ?? 0,
+            right: m.today_match_right_closed ?? m.today_match_right ?? 0,
+        });
+    }
+
+    const todayPaid = Number.parseFloat(String(m.today_payout_usd ?? '0')) || 0;
+    const latestPaid = Number.parseFloat(String(m.latest_paid_usd ?? '0')) || 0;
+    if (m.today_closing_recorded === true && todayPaid <= 0 && latestPaid > 0 && m.latest_paid_date) {
+        rows.push({
+            label: t('member.team.rowLastMatchingIncome', {
+                date: m.latest_paid_date,
+                pairs: m.latest_paid_pairs ?? 0,
+            }),
+            left: fmtUsdShort(m.latest_paid_usd),
+            right: fmtUsdShort(m.latest_paid_usd),
+        });
+    }
+
+    rows.push(
+        {
+            label: t('member.team.rowCarryForwardNow'),
+            left: carryNow.left,
+            right: carryNow.right,
+        },
+        matchingIncomeRow(t, m),
+    );
+
+    return rows;
+}
+
+function buildCompactSubSuperLegRows(t, legMatch) {
+    return buildCompactLegRows(t, legMatch, 'panel');
 }
 
 /** Strong leg par carry number; weak leg par — (0 nahi). */
@@ -398,184 +478,20 @@ function carryOutDisplay(left, right) {
     return { left: l, right: r };
 }
 
-function buildActiveLegRows(legs, t, activeMatching, legMatch, todayDate) {
+function buildActiveLegRows(legs, t, _activeMatching, legMatch) {
     if (!legs?.left || !legs?.right) {
         return [];
     }
-    const L = legs.left;
-    const R = legs.right;
-    const m = legMatch ?? {};
-    const am = activeMatching ?? {};
-    const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
-    const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
-    const weakLapse = weakSideLapseDisplay(am);
-    const pairs = m.pairs_matched ?? 0;
-    const payoutRow = payoutYesterdayRow(t, m);
-    return [
-        { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
-        {
-            label: t('member.team.rowTotalActivePanelists'),
-            left: L.total_active ?? 0,
-            right: R.total_active ?? 0,
-        },
-        {
-            label: t('member.team.rowTotalCarryAfterMatch'),
-            left: totalCarry.left,
-            right: totalCarry.right,
-        },
-        todayLegPairsRow(t, m, todayDate),
-        {
-            label: t('member.team.rowYesterdayActivePanelists'),
-            left: L.active,
-            right: R.active,
-        },
-        {
-            label: t('member.team.rowYesterdayMatchBuckets'),
-            left: m.yesterday_match_left ?? 0,
-            right: m.yesterday_match_right ?? 0,
-        },
-        {
-            label: t('member.team.rowPairsMatchedYesterday'),
-            left: pairs,
-            right: pairs,
-        },
-        {
-            label: t('member.team.rowCarryForwardYesterday'),
-            left: carryForward.left,
-            right: carryForward.right,
-        },
-        payoutRow,
-        { label: t('member.team.lapsedYesterday'), left: weakLapse.left, right: weakLapse.right },
-    ];
+
+    return buildCompactLegRows(t, legMatch, 'active_panel');
 }
 
-function buildSubLegRows(legs, t, subMatching, legMatch, todayDate) {
-    if (!legs?.left || !legs?.right) {
-        return [];
-    }
-    const L = legs.left;
-    const R = legs.right;
-    const m = legMatch ?? {};
-    const sm = subMatching ?? {};
-    const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
-    const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
-    const weakLapse = weakSideLapseDisplay(sm);
-    const pairs = m.pairs_matched ?? 0;
-    const payoutRow = payoutYesterdayRow(t, m);
-    return [
-        {
-            label: t('member.team.rowTotalSubPanels'),
-            left: L.total_sub_panels ?? 0,
-            right: R.total_sub_panels ?? 0,
-        },
-        {
-            label: t('member.team.rowTotalCarryAfterMatch'),
-            left: totalCarry.left,
-            right: totalCarry.right,
-        },
-        todayLegPairsRow(t, m, todayDate),
-        {
-            label: t('member.team.rowYesterdaySubPanels'),
-            left: L.sub_panels,
-            right: R.sub_panels,
-        },
-        {
-            label: t('member.team.rowYesterdayMatchBuckets'),
-            left: m.yesterday_match_left ?? 0,
-            right: m.yesterday_match_right ?? 0,
-        },
-        {
-            label: t('member.team.rowPairsMatchedYesterday'),
-            left: pairs,
-            right: pairs,
-        },
-        {
-            label: t('member.team.rowCarryForwardYesterday'),
-            left: carryForward.left,
-            right: carryForward.right,
-        },
-        payoutRow,
-        {
-            label: t('member.team.lapsedYesterday'),
-            left: weakLapse.left,
-            right: weakLapse.right,
-        },
-    ];
+function buildSubLegRows(_legs, t, _subMatching, legMatch) {
+    return buildCompactLegRows(t, legMatch, 'panel');
 }
 
-function buildSuperLegRows(legs, t, superMatching, legMatch, todayDate) {
-    if (!legs?.left || !legs?.right) {
-        return [];
-    }
-    const L = legs.left;
-    const R = legs.right;
-    const m = legMatch ?? {};
-    const sup = superMatching ?? {};
-    const totalCarry = carryOutDisplay(m.total_carry_left, m.total_carry_right);
-    const carryForward = carryOutDisplay(m.carry_forward_left, m.carry_forward_right);
-    const weakLapse = weakSideLapseDisplay(sup);
-    const pairs = m.pairs_matched ?? 0;
-    const payoutRow = payoutYesterdayRow(t, m);
-    return [
-        {
-            label: t('member.team.rowTotalSuperPanels'),
-            left: L.total_super_sub_panels ?? 0,
-            right: R.total_super_sub_panels ?? 0,
-        },
-        {
-            label: t('member.team.rowTotalCarryAfterMatch'),
-            left: totalCarry.left,
-            right: totalCarry.right,
-        },
-        todayLegPairsRow(t, m, todayDate),
-        {
-            label: t('member.team.rowYesterdaySuperPanels'),
-            left: L.super_sub_panels,
-            right: R.super_sub_panels,
-        },
-        {
-            label: t('member.team.rowYesterdayMatchBuckets'),
-            left: m.yesterday_match_left ?? 0,
-            right: m.yesterday_match_right ?? 0,
-        },
-        {
-            label: t('member.team.rowPairsMatchedYesterday'),
-            left: pairs,
-            right: pairs,
-        },
-        {
-            label: t('member.team.rowCarryForwardYesterday'),
-            left: carryForward.left,
-            right: carryForward.right,
-        },
-        payoutRow,
-        {
-            label: t('member.team.lapsedYesterday'),
-            left: weakLapse.left,
-            right: weakLapse.right,
-        },
-    ];
-}
-
-/** Lapse count only on the weaker leg column (— on the strong side). */
-function weakSideLapseDisplay(data) {
-    const dash = '—';
-    const side = data?.today_weak_side;
-    const lapsed =
-        Number(data?.today_weak_lapsed ?? data?.today_left_lapsed ?? data?.today_right_lapsed ?? 0) | 0;
-    if (side === 'left') {
-        return { left: lapsed, right: dash };
-    }
-    if (side === 'right') {
-        return { left: dash, right: lapsed };
-    }
-    if ((Number(data?.today_left_lapsed ?? 0) | 0) > 0) {
-        return { left: Number(data.today_left_lapsed) | 0, right: dash };
-    }
-    if ((Number(data?.today_right_lapsed ?? 0) | 0) > 0) {
-        return { left: dash, right: Number(data.today_right_lapsed) | 0 };
-    }
-    return { left: 0, right: 0 };
+function buildSuperLegRows(_legs, t, _superMatching, legMatch) {
+    return buildCompactLegRows(t, legMatch, 'super');
 }
 
 function EmptyNodeSlot({ side = 'left' }) {
@@ -929,24 +845,12 @@ export default function MemberTeamPage() {
             return [];
         }
         if (totalTeamTab === 'active') {
-            return buildActiveLegRows(
-                data.legs,
-                t,
-                data?.matching?.active_panel,
-                data?.leg_match?.active_panel,
-                todayDate,
-            );
+            return buildActiveLegRows(data.legs, t, data?.matching?.active_panel, data?.leg_match?.active_panel);
         }
         if (totalTeamTab === 'sub') {
-            return buildSubLegRows(data.legs, t, data?.matching?.sub_panel, data?.leg_match?.panel, todayDate);
+            return buildSubLegRows(data.legs, t, data?.matching?.sub_panel, data?.leg_match?.panel);
         }
-        return buildSuperLegRows(
-            data.legs,
-            t,
-            data?.matching?.super_sub_panel,
-            data?.leg_match?.super,
-            todayDate,
-        );
+        return buildSuperLegRows(data.legs, t, data?.matching?.super_sub_panel, data?.leg_match?.super);
     }, [
         data?.legs,
         data?.leg_match,
@@ -1013,7 +917,6 @@ export default function MemberTeamPage() {
                                     t,
                                     data?.matching?.active_panel,
                                     data?.leg_match?.active_panel,
-                                    todayDate,
                                 )}
                                 caption={totalTeamTableCaption('active', t, data?.team_volume?.date)}
                                 accent="active"
@@ -1333,6 +1236,7 @@ export default function MemberTeamPage() {
 
                     <RmsCard variant="neon" className="!rounded-[24px] !border-[#8B5CF6]/30 !bg-[#0f162b]/95 !p-4 sm:!p-4">
                         <h2 className="text-lg font-bold text-white">{t('member.team.matchingIncome')}</h2>
+                        <p className="mt-1 text-xs text-[#94A3B8]">{t('member.team.matchingIncomeHint')}</p>
                         <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label={t('member.team.ariaMatching')}>
                             <button
                                 type="button"
@@ -1368,31 +1272,39 @@ export default function MemberTeamPage() {
                         <div
                             className="mt-2"
                             role="tabpanel"
-                            aria-labelledby={matchingIncomeTab === 'sub' ? 'matching-income-tab-sub' : 'matching-income-tab-super'}
+                            aria-labelledby={
+                                matchingIncomeTab === 'sub' ? 'matching-income-tab-sub' : 'matching-income-tab-super'
+                            }
                             id="matching-income-panel"
                         >
                             {matchingIncomeTab === 'sub' && subMatchData ? (
-                                <MatchingIncomeTable
-                                    dark
-                                    embedded
-                                    comfortable
-                                    hideEarnedHighlight
-                                    hideLiveData
-                                    variant="sub"
-                                    panelData={panelMatchData}
-                                    subData={subMatchData}
-                                />
+                                <>
+                                    <p className="mb-2 text-xs text-sky-200/80">{t('member.team.subMatchingHint')}</p>
+                                    <MatchingIncomeTable
+                                        dark
+                                        embedded
+                                        comfortable
+                                        hideEarnedHighlight
+                                        hideLiveData
+                                        variant="sub"
+                                        panelData={panelMatchData}
+                                        subData={subMatchData}
+                                    />
+                                </>
                             ) : null}
                             {matchingIncomeTab === 'super' && superMatchData ? (
-                                <MatchingIncomeTable
-                                    dark
-                                    embedded
-                                    comfortable
-                                    hideEarnedHighlight
-                                    hideLiveData
-                                    variant="super"
-                                    superData={superMatchData}
-                                />
+                                <>
+                                    <p className="mb-2 text-xs text-amber-200/80">{t('member.team.superMatchingHint')}</p>
+                                    <MatchingIncomeTable
+                                        dark
+                                        embedded
+                                        comfortable
+                                        hideEarnedHighlight
+                                        hideLiveData
+                                        variant="super"
+                                        superData={superMatchData}
+                                    />
+                                </>
                             ) : null}
                             {matchingIncomeTab === 'sub' && !subMatchData ? (
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
@@ -1401,6 +1313,53 @@ export default function MemberTeamPage() {
                                 <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
                             ) : null}
                         </div>
+                    </RmsCard>
+
+                    <RmsCard variant="neon" className="!rounded-[24px] !border-emerald-500/25 !bg-[#0f162b]/95 !p-4 sm:!p-4">
+                        <h2 className="text-lg font-bold text-white">{t('member.team.closingIncomeHistory')}</h2>
+                        <p className="mt-1 text-xs text-[#94A3B8]">{t('member.team.closingIncomeHistoryHint')}</p>
+                        {Array.isArray(data?.closing_income_history) && data.closing_income_history.length > 0 ? (
+                            <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
+                                <table className="min-w-full text-left text-sm text-white">
+                                    <thead>
+                                        <tr className="border-b border-white/10 bg-black/25 text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                                            <th className="px-3 py-2">{t('member.team.thClosingDate')}</th>
+                                            <th className="px-3 py-2">{t('member.team.thClosingScope')}</th>
+                                            <th className="px-3 py-2 text-right">{t('member.team.thClosingBuckets')}</th>
+                                            <th className="px-3 py-2 text-right">{t('member.team.thClosingPairs')}</th>
+                                            <th className="px-3 py-2 text-right">{t('member.team.thClosingPayout')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.closing_income_history.map((row, idx) => {
+                                            const paid = row.income_paid === true;
+                                            const payoutLabel = paid
+                                                ? fmtUsdShort(row.payout_usd)
+                                                : row.income_eligible === false
+                                                  ? t('member.team.closingCarryOnly')
+                                                  : fmtUsdShort('0');
+                                            return (
+                                                <tr key={`${row.closing_date}-${row.scope}-${idx}`} className="border-t border-white/[0.07]">
+                                                    <td className="px-3 py-2 tabular-nums">{row.closing_date}</td>
+                                                    <td className="px-3 py-2">{closingScopeLabel(t, row.scope)}</td>
+                                                    <td className="px-3 py-2 text-right tabular-nums text-cyan-200/90">
+                                                        {row.left_carry_in} / {row.right_carry_in}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right tabular-nums">{row.pairs_matched}</td>
+                                                    <td
+                                                        className={`px-3 py-2 text-right tabular-nums font-semibold ${paid ? 'text-emerald-300' : 'text-[#94A3B8]'}`}
+                                                    >
+                                                        {payoutLabel}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-sm text-[#94A3B8]">{t('member.team.closingIncomeNone')}</p>
+                        )}
                     </RmsCard>
 
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
