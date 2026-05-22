@@ -6,6 +6,7 @@ use App\Models\BinaryDailyClosing;
 use App\Models\MatchingPayout;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\BinaryClosingCalendar;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -339,7 +340,7 @@ class BinaryDailyClosingService
 
             $totalPayout = bcadd($payout, $milestonePaidUsd, 2);
 
-            if ($incomeEligible && ! $this->payoutMatchesExpected($expectedTotalUsd, $totalPayout, $expectedMilestoneUsd, $milestonePaidUsd, $payout)) {
+            if ($incomeEligible && ! $this->payoutMatchesExpected($expectedTotalUsd, $totalPayout, $expectedMilestoneUsd, $milestonePaidUsd, $payout, $perPairPayout)) {
                 Log::error('binary_closing.payout_mismatch', [
                     'user_id' => $userId,
                     'scope' => $scope,
