@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Support\BinaryClosingCalendar;
 use App\Support\BinaryWeakSideLapse;
+use Carbon\CarbonImmutable;
 
 class MemberTeamService
 {
@@ -16,6 +17,7 @@ class MemberTeamService
         protected SuperSubPanelMatchingService $superSubPanelMatching,
         protected SurveyLevelIncomeService $surveyLevelIncome,
         protected ActivePanelMatchingService $activePanelMatching,
+        protected BinaryClosingDailyCarryService $dailyCarry,
     ) {}
 
     /**
@@ -147,14 +149,19 @@ class MemberTeamService
      * @param  array<string, mixed>  $status
      * @return array<string, mixed>
      */
-    private function matchingForTeamYesterday(User $user, string $scope, array $status, int $legLeft, int $legRight): array
+    private function matchingForTeamYesterday(User $user, string $scope, array $status): array
     {
         $yesterday = BinaryClosingCalendar::yesterdayDateString();
+        $closingDate = CarbonImmutable::parse($yesterday, BinaryClosingCalendar::timezone())->startOfDay();
         $maxPairs = match ($scope) {
             BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20),
             BinaryDailyClosing::SCOPE_SUPER => (int) config('binary_closing.scopes.super.max_pairs_per_day', 20),
             default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
         };
+
+        $daily = $this->dailyCarry->incrementsForUserOnClosingDate($user->id, $scope, $closingDate);
+        $carryInLeft = (int) $daily['left'];
+        $carryInRight = (int) $daily['right'];
 
         $closing = BinaryDailyClosing::query()
             ->where('user_id', $user->id)
@@ -186,7 +193,7 @@ class MemberTeamService
             ]);
         }
 
-        $projected = BinaryWeakSideLapse::splitFromLegCounts($legLeft, $legRight, $maxPairs);
+        $projected = BinaryWeakSideLapse::splitFromLegCounts($carryInLeft, $carryInRight, $maxPairs);
         $weakLapsed = $projected['weak_side'] === 'left'
             ? $projected['weak_lapsed']
             : ($projected['weak_side'] === 'right' ? $projected['weak_lapsed'] : 0);
@@ -194,8 +201,8 @@ class MemberTeamService
         return array_merge($status, [
             'earned_today_usd' => '0.00',
             'today_milestone_paid_usd' => '0.00',
-            'today_left_carry_in' => $legLeft,
-            'today_right_carry_in' => $legRight,
+            'today_left_carry_in' => $carryInLeft,
+            'today_right_carry_in' => $carryInRight,
             'today_left_carry_out' => $projected['left_out'],
             'today_right_carry_out' => $projected['right_out'],
             'today_left_lapsed' => $projected['weak_side'] === 'left' ? $weakLapsed : 0,
@@ -350,29 +357,21 @@ class MemberTeamService
                     $user,
                     BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
                     $this->activePanelMatching->status($user),
-                    (int) $leftLeg['active'],
-                    (int) $rightLeg['active'],
                 ),
                 'panel' => $this->matchingForTeamYesterday(
                     $user,
                     BinaryDailyClosing::SCOPE_PANEL,
                     $this->panelMatching->status($user),
-                    (int) $leftLeg['sub_panels'],
-                    (int) $rightLeg['sub_panels'],
                 ),
                 'sub_panel' => $this->matchingForTeamYesterday(
                     $user,
                     BinaryDailyClosing::SCOPE_PANEL,
                     $this->subPanelMatching->status($user),
-                    (int) $leftLeg['sub_panels'],
-                    (int) $rightLeg['sub_panels'],
                 ),
                 'super_sub_panel' => $this->matchingForTeamYesterday(
                     $user,
                     BinaryDailyClosing::SCOPE_SUPER,
                     $this->superSubPanelMatching->status($user),
-                    (int) $leftLeg['super_sub_panels'],
-                    (int) $rightLeg['super_sub_panels'],
                 ),
             ],
             'level_income' => $this->levelIncomeOverviewWithTeamByLevel($user),

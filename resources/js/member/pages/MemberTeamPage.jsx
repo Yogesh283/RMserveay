@@ -360,13 +360,34 @@ function fmtUsdShort(s) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 }
 
-/** Yesterday closing carry_out on your left / right binary legs (both columns show numbers). */
-function yesterdayCarryRow(matching) {
+const CARRY_DASH = '—';
+
+/** Kal ke points aapki left / right leg par (dono sides par ho sakte hain). */
+function yesterdayCarryInRow(matching) {
     const m = matching ?? {};
     return {
-        left: Number(m.today_left_carry_out ?? 0) | 0,
-        right: Number(m.today_right_carry_out ?? 0) | 0,
+        left: Number(m.today_left_carry_in ?? 0) | 0,
+        right: Number(m.today_right_carry_in ?? 0) | 0,
     };
+}
+
+/**
+ * Carry forward = sirf strong (power) leg par diff; weak leg par — (binary rule).
+ */
+function yesterdayCarryForwardRow(matching) {
+    const m = matching ?? {};
+    const left = Number(m.today_left_carry_out ?? 0) | 0;
+    const right = Number(m.today_right_carry_out ?? 0) | 0;
+    if (left > 0 && right === 0) {
+        return { left, right: CARRY_DASH };
+    }
+    if (right > 0 && left === 0) {
+        return { left: CARRY_DASH, right };
+    }
+    if (left === 0 && right === 0) {
+        return { left: 0, right: 0 };
+    }
+    return { left, right };
 }
 
 function buildActiveLegRows(legs, t, activeMatching) {
@@ -376,7 +397,8 @@ function buildActiveLegRows(legs, t, activeMatching) {
     const L = legs.left;
     const R = legs.right;
     const am = activeMatching ?? {};
-    const carryYesterday = yesterdayCarryRow(am);
+    const carryIn = yesterdayCarryInRow(am);
+    const carryForward = yesterdayCarryForwardRow(am);
     const weakLapse = weakSideLapseDisplay(am);
     const payoutToday = am.earned_today_usd ?? '0.00';
     return [
@@ -392,9 +414,14 @@ function buildActiveLegRows(legs, t, activeMatching) {
             right: R.active,
         },
         {
-            label: t('member.team.rowCarryYesterday'),
-            left: carryYesterday.left,
-            right: carryYesterday.right,
+            label: t('member.team.rowCarryInYesterday'),
+            left: carryIn.left,
+            right: carryIn.right,
+        },
+        {
+            label: t('member.team.rowCarryForwardYesterday'),
+            left: carryForward.left,
+            right: carryForward.right,
         },
         { label: t('member.team.payoutYesterday'), left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
         { label: t('member.team.lapsedYesterday'), left: weakLapse.left, right: weakLapse.right },
@@ -408,7 +435,8 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
     const L = legs.left;
     const R = legs.right;
     const sm = subMatching ?? {};
-    const carryYesterday = yesterdayCarryRow(sm);
+    const carryIn = yesterdayCarryInRow(sm);
+    const carryForward = yesterdayCarryForwardRow(sm);
     const weakLapse = weakSideLapseDisplay(sm);
     const payoutToday = sm.today_milestone_paid_usd ?? sm.earned_today_usd ?? '0.00';
     return [
@@ -423,9 +451,14 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
             right: R.sub_panels,
         },
         {
-            label: t('member.team.rowCarryYesterday'),
-            left: carryYesterday.left,
-            right: carryYesterday.right,
+            label: t('member.team.rowCarryInYesterday'),
+            left: carryIn.left,
+            right: carryIn.right,
+        },
+        {
+            label: t('member.team.rowCarryForwardYesterday'),
+            left: carryForward.left,
+            right: carryForward.right,
         },
         {
             label: t('member.team.payoutYesterday'),
@@ -447,7 +480,8 @@ function buildSuperLegRows(legs, t, superMatching) {
     const L = legs.left;
     const R = legs.right;
     const sup = superMatching ?? {};
-    const carryYesterday = yesterdayCarryRow(sup);
+    const carryIn = yesterdayCarryInRow(sup);
+    const carryForward = yesterdayCarryForwardRow(sup);
     const weakLapse = weakSideLapseDisplay(sup);
     const payoutToday = sup.today_milestone_paid_usd ?? sup.earned_today_usd ?? '0.00';
     return [
@@ -462,9 +496,14 @@ function buildSuperLegRows(legs, t, superMatching) {
             right: R.super_sub_panels,
         },
         {
-            label: t('member.team.rowCarryYesterday'),
-            left: carryYesterday.left,
-            right: carryYesterday.right,
+            label: t('member.team.rowCarryInYesterday'),
+            left: carryIn.left,
+            right: carryIn.right,
+        },
+        {
+            label: t('member.team.rowCarryForwardYesterday'),
+            left: carryForward.left,
+            right: carryForward.right,
         },
         {
             label: t('member.team.payoutYesterday'),

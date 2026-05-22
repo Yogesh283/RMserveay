@@ -504,6 +504,8 @@
             "rowTotalSuperPanels": "Total super panels (ab tak)",
             "rowYesterdaySuperPanels": "Super panels (kal)",
             "rowCarryYesterday": "Carry forward (kal)",
+            "rowCarryInYesterday": "Kal ke points (left / right leg)",
+            "rowCarryForwardYesterday": "Carry forward (kal) — sirf strong leg",
             "directReferrals": "Direct referrals",
             "bySponsorHint": "By sponsor (not binary).",
             "thName": "Name",
