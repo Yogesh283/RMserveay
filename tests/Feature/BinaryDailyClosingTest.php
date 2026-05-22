@@ -293,4 +293,30 @@ class BinaryDailyClosingTest extends TestCase
             'amount' => '1.00',
         ]);
     }
+
+    public function test_daily_ledger_matches_from_stored_carry_buckets(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => true]);
+
+        $user = $this->makeUser(2, 3);
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
+
+        $this->assertNotNull($closing);
+        $this->assertSame(2, (int) $closing->pairs_matched);
+        $this->assertSame('2.00', (string) $closing->payout_usd);
+    }
+
+    public function test_daily_ledger_skips_one_sided_carry_without_pairs(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => true]);
+
+        $user = $this->makeUser(0, 88);
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
+
+        $this->assertNull($closing);
+    }
 }

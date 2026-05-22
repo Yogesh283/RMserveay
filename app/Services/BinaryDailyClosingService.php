@@ -231,13 +231,36 @@ class BinaryDailyClosingService
             $storedLeft = (int) $user->{$leftCol};
             $storedRight = (int) $user->{$rightCol};
 
-            $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
-            $leftIn = (int) $matchInputs['left_in'];
-            $rightIn = (int) $matchInputs['right_in'];
-            $dailyLeft = (int) $matchInputs['yesterday_left'];
-            $dailyRight = (int) $matchInputs['yesterday_right'];
+            if ($useDailyLedger) {
+                // Production: stored carry buckets + purchases on `closing_date` only (see config comment).
+                $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
+                $dailyLeft = (int) $daily['left'];
+                $dailyRight = (int) $daily['right'];
+                $leftIn = $storedLeft + $dailyLeft;
+                $rightIn = $storedRight + $dailyRight;
+                $matchInputs = [
+                    'left_in' => $leftIn,
+                    'right_in' => $rightIn,
+                    'opening_left_out' => $storedLeft,
+                    'opening_right_out' => $storedRight,
+                    'yesterday_left' => $dailyLeft,
+                    'yesterday_right' => $dailyRight,
+                    'total_left' => $leftIn,
+                    'total_right' => $rightIn,
+                ];
+            } else {
+                $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
+                $leftIn = (int) $matchInputs['left_in'];
+                $rightIn = (int) $matchInputs['right_in'];
+                $dailyLeft = (int) $matchInputs['yesterday_left'];
+                $dailyRight = (int) $matchInputs['yesterday_right'];
+            }
 
             if ($leftIn <= 0 && $rightIn <= 0) {
+                return null;
+            }
+
+            if ($useDailyLedger && min($leftIn, $rightIn) <= 0) {
                 return null;
             }
 
