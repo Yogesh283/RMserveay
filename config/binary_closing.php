@@ -23,10 +23,9 @@ return [
     'enabled' => filter_var(env('BINARY_CLOSING_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
 
     /**
-     * When true (default, required in production): active_panel, panel, and super all
-     * match only wallet purchases on the calendar `closing_date` (not cumulative carry).
-     * Cron/command default closing date is yesterday in `timezone` (e.g. 21 May run → 20 May).
-     * Set false only for legacy tests/backfill — do not disable on live.
+     * When true (default): cron only processes users with sub/super/active volume on `closing_date`.
+     * Pair math always matches the team page: lifetime-leg opening carry + that date's per-leg volume.
+     * Set false only for legacy tests — do not disable on live.
      */
     'use_daily_carry_ledger' => filter_var(env('BINARY_CLOSING_USE_DAILY_LEDGER', true), FILTER_VALIDATE_BOOLEAN),
 

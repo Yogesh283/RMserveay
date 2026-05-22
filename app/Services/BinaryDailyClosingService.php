@@ -201,7 +201,7 @@ class BinaryDailyClosingService
     /**
      * Atomically close one (user, scope, date).
      *
-     * Matches pairs for `closing_date` only (daily ledger) and updates stored carry.
+     * Same math as the team page: opening carry from lifetime leg totals + that date's per-leg volume.
      */
     private function processOne(int $userId, string $scope, array $cfg, CarbonImmutable $date): ?BinaryDailyClosing
     {
@@ -223,52 +223,19 @@ class BinaryDailyClosingService
             $storedLeft = (int) $user->{$leftCol};
             $storedRight = (int) $user->{$rightCol};
 
-            $bucketLeft = $storedLeft;
-            $bucketRight = $storedRight;
+            $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
+            $leftIn = (int) $matchInputs['left_in'];
+            $rightIn = (int) $matchInputs['right_in'];
+            $dailyLeft = (int) $matchInputs['yesterday_left'];
+            $dailyRight = (int) $matchInputs['yesterday_right'];
 
-            if ($useDailyLedger) {
-                // Income pairs = purchases on `closing_date` only; carry_out uses stored + that day.
-                $daily = $this->dailyCarry->incrementsForUserOnClosingDate($userId, $scope, $date);
-                $dailyLeft = (int) $daily['left'];
-                $dailyRight = (int) $daily['right'];
-                $bucketLeft = $storedLeft + $dailyLeft;
-                $bucketRight = $storedRight + $dailyRight;
-                $leftIn = $dailyLeft;
-                $rightIn = $dailyRight;
-                $matchInputs = [
-                    'left_in' => $leftIn,
-                    'right_in' => $rightIn,
-                    'opening_left_out' => $storedLeft,
-                    'opening_right_out' => $storedRight,
-                    'yesterday_left' => $dailyLeft,
-                    'yesterday_right' => $dailyRight,
-                    'total_left' => $bucketLeft,
-                    'total_right' => $bucketRight,
-                ];
-            } else {
-                $matchInputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date, $maxPairs);
-                $leftIn = (int) $matchInputs['left_in'];
-                $rightIn = (int) $matchInputs['right_in'];
-                $dailyLeft = (int) $matchInputs['yesterday_left'];
-                $dailyRight = (int) $matchInputs['yesterday_right'];
-            }
-
-            if ($useDailyLedger) {
-                if ($dailyLeft <= 0 && $dailyRight <= 0) {
-                    return null;
-                }
-                if (min($dailyLeft, $dailyRight) <= 0) {
-                    return null;
-                }
-            } elseif ($leftIn <= 0 && $rightIn <= 0) {
+            if ($leftIn <= 0 && $rightIn <= 0) {
                 return null;
             }
 
             $incomeEligible = $user->qualifiesActivePanelistIncome();
 
-            $pairsFromDaily = $useDailyLedger && min($dailyLeft, $dailyRight) > 0;
-
-            if (! $incomeEligible && ($pairsFromDaily || min($leftIn, $rightIn) > 0)) {
+            if (! $incomeEligible && min($leftIn, $rightIn) > 0) {
                 Log::info('binary_closing.carry_only_inactive_panelist', [
                     'user_id' => $userId,
                     'scope' => $scope,
@@ -290,14 +257,12 @@ class BinaryDailyClosingService
                 return null;
             }
 
-            $pairsAvailable = $useDailyLedger
-                ? min($dailyLeft, $dailyRight)
-                : min($leftIn, $rightIn);
+            $pairsAvailable = min($leftIn, $rightIn);
             $pairsMatched = min($pairsAvailable, $maxPairs);
             $capHit = $pairsAvailable > $maxPairs;
 
-            $carryLeft = $useDailyLedger ? $bucketLeft : $leftIn;
-            $carryRight = $useDailyLedger ? $bucketRight : $rightIn;
+            $carryLeft = $leftIn;
+            $carryRight = $rightIn;
 
             $payout = $incomeEligible
                 ? bcmul((string) $pairsMatched, $perPair, 2)

@@ -306,7 +306,7 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertNull($closing);
     }
 
-    public function test_daily_ledger_skips_one_sided_daily_or_stored_only(): void
+    public function test_daily_ledger_still_skips_when_no_activity_on_closing_date(): void
     {
         config(['binary_closing.use_daily_carry_ledger' => true]);
 
@@ -316,5 +316,49 @@ class BinaryDailyClosingTest extends TestCase
             ->closeForUser($user, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
 
         $this->assertNull($closing);
+    }
+
+    public function test_daily_ledger_matches_team_buckets_one_sided_day_with_opening_carry(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => true]);
+
+        $leftLeg = User::factory()->create(['sub_panel_count' => 72]);
+        $rightLeg = User::factory()->create(['sub_panel_count' => 243]);
+        $earner = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 9,
+            'left_child_id' => $leftLeg->id,
+            'right_child_id' => $rightLeg->id,
+            'panel_match_carry_left' => 0,
+            'panel_match_carry_right' => 0,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $buyer = User::factory()->create([
+            'binary_parent_id' => $leftLeg->id,
+            'binary_side' => 'left',
+        ]);
+
+        for ($i = 0; $i < 9; $i++) {
+            WalletTransaction::create([
+                'user_id' => $buyer->id,
+                'type' => WalletTransaction::TYPE_SUB_PANEL_FEE,
+                'amount' => '-10.00',
+                'balance_after' => '0.00',
+                'created_at' => Carbon::parse('2026-05-21 12:00:00', 'Asia/Kolkata'),
+            ]);
+        }
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($earner, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
+
+        $this->assertNotNull($closing);
+        $this->assertSame(9, (int) $closing->left_carry_in);
+        $this->assertSame(171, (int) $closing->right_carry_in);
+        $this->assertSame(9, (int) $closing->pairs_matched);
+        $this->assertSame(0, (int) $closing->left_carry_out);
+        $this->assertSame(162, (int) $closing->right_carry_out);
     }
 }
