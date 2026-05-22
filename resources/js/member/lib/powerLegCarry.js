@@ -2,7 +2,7 @@
  * Carry forward = strong (power) leg par sirf difference.
  * Weak leg par — (kuch nahi).
  *
- * Team table uses lifetime leg totals (active panelists / sub panels / super panels).
+ * Team table uses yesterday leg totals (active / sub / super purchases on closing date).
  * Agar closing carry_out sirf ek side par ho to wahi use hota hai jab wo power leg se match kare.
  */
 

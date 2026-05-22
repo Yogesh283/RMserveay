@@ -381,8 +381,8 @@ function buildActiveLegRows(legs, t, activeMatching) {
         { label: t('member.team.rowRegistrations'), left: L.count, right: R.count },
         { label: t('member.team.rowActivePanelists'), left: L.active, right: R.active },
         { label: 'Active carry forward', left: carry.left, right: carry.right },
-        { label: 'Payout today', left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
-        { label: 'Lapsed today', left: weakLapse.left, right: weakLapse.right },
+        { label: t('member.team.payoutYesterday'), left: fmtUsdShort(payoutToday), right: fmtUsdShort(payoutToday) },
+        { label: t('member.team.lapsedYesterday'), left: weakLapse.left, right: weakLapse.right },
     ];
 }
 
@@ -417,12 +417,12 @@ function buildSubLegRows(legs, t, panelMatching, subMatching) {
             right: carry.right,
         },
         {
-            label: 'Payout today',
+            label: t('member.team.payoutYesterday'),
             left: fmtUsdShort(payoutToday),
             right: fmtUsdShort(payoutToday),
         },
         {
-            label: 'Lapsed today',
+            label: t('member.team.lapsedYesterday'),
             left: weakLapse.left,
             right: weakLapse.right,
         },
@@ -459,12 +459,12 @@ function buildSuperLegRows(legs, t, superMatching) {
             right: carry.right,
         },
         {
-            label: 'Payout today',
+            label: t('member.team.payoutYesterday'),
             left: fmtUsdShort(payoutToday),
             right: fmtUsdShort(payoutToday),
         },
         {
-            label: 'Lapsed today',
+            label: t('member.team.lapsedYesterday'),
             left: weakLapse.left,
             right: weakLapse.right,
         },
@@ -609,14 +609,15 @@ function TreeNode({ node, expandedIds, loadingIds, onFocus, isRoot = false }) {
     );
 }
 
-function totalTeamTableCaption(tab, t) {
+function totalTeamTableCaption(tab, t, volumeDate) {
+    const suffix = volumeDate ? ` (${volumeDate})` : '';
     switch (tab) {
         case 'active':
-            return t('member.team.captionActive');
+            return t('member.team.captionActive') + suffix;
         case 'sub':
-            return t('member.team.captionSub');
+            return t('member.team.captionSub') + suffix;
         case 'super':
-            return t('member.team.captionSuper');
+            return t('member.team.captionSuper') + suffix;
         default:
             return '';
     }
@@ -907,7 +908,7 @@ export default function MemberTeamPage() {
                         {data?.legs ? (
                             <LegsCompareTable
                                 rows={buildActiveLegRows(data.legs, t, data?.matching?.active_panel)}
-                                caption={totalTeamTableCaption('active', t)}
+                                caption={totalTeamTableCaption('active', t, data?.team_volume?.date)}
                                 accent="active"
                             />
                         ) : (
@@ -1083,7 +1084,11 @@ export default function MemberTeamPage() {
                             </button>
                         </div>
                         <div className="mt-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
-                            <LegsCompareTable rows={totalTeamRows} caption={totalTeamTableCaption(totalTeamTab, t)} accent={totalTeamTab} />
+                            <LegsCompareTable
+                                rows={totalTeamRows}
+                                caption={totalTeamTableCaption(totalTeamTab, t, data?.team_volume?.date)}
+                                accent={totalTeamTab}
+                            />
                         </div>
                     </RmsCard>
 

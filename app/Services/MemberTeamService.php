@@ -2,7 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\BinaryDailyClosing;
 use App\Models\User;
+use App\Models\WalletTransaction;
+use App\Support\BinaryClosingCalendar;
+use App\Support\BinaryWeakSideLapse;
 
 class MemberTeamService
 {
@@ -84,62 +88,110 @@ class MemberTeamService
             ];
         }
 
-        $rows = User::query()->whereIn('id', $ids)->get([
-            'id', 'sub_panel_count', 'super_sub_panel_count',
-            'active_panel_match_carry_left', 'active_panel_match_carry_right',
-            'panel_match_carry_left', 'panel_match_carry_right',
-            'super_panel_match_carry_left', 'super_panel_match_carry_right',
-            'activation_fee_paid_at', 'minimum_panel_fee_paid_at',
-            'spm_match_day', 'spm_cumulative_panels',
-            'sspm_match_day', 'sspm_cumulative_panels',
-        ]);
+        [$start, $end] = $this->yesterdayBounds();
 
-        $active = 0;
-        $subPanels = 0;
-        $superSub = 0;
-        $cal = 0;
-        $car = 0;
-        $cpl = 0;
-        $cpr = 0;
-        $csl = 0;
-        $csr = 0;
-        $spmToday = 0;
-        $sspmToday = 0;
+        $active = User::query()
+            ->whereIn('id', $ids)
+            ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
+            ->count();
 
-        foreach ($rows as $u) {
-            if ($u->qualifiesActivePanelistIncome()) {
-                $active++;
-            }
-            $subPanels += (int) $u->sub_panel_count;
-            $superSub += (int) $u->super_sub_panel_count;
-            $cal += (int) $u->active_panel_match_carry_left;
-            $car += (int) $u->active_panel_match_carry_right;
-            $cpl += (int) $u->panel_match_carry_left;
-            $cpr += (int) $u->panel_match_carry_right;
-            $csl += (int) $u->super_panel_match_carry_left;
-            $csr += (int) $u->super_panel_match_carry_right;
-            if ($u->spm_match_day !== null && now()->isSameDay($u->spm_match_day)) {
-                $spmToday += (int) $u->spm_cumulative_panels;
-            }
-            if ($u->sspm_match_day !== null && now()->isSameDay($u->sspm_match_day)) {
-                $sspmToday += (int) $u->sspm_cumulative_panels;
-            }
-        }
+        $subPanels = WalletTransaction::query()
+            ->whereIn('user_id', $ids)
+            ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
+            ->whereBetween('created_at', [$start, $end])
+            ->count();
+
+        $superSub = WalletTransaction::query()
+            ->whereIn('user_id', $ids)
+            ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
+            ->whereBetween('created_at', [$start, $end])
+            ->count();
 
         return [
             'count' => count($ids),
             'active' => $active,
             'sub_panels' => $subPanels,
             'super_sub_panels' => $superSub,
-            'carry_active_left' => $cal,
-            'carry_active_right' => $car,
-            'carry_panel_left' => $cpl,
-            'carry_panel_right' => $cpr,
-            'carry_super_left' => $csl,
-            'carry_super_right' => $csr,
-            'sub_matching_cumulative_today' => $spmToday,
-            'super_matching_cumulative_today' => $sspmToday,
+            'carry_active_left' => 0,
+            'carry_active_right' => 0,
+            'carry_panel_left' => 0,
+            'carry_panel_right' => 0,
+            'carry_super_left' => 0,
+            'carry_super_right' => 0,
+            'sub_matching_cumulative_today' => 0,
+            'super_matching_cumulative_today' => 0,
         ];
+    }
+
+    /**
+     * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}
+     */
+    private function yesterdayBounds(): array
+    {
+        return BinaryClosingCalendar::dateLocalBounds(BinaryClosingCalendar::yesterdayDateString());
+    }
+
+    /**
+     * Team page: payout / lapse / carry_out from yesterday's closing (or projected from yesterday leg counts).
+     *
+     * @param  array<string, mixed>  $status
+     * @return array<string, mixed>
+     */
+    private function matchingForTeamYesterday(User $user, string $scope, array $status, int $legLeft, int $legRight): array
+    {
+        $yesterday = BinaryClosingCalendar::yesterdayDateString();
+        $maxPairs = match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20),
+            BinaryDailyClosing::SCOPE_SUPER => (int) config('binary_closing.scopes.super.max_pairs_per_day', 20),
+            default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
+        };
+
+        $closing = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $yesterday)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($closing !== null) {
+            $weak = BinaryWeakSideLapse::fromClosing($closing);
+            $meta = is_array($closing->meta) ? $closing->meta : [];
+            $payout = number_format((float) $closing->payout_usd, 2, '.', '');
+            $milestonePaid = (string) ($meta['milestone_paid_usd'] ?? $payout);
+
+            return array_merge($status, [
+                'earned_today_usd' => $payout,
+                'today_milestone_paid_usd' => $milestonePaid,
+                'today_left_carry_out' => (int) $closing->left_carry_out,
+                'today_right_carry_out' => (int) $closing->right_carry_out,
+                'today_left_lapsed' => (int) $closing->left_lapsed,
+                'today_right_lapsed' => (int) $closing->right_lapsed,
+                'today_weak_side' => $weak['side'],
+                'today_weak_lapsed' => $weak['lapsed'],
+                'last_closing_date' => $yesterday,
+                'team_volume_period' => 'yesterday',
+                'team_volume_date' => $yesterday,
+            ]);
+        }
+
+        $projected = BinaryWeakSideLapse::splitFromLegCounts($legLeft, $legRight, $maxPairs);
+        $weakLapsed = $projected['weak_side'] === 'left'
+            ? $projected['weak_lapsed']
+            : ($projected['weak_side'] === 'right' ? $projected['weak_lapsed'] : 0);
+
+        return array_merge($status, [
+            'earned_today_usd' => '0.00',
+            'today_milestone_paid_usd' => '0.00',
+            'today_left_carry_out' => $projected['left_out'],
+            'today_right_carry_out' => $projected['right_out'],
+            'today_left_lapsed' => $projected['weak_side'] === 'left' ? $weakLapsed : 0,
+            'today_right_lapsed' => $projected['weak_side'] === 'right' ? $weakLapsed : 0,
+            'today_weak_side' => $projected['weak_side'],
+            'today_weak_lapsed' => $weakLapsed,
+            'last_closing_date' => null,
+            'team_volume_period' => 'yesterday',
+            'team_volume_date' => $yesterday,
+        ]);
     }
 
     /**
@@ -170,22 +222,33 @@ class MemberTeamService
             ->all();
         $depth = 1;
 
+        [$start, $end] = $this->yesterdayBounds();
+
         while ($depth <= $max && $currentIds !== []) {
             $users = User::query()
                 ->whereIn('id', $currentIds)
                 ->excludeDummy()
                 ->get([
-                    'sub_panel_count', 'super_sub_panel_count',
-                    'activation_fee_paid_at', 'minimum_panel_fee_paid_at',
+                    'id',
+                    'minimum_panel_fee_paid_at',
                 ]);
 
             foreach ($users as $u) {
                 $out[$depth]['team_members']++;
-                if ($u->qualifiesActivePanelistIncome()) {
+                if ($u->minimum_panel_fee_paid_at !== null
+                    && $u->minimum_panel_fee_paid_at->between($start, $end)) {
                     $out[$depth]['active_panelists']++;
                 }
-                $out[$depth]['sub_panel_slots'] += (int) $u->sub_panel_count;
-                $out[$depth]['super_sub_panel_slots'] += (int) $u->super_sub_panel_count;
+                $out[$depth]['sub_panel_slots'] += (int) WalletTransaction::query()
+                    ->where('user_id', $u->id)
+                    ->where('type', WalletTransaction::TYPE_SUB_PANEL_FEE)
+                    ->whereBetween('created_at', [$start, $end])
+                    ->count();
+                $out[$depth]['super_sub_panel_slots'] += (int) WalletTransaction::query()
+                    ->where('user_id', $u->id)
+                    ->where('type', WalletTransaction::TYPE_SUPER_SUB_PANEL_FEE)
+                    ->whereBetween('created_at', [$start, $end])
+                    ->count();
             }
 
             $currentIds = User::query()
@@ -230,14 +293,19 @@ class MemberTeamService
 
         $leftLeg = $this->aggregateLeg($user, 'left');
         $rightLeg = $this->aggregateLeg($user, 'right');
+        $yesterdayDate = BinaryClosingCalendar::yesterdayDateString();
         $leftIds = $this->collectBinarySubtreeIds($user->left_child_id !== null ? (int) $user->left_child_id : null);
         $rightIds = $this->collectBinarySubtreeIds($user->right_child_id !== null ? (int) $user->right_child_id : null);
         $networkCount = count(array_unique(array_merge($leftIds, $rightIds)));
 
+        [$start, $end] = $this->yesterdayBounds();
         $activeNetwork = 0;
         if ($leftIds !== [] || $rightIds !== []) {
             $allNet = array_unique(array_merge($leftIds, $rightIds));
-            $activeNetwork = User::query()->whereIn('id', $allNet)->get()->filter(fn (User $u) => $u->qualifiesActivePanelistIncome())->count();
+            $activeNetwork = User::query()
+                ->whereIn('id', $allNet)
+                ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
+                ->count();
         }
 
         return [
@@ -259,11 +327,39 @@ class MemberTeamService
                 'left' => $leftLeg,
                 'right' => $rightLeg,
             ],
+            'team_volume' => [
+                'period' => 'yesterday',
+                'date' => $yesterdayDate,
+            ],
             'matching' => [
-                'active_panel' => $this->activePanelMatching->status($user),
-                'panel' => $this->panelMatching->status($user),
-                'sub_panel' => $this->subPanelMatching->status($user),
-                'super_sub_panel' => $this->superSubPanelMatching->status($user),
+                'active_panel' => $this->matchingForTeamYesterday(
+                    $user,
+                    BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
+                    $this->activePanelMatching->status($user),
+                    (int) $leftLeg['active'],
+                    (int) $rightLeg['active'],
+                ),
+                'panel' => $this->matchingForTeamYesterday(
+                    $user,
+                    BinaryDailyClosing::SCOPE_PANEL,
+                    $this->panelMatching->status($user),
+                    (int) $leftLeg['sub_panels'],
+                    (int) $rightLeg['sub_panels'],
+                ),
+                'sub_panel' => $this->matchingForTeamYesterday(
+                    $user,
+                    BinaryDailyClosing::SCOPE_PANEL,
+                    $this->subPanelMatching->status($user),
+                    (int) $leftLeg['sub_panels'],
+                    (int) $rightLeg['sub_panels'],
+                ),
+                'super_sub_panel' => $this->matchingForTeamYesterday(
+                    $user,
+                    BinaryDailyClosing::SCOPE_SUPER,
+                    $this->superSubPanelMatching->status($user),
+                    (int) $leftLeg['super_sub_panels'],
+                    (int) $rightLeg['super_sub_panels'],
+                ),
             ],
             'level_income' => $this->levelIncomeOverviewWithTeamByLevel($user),
         ];
