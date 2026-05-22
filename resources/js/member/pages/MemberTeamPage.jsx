@@ -373,6 +373,93 @@ function payoutYesterdayRow(t, legMatch) {
     };
 }
 
+/** Active / Sub / Super — kal ki payout + pairs ek table row mein. */
+function YesterdayAllScopesIncomeTable({ teamVolume, legMatch, t }) {
+    const date = teamVolume?.date ?? '';
+    const cols = [
+        {
+            key: 'active',
+            label: 'Active Panel',
+            match: legMatch?.active_panel,
+            head: 'border-emerald-500/25 bg-emerald-500/15 text-emerald-100',
+            cell: 'border-emerald-500/12 bg-emerald-500/[0.08]',
+        },
+        {
+            key: 'sub',
+            label: 'Sub Panel',
+            match: legMatch?.panel,
+            head: 'border-sky-500/25 bg-sky-500/15 text-sky-100',
+            cell: 'border-sky-500/12 bg-sky-500/[0.08]',
+        },
+        {
+            key: 'super',
+            label: 'Super Panel',
+            match: legMatch?.super,
+            head: 'border-amber-500/25 bg-amber-500/15 text-amber-100',
+            cell: 'border-amber-500/12 bg-amber-500/[0.08]',
+        },
+    ];
+
+    const cellValue = (m) => {
+        const eligible = m?.income_eligible === true;
+        const payout = fmtUsdShort(eligible ? (m?.payout_usd ?? '0.00') : '0.00');
+        const pairs = Number(m?.pairs_matched ?? 0) | 0;
+        return { payout, pairs, eligible };
+    };
+
+    return (
+        <div className="mt-3 overflow-x-auto rounded-xl border border-white/[0.14] ring-1 ring-[#8B5CF6]/15">
+            <p className="border-b border-white/[0.08] bg-[#0f172a]/90 px-3 py-2 text-[11px] font-semibold text-white/90 sm:px-4">
+                {t('member.team.yesterdayIncomeAllScopes')}
+                {date ? ` (${date})` : ''}
+            </p>
+            <table className="w-full min-w-[320px] border-collapse text-sm">
+                <thead>
+                    <tr>
+                        <th className="bg-black/25 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-white/70 sm:px-4">
+                            {t('member.ui.details')}
+                        </th>
+                        {cols.map((c) => (
+                            <th
+                                key={c.key}
+                                className={`border-l px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide sm:px-3 sm:text-[11px] ${c.head}`}
+                            >
+                                {c.label}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr className="border-t border-white/[0.08]">
+                        <td className="bg-black/20 px-3 py-2.5 text-left text-[12px] font-medium text-white/90 sm:px-4">
+                            {t('member.team.payoutYesterday')}
+                        </td>
+                        {cols.map((c) => {
+                            const v = cellValue(c.match);
+                            return (
+                                <td
+                                    key={c.key}
+                                    className={`border-l px-2 py-2.5 text-center sm:px-3 ${c.cell}`}
+                                >
+                                    <span className="block text-sm font-bold tabular-nums text-white sm:text-base">{v.payout}</span>
+                                    <span className="mt-0.5 block text-[10px] tabular-nums text-white/65 sm:text-[11px]">
+                                        {v.pairs} {t('member.team.pairsShort')}
+                                    </span>
+                                    {!v.eligible ? (
+                                        <span className="mt-0.5 block text-[9px] font-medium text-amber-200/90">
+                                            {t('member.team.incomeBlockedShort')}
+                                        </span>
+                                    ) : null}
+                                </td>
+                            );
+                        })}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 /** Strong leg par carry number; weak leg par — (0 nahi). */
 function carryOutDisplay(left, right) {
     const l = Number(left) | 0;
@@ -1158,6 +1245,13 @@ export default function MemberTeamPage() {
                             <p className="mt-2 rounded-lg border border-amber-400/35 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-100/95">
                                 {t('member.team.inactivePanelistCarryOnly')}
                             </p>
+                        ) : null}
+                        {data?.leg_match ? (
+                            <YesterdayAllScopesIncomeTable
+                                teamVolume={data.team_volume}
+                                legMatch={data.leg_match}
+                                t={t}
+                            />
                         ) : null}
                         <div className="mt-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
                             <LegsCompareTable

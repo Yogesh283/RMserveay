@@ -234,14 +234,18 @@ class BinaryClosingReversalService
             ->orderBy('id')
             ->first();
 
-        $meta = $firstPaid?->meta ?? [];
-        $usedDailyLedger = (bool) ($meta['daily_carry_ledger'] ?? false);
+        $meta = is_array($firstPaid?->meta) ? $firstPaid->meta : [];
+        $beforeL = $meta['stored_carry_left_before'] ?? null;
+        $beforeR = $meta['stored_carry_right_before'] ?? null;
 
-        if ($usedDailyLedger && $firstPaid !== null) {
-            $beforeL = (int) ($meta['stored_carry_left_before'] ?? $g['left_in']);
-            $beforeR = (int) ($meta['stored_carry_right_before'] ?? $g['right_in']);
-            $user->{$leftCol} = $beforeL;
-            $user->{$rightCol} = $beforeR;
+        if ($beforeL !== null && $beforeR !== null) {
+            $user->{$leftCol} = (int) $beforeL;
+            $user->{$rightCol} = (int) $beforeR;
+        } elseif ($firstPaid !== null) {
+            // Legacy closings: undo by adding matched pairs back to both carry_out legs.
+            $pairs = (int) $firstPaid->pairs_matched;
+            $user->{$leftCol} = (int) $firstPaid->left_carry_out + $pairs;
+            $user->{$rightCol} = (int) $firstPaid->right_carry_out + $pairs;
         } else {
             $user->{$leftCol} = $g['left_in'];
             $user->{$rightCol} = $g['right_in'];
