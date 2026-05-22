@@ -361,4 +361,36 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertSame(0, (int) $closing->left_carry_out);
         $this->assertSame(162, (int) $closing->right_carry_out);
     }
+
+    public function test_inactive_panelist_updates_left_right_carry_without_payout(): void
+    {
+        config(['binary_closing.use_daily_carry_ledger' => true]);
+
+        $leftLeg = User::factory()->create(['sub_panel_count' => 72]);
+        $rightLeg = User::factory()->create(['sub_panel_count' => 243]);
+        $inactive = User::factory()->create([
+            'activation_fee_paid_at' => null,
+            'minimum_panel_fee_paid_at' => null,
+            'sub_panel_count' => 0,
+            'left_child_id' => $leftLeg->id,
+            'right_child_id' => $rightLeg->id,
+            'panel_match_carry_left' => 10,
+            'panel_match_carry_right' => 20,
+            'wallet_balance' => '0.00',
+        ]);
+
+        $closing = app(BinaryDailyClosingService::class)
+            ->closeForUser($inactive, BinaryDailyClosing::SCOPE_PANEL, Carbon::parse('2026-05-21', 'Asia/Kolkata'));
+
+        $this->assertNotNull($closing);
+        $this->assertSame(0, (int) $closing->pairs_matched);
+        $this->assertSame('0.00', (string) $closing->payout_usd);
+        $this->assertSame(0, (int) $closing->left_carry_out);
+        $this->assertSame(171, (int) $closing->right_carry_out);
+
+        $inactive->refresh();
+        $this->assertSame(0, (int) $inactive->panel_match_carry_left);
+        $this->assertSame(171, (int) $inactive->panel_match_carry_right);
+        $this->assertSame('0.00', (string) $inactive->wallet_balance);
+    }
 }

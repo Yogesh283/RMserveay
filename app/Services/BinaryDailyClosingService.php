@@ -171,6 +171,17 @@ class BinaryDailyClosingService
                 }
             }
 
+            // Inactive (or active) users with stored carry must still close so left/right buckets refresh.
+            User::query()
+                ->where(function ($q) use ($leftCol, $rightCol) {
+                    $q->where($leftCol, '>', 0)->orWhere($rightCol, '>', 0);
+                })
+                ->orderBy('id')
+                ->pluck('id')
+                ->each(function ($id) use (&$ids) {
+                    $ids[(int) $id] = true;
+                });
+
             $out = array_keys($ids);
             sort($out);
 
@@ -318,6 +329,7 @@ class BinaryDailyClosingService
                 $walletTxId = $tx->id;
             }
 
+            // Inactive panelists: no payout, but per-leg carry columns always follow closing math.
             $user->{$leftCol} = $leftOut;
             $user->{$rightCol} = $rightOut;
             $user->save();
