@@ -24,6 +24,11 @@ class MemberTeamController extends Controller
         ));
     }
 
+    public function levelIncome(Request $request): JsonResponse
+    {
+        return response()->json($this->team->levelIncomeWithTeamByLevel($request->user()));
+    }
+
     public function binaryTree(Request $request): JsonResponse
     {
         $validated = $request->validate([

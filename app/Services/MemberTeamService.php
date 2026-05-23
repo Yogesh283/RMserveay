@@ -136,6 +136,78 @@ class MemberTeamService
     }
 
     /**
+     * Fast leg summary for team overview (no yesterday wallet queries).
+     *
+     * @param  list<int>  $ids
+     * @return array{
+     *     count:int,
+     *     total_active:int, total_sub_panels:int, total_super_sub_panels:int
+     * }
+     */
+    private function aggregateLegSummaryFromIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [
+                'count' => 0,
+                'total_active' => 0,
+                'total_sub_panels' => 0,
+                'total_super_sub_panels' => 0,
+            ];
+        }
+
+        $rows = User::query()
+            ->whereIn('id', $ids)
+            ->get([
+                'id',
+                'sub_panel_count',
+                'super_sub_panel_count',
+                'activation_fee_paid_at',
+                'minimum_panel_fee_paid_at',
+            ]);
+
+        $totalActive = 0;
+        $totalSub = 0;
+        $totalSuper = 0;
+        foreach ($rows as $u) {
+            if ($u->qualifiesActivePanelistIncome()) {
+                $totalActive++;
+            }
+            $totalSub += (int) $u->sub_panel_count;
+            $totalSuper += (int) $u->super_sub_panel_count;
+        }
+
+        return [
+            'count' => count($ids),
+            'total_active' => $totalActive,
+            'total_sub_panels' => $totalSub,
+            'total_super_sub_panels' => $totalSuper,
+        ];
+    }
+
+    /**
+     * Lightweight leg_match block for team page (selected date only).
+     *
+     * @return array<string, mixed>
+     */
+    private function buildTeamLegMatchOverview(User $user, string $scope, ?string $viewDate = null): array
+    {
+        $selectedDate = $this->resolveTeamViewDate($viewDate);
+        $lifetime = $this->subtreeVolumes->lifetimeLegVolumes($user, $scope);
+        $selected = $this->buildTeamLegDaySnapshot($user, $scope, $selectedDate);
+
+        return [
+            'total_left' => (int) $lifetime['left'],
+            'total_right' => (int) $lifetime['right'],
+            'view_date' => $selectedDate,
+            'income_eligible' => (bool) $selected['income_eligible'],
+            'payout_usd' => $selected['payout_usd'],
+            'days' => [
+                'selected' => $selected,
+            ],
+        ];
+    }
+
+    /**
      * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}
      */
     private function yesterdayBounds(): array
@@ -664,22 +736,12 @@ class MemberTeamService
             ];
         })->values()->all();
 
-        $leftLeg = $this->aggregateLeg($user, 'left');
-        $rightLeg = $this->aggregateLeg($user, 'right');
         $yesterdayDate = BinaryClosingCalendar::yesterdayDateString();
         $leftIds = $this->collectBinarySubtreeIds($user->left_child_id !== null ? (int) $user->left_child_id : null);
         $rightIds = $this->collectBinarySubtreeIds($user->right_child_id !== null ? (int) $user->right_child_id : null);
+        $leftLeg = $this->aggregateLegSummaryFromIds($leftIds);
+        $rightLeg = $this->aggregateLegSummaryFromIds($rightIds);
         $networkCount = count(array_unique(array_merge($leftIds, $rightIds)));
-
-        [$start, $end] = $this->yesterdayBounds();
-        $activeNetwork = 0;
-        if ($leftIds !== [] || $rightIds !== []) {
-            $allNet = array_unique(array_merge($leftIds, $rightIds));
-            $activeNetwork = User::query()
-                ->whereIn('id', $allNet)
-                ->whereBetween('minimum_panel_fee_paid_at', [$start, $end])
-                ->count();
-        }
 
         return [
             'direct' => [
@@ -688,7 +750,6 @@ class MemberTeamService
             ],
             'network' => [
                 'total_members' => $networkCount,
-                'active_members' => $activeNetwork,
             ],
             'self' => [
                 'referral_code' => (string) $user->referral_code,
@@ -709,43 +770,23 @@ class MemberTeamService
                 'max_date' => BinaryClosingCalendar::todayDateString(),
             ],
             'leg_match' => [
-                'active_panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $leftLeg, $rightLeg, $viewDate),
-                'panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_PANEL, $leftLeg, $rightLeg, $viewDate),
-                'super' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_SUPER, $leftLeg, $rightLeg, $viewDate),
+                'active_panel' => $this->buildTeamLegMatchOverview($user, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $viewDate),
+                'panel' => $this->buildTeamLegMatchOverview($user, BinaryDailyClosing::SCOPE_PANEL, $viewDate),
+                'super' => $this->buildTeamLegMatchOverview($user, BinaryDailyClosing::SCOPE_SUPER, $viewDate),
             ],
-            'matching' => [
-                'active_panel' => $this->matchingForTeamYesterday(
-                    $user,
-                    BinaryDailyClosing::SCOPE_ACTIVE_PANEL,
-                    $this->activePanelMatching->status($user),
-                    $leftLeg,
-                    $rightLeg,
-                ),
-                'panel' => $this->matchingForTeamYesterday(
-                    $user,
-                    BinaryDailyClosing::SCOPE_PANEL,
-                    $this->panelMatching->status($user),
-                    $leftLeg,
-                    $rightLeg,
-                ),
-                'sub_panel' => $this->matchingForTeamYesterday(
-                    $user,
-                    BinaryDailyClosing::SCOPE_PANEL,
-                    $this->subPanelMatching->status($user),
-                    $leftLeg,
-                    $rightLeg,
-                ),
-                'super_sub_panel' => $this->matchingForTeamYesterday(
-                    $user,
-                    BinaryDailyClosing::SCOPE_SUPER,
-                    $this->superSubPanelMatching->status($user),
-                    $leftLeg,
-                    $rightLeg,
-                ),
-            ],
-            'level_income' => $this->levelIncomeOverviewWithTeamByLevel($user),
+            'level_income' => $this->surveyLevelIncome->status($user),
             'closing_income_history' => $this->recentClosingIncomeHistory($user),
         ];
+    }
+
+    /**
+     * Level income with per-generation team counts (lazy-loaded on team page).
+     *
+     * @return array<string, mixed>
+     */
+    public function levelIncomeWithTeamByLevel(User $user): array
+    {
+        return $this->levelIncomeOverviewWithTeamByLevel($user);
     }
 
     /**

@@ -305,7 +305,55 @@ const LEGS_TABLE_ACCENTS = {
     },
 };
 
-function LegsCompareTable({ rows, caption, accent = 'default' }) {
+const SUMMARY_ROW_ICONS = {
+    registration: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+    ),
+    scopeTotal: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-8H2v8h5m10 0v-5a3 3 0 00-6 0v5m6 0H7" />
+        </svg>
+    ),
+    newJoin: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+    ),
+    carry: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+    ),
+    matching: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    ),
+};
+
+const SUMMARY_ICON_TONES = {
+    registration: 'border-violet-400/40 bg-violet-500/15 text-violet-200',
+    scopeTotal: 'border-teal-400/40 bg-teal-500/15 text-teal-200',
+    newJoin: 'border-sky-400/40 bg-sky-500/15 text-sky-200',
+    carry: 'border-amber-400/40 bg-amber-500/15 text-amber-200',
+    matching: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200',
+};
+
+function SummaryRowIcon({ icon }) {
+    if (!icon || !SUMMARY_ROW_ICONS[icon]) {
+        return null;
+    }
+    const tone = SUMMARY_ICON_TONES[icon] ?? SUMMARY_ICON_TONES.registration;
+    return (
+        <span className={`mr-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${tone}`}>
+            {SUMMARY_ROW_ICONS[icon]}
+        </span>
+    );
+}
+
+function LegsCompareTable({ rows, caption, title, accent = 'default' }) {
     const { t } = useTranslation();
     if (!rows?.length) {
         return null;
@@ -313,6 +361,11 @@ function LegsCompareTable({ rows, caption, accent = 'default' }) {
     const s = LEGS_TABLE_ACCENTS[accent] ?? LEGS_TABLE_ACCENTS.default;
     return (
         <div className={`mt-2 overflow-x-auto rounded-xl border ${s.wrap}`}>
+            {title ? (
+                <p className="border-b border-white/[0.08] bg-[#0f172a]/90 px-3 py-2.5 text-base font-bold text-white sm:px-4">
+                    {title}
+                </p>
+            ) : null}
             {caption ? (
                 <p className={`border-b px-3 py-1.5 text-[11px] font-medium leading-snug sm:px-4 ${s.cap}`}>{caption}</p>
             ) : null}
@@ -354,7 +407,10 @@ function LegsCompareTable({ rows, caption, accent = 'default' }) {
                                         row.highlight ? 'bg-white/[0.04] text-amber-100' : 'bg-black/20 text-white/90'
                                     }`}
                                 >
-                                    {row.label}
+                                    <span className="flex items-center">
+                                        <SummaryRowIcon icon={row.icon} />
+                                        <span>{row.label}</span>
+                                    </span>
                                 </td>
                                 <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.lTd}`}>
                                     {row.left ?? t('member.ui.dash')}
@@ -383,154 +439,136 @@ function closingScopeLabel(t, scope) {
     return t('member.team.scopeSubPanel');
 }
 
-const CARRY_DASH = '—';
-
-function matchingIncomeRow(t, legMatch) {
-    const m = legMatch ?? {};
-    const eligible = m.income_eligible === true;
-    const useToday = m.today_closing_recorded === true;
-    const amount = eligible
-        ? useToday
-            ? (m.today_payout_usd ?? '0.00')
-            : (m.payout_usd ?? '0.00')
-        : '0.00';
-    const date = useToday ? m.today_date : m.team_volume_date;
-    return {
-        label: eligible
-            ? useToday
-                ? t('member.team.rowMatchingIncomeToday', { date })
-                : t('member.team.rowMatchingIncome', { date })
-            : t('member.team.rowMatchingIncomeBlocked'),
-        left: fmtUsdShort(amount),
-        right: fmtUsdShort(amount),
-    };
-}
-
-function totalRowLabel(t, scope) {
+function scopeLegCount(leg, scope) {
+    if (!leg) {
+        return 0;
+    }
     if (scope === 'active_panel') {
-        return t('member.team.rowTotalActiveLr');
+        return Number(leg.total_active ?? 0);
     }
     if (scope === 'super') {
-        return t('member.team.rowTotalSuperLr');
+        return Number(leg.total_super_sub_panels ?? 0);
     }
-
-    return t('member.team.rowTotalSubLr');
+    return Number(leg.total_sub_panels ?? 0);
 }
 
-function newInTeamRowLabel(t, scope) {
+/** Full lifetime L/R totals for Active / Sub / Super (binary tree per leg). */
+function scopeLegTotals(legs, scope, legMatch) {
+    const left = scopeLegCount(legs?.left, scope);
+    const right = scopeLegCount(legs?.right, scope);
+    const m = legMatch ?? {};
+    const matchLeft = Number(m.total_left ?? 0);
+    const matchRight = Number(m.total_right ?? 0);
+    if (left === 0 && right === 0 && (matchLeft > 0 || matchRight > 0)) {
+        return { left: matchLeft, right: matchRight };
+    }
+    return { left, right };
+}
+
+function scopeTotalLabel(t, scope) {
     if (scope === 'active_panel') {
-        return t('member.team.rowNewInTeamActive');
+        return t('member.team.summaryTotalActive');
     }
     if (scope === 'super') {
-        return t('member.team.rowNewInTeamSuper');
+        return t('member.team.summaryTotalSuper');
     }
-
-    return t('member.team.rowNewInTeamSub');
+    return t('member.team.summaryTotalSub');
 }
 
-/** Selected calendar date: total L/R + ~5 rows (naya, carry before, match, carry after, income). */
-function buildShortDayLegRows(t, legMatch, scope = 'panel') {
+function formatLrPair(left, right) {
+    return `${left}|${right}`;
+}
+
+/** Carry = strong leg total minus weak leg total (same scope L/R panel counts). */
+function carryForwardFromTotals(left, right) {
+    const l = Number(left) | 0;
+    const r = Number(right) | 0;
+    if (l === r) {
+        return { left: 0, right: 0 };
+    }
+    if (l > r) {
+        return { left: l - r, right: 0 };
+    }
+    return { left: 0, right: r - l };
+}
+
+/** Binary Team Summary — 5 rows like dashboard mock (registration, scope total, new, carry, income). */
+function buildBinarySummaryRows(t, legs, legMatch, scope) {
     const m = legMatch ?? {};
-    const day =
-        m.days?.selected ??
-        m.days?.yesterday ?? {
-            date: m.view_date ?? m.team_volume_date ?? '',
-        };
-    const viewDate = m.view_date ?? day.date ?? '';
-
-    const rows = [
-        {
-            label: totalRowLabel(t, scope),
-            left: m.total_left ?? day.total_left ?? 0,
-            right: m.total_right ?? day.total_right ?? 0,
-        },
-    ];
-
-    if (!day?.date) {
-        return { rows, viewDate };
+    const day = m.days?.selected ?? {};
+    if (!legs?.left || !legs?.right) {
+        return { rows: [] };
     }
 
-    const pairs = Number(day.pairs_matched ?? 0) | 0;
-    const carryIn = carryOutDisplay(day.carry_in_left ?? 0, day.carry_in_right ?? 0);
-    const carryOut = carryOutDisplay(
-        day.display_carry_left ?? day.carry_out_left ?? 0,
-        day.display_carry_right ?? day.carry_out_right ?? 0,
-    );
+    const payout = day.payout_usd ?? m.payout_usd ?? '0.00';
+    const totals = scopeLegTotals(legs, scope, m);
+    const carry = carryForwardFromTotals(totals.left, totals.right);
+
+    const rows = [];
+
+    if (scope === 'active_panel') {
+        rows.push({
+            icon: 'registration',
+            label: t('member.team.summaryTotalRegistration'),
+            left: legs.left.count ?? 0,
+            right: legs.right.count ?? 0,
+            highlight: true,
+        });
+    }
+
+    rows.push({
+        icon: 'scopeTotal',
+        label: scopeTotalLabel(t, scope),
+        left: totals.left,
+        right: totals.right,
+        highlight: scope !== 'active_panel',
+    });
+
+    rows.push({
+        icon: 'newJoin',
+        label: t('member.team.summaryTodayNew'),
+        left: day.team_new_left ?? 0,
+        right: day.team_new_right ?? 0,
+    });
 
     rows.push(
         {
-            label: newInTeamRowLabel(t, scope),
-            left: day.team_new_left ?? 0,
-            right: day.team_new_right ?? 0,
-            highlight: true,
+            icon: 'carry',
+            label: t('member.team.summaryCarryForward'),
+            left: carry.left,
+            right: carry.right,
         },
         {
-            label: t('member.team.rowMatchingCarryBeforeShort'),
-            left: carryIn.left,
-            right: carryIn.right,
-        },
-        {
-            label:
-                pairs > 0
-                    ? t('member.team.rowFlowMatchShort', { pairs })
-                    : t('member.team.rowFlowNoMatchShort'),
-            left: day.carry_in_left ?? 0,
-            right: day.carry_in_right ?? 0,
-        },
-        {
-            label: day.income_eligible
-                ? t('member.team.rowFlowCarryShort')
-                : t('member.team.rowFlowCarryTeamShort'),
-            left: carryOut.left,
-            right: carryOut.right,
-        },
-        {
-            label: day.income_eligible
-                ? t('member.team.rowFlowIncomeShort')
-                : t('member.team.rowFlowIncomeHoldShort'),
-            left: fmtUsdShort(day.payout_usd ?? '0.00'),
-            right: fmtUsdShort(day.payout_usd ?? '0.00'),
+            icon: 'matching',
+            label: t('member.team.summaryMatchingTotal'),
+            left: fmtUsdShort(payout),
+            right: fmtUsdShort(payout),
         },
     );
 
-    return { rows, viewDate };
-}
-
-function buildCompactLegRows(t, legMatch, scope = 'panel') {
-    return buildShortDayLegRows(t, legMatch, scope);
-}
-
-function buildCompactSubSuperLegRows(t, legMatch) {
-    return buildCompactLegRows(t, legMatch, 'panel');
-}
-
-/** Strong leg par carry number; weak leg par — (0 nahi). */
-function carryOutDisplay(left, right) {
-    const l = Number(left) | 0;
-    const r = Number(right) | 0;
-    if (l > 0 && r === 0) {
-        return { left: l, right: CARRY_DASH };
-    }
-    if (r > 0 && l === 0) {
-        return { left: CARRY_DASH, right: r };
-    }
-    return { left: l, right: r };
+    return { rows };
 }
 
 function buildActiveLegRows(legs, t, _activeMatching, legMatch) {
-    if (!legs?.left || !legs?.right) {
-        return { rows: [], yesterdayDate: '', todayDate: '' };
+    return buildBinarySummaryRows(t, legs, legMatch, 'active_panel');
+}
+
+function buildSubLegRows(legs, t, _subMatching, legMatch) {
+    return buildBinarySummaryRows(t, legs, legMatch, 'panel');
+}
+
+function buildSuperLegRows(legs, t, _superMatching, legMatch) {
+    return buildBinarySummaryRows(t, legs, legMatch, 'super');
+}
+
+function binarySummaryTitle(t, tab) {
+    if (tab === 'active') {
+        return t('member.team.binarySummaryActive');
     }
-
-    return buildCompactLegRows(t, legMatch, 'active_panel');
-}
-
-function buildSubLegRows(_legs, t, _subMatching, legMatch) {
-    return buildCompactLegRows(t, legMatch, 'panel');
-}
-
-function buildSuperLegRows(_legs, t, _superMatching, legMatch) {
-    return buildCompactLegRows(t, legMatch, 'super');
+    if (tab === 'sub') {
+        return t('member.team.binarySummarySub');
+    }
+    return t('member.team.binarySummarySuper');
 }
 
 function EmptyNodeSlot({ side = 'left' }) {
@@ -650,20 +688,6 @@ function TreeNode({ node, expandedIds, loadingIds, onFocus, isRoot = false }) {
     );
 }
 
-function totalTeamTableCaption(tab, t, volumeDate) {
-    const suffix = volumeDate ? ` (${volumeDate})` : '';
-    switch (tab) {
-        case 'active':
-            return t('member.team.captionActive') + suffix;
-        case 'sub':
-            return t('member.team.captionSub') + suffix;
-        case 'super':
-            return t('member.team.captionSuper') + suffix;
-        default:
-            return '';
-    }
-}
-
 export default function MemberTeamPage() {
     const { t, i18n } = useTranslation();
     const [data, setData] = useState(null);
@@ -689,49 +713,62 @@ export default function MemberTeamPage() {
     const [panelMatchData, setPanelMatchData] = useState(null);
     const [subMatchData, setSubMatchData] = useState(null);
     const [superMatchData, setSuperMatchData] = useState(null);
-    const [viewDate, setViewDate] = useState('');
-    const [tableLoading, setTableLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
+    const [levelIncomeDetail, setLevelIncomeDetail] = useState(null);
+    const [levelIncomeLoading, setLevelIncomeLoading] = useState(false);
+    const [matchingLoading, setMatchingLoading] = useState(false);
 
-    const load = useCallback(async (dateOverride) => {
+    const load = useCallback(async () => {
         setErr(null);
-        setTableLoading(true);
+        setPageLoading(true);
         try {
             await prepareSanctum();
-            const params = {};
-            if (typeof dateOverride === 'string' && dateOverride !== '') {
-                params.date = dateOverride;
-            }
-            const [ov, pm, sm, sup] = await Promise.all([
-                window.axios.get('api/member/team/overview', { params }),
+            const { data: ov } = await window.axios.get('api/member/team/overview');
+            setData(ov);
+        } catch (e) {
+            setErr(e.response?.data?.message ?? e.message ?? t('member.team.loadFailed'));
+        } finally {
+            setPageLoading(false);
+        }
+    }, [t]);
+
+    const loadMatchingProgrammes = useCallback(async () => {
+        if (panelMatchData && subMatchData && superMatchData) {
+            return;
+        }
+        setMatchingLoading(true);
+        try {
+            await prepareSanctum();
+            const [pm, sm, sup] = await Promise.all([
                 window.axios.get('api/member/programme/panel-matching'),
                 window.axios.get('api/member/programme/sub-panel-matching'),
                 window.axios.get('api/member/programme/super-sub-panel-matching'),
             ]);
-            setData(ov.data);
-            const picked = ov.data?.team_volume?.view_date ?? '';
-            if (picked) {
-                setViewDate(picked);
-            }
             setPanelMatchData(pm.data);
             setSubMatchData(sm.data);
             setSuperMatchData(sup.data);
-        } catch (e) {
-            setErr(e.response?.data?.message ?? e.message ?? t('member.team.loadFailed'));
-            setPanelMatchData(null);
-            setSubMatchData(null);
-            setSuperMatchData(null);
+        } catch {
+            /* matching tables are optional below the fold */
         } finally {
-            setTableLoading(false);
+            setMatchingLoading(false);
         }
-    }, [t]);
+    }, [panelMatchData, subMatchData, superMatchData]);
 
-    const onViewDateChange = (e) => {
-        const d = e.target.value;
-        setViewDate(d);
-        if (d) {
-            load(d);
+    const loadLevelIncomeDetail = useCallback(async () => {
+        if (levelIncomeDetail || levelIncomeLoading) {
+            return;
         }
-    };
+        setLevelIncomeLoading(true);
+        try {
+            await prepareSanctum();
+            const { data: json } = await window.axios.get('api/member/team/level-income');
+            setLevelIncomeDetail(json);
+        } catch {
+            /* keep basic level_income from overview */
+        } finally {
+            setLevelIncomeLoading(false);
+        }
+    }, [levelIncomeDetail, levelIncomeLoading]);
 
     /** Find a node anywhere in the loaded tree by its DB id. Returns the node object or null. */
     const findNodeById = useCallback((root, id) => {
@@ -884,7 +921,20 @@ export default function MemberTeamPage() {
         load();
     }, [load]);
 
-    const lv = data?.level_income;
+    useEffect(() => {
+        if (levelIncomeExpanded) {
+            loadLevelIncomeDetail();
+        }
+    }, [levelIncomeExpanded, loadLevelIncomeDetail]);
+
+    useEffect(() => {
+        const id = window.setTimeout(() => {
+            loadMatchingProgrammes();
+        }, 400);
+        return () => window.clearTimeout(id);
+    }, [loadMatchingProgrammes]);
+
+    const lv = levelIncomeDetail ?? data?.level_income;
 
     const inviteUrls = useMemo(() => {
         const code = data?.self?.referral_code?.trim();
@@ -898,30 +948,29 @@ export default function MemberTeamPage() {
         };
     }, [data?.self?.referral_code]);
 
-    const todayDate = data?.team_volume?.today_date ?? data?.leg_match?.active_panel?.today_date ?? '';
+    const scopeTabTotals = useMemo(() => {
+        if (!data?.legs) {
+            return { active: null, sub: null, super: null };
+        }
+        return {
+            active: scopeLegTotals(data.legs, 'active_panel', data.leg_match?.active_panel),
+            sub: scopeLegTotals(data.legs, 'panel', data.leg_match?.panel),
+            super: scopeLegTotals(data.legs, 'super', data.leg_match?.super),
+        };
+    }, [data?.legs, data?.leg_match]);
 
     const totalTeamTables = useMemo(() => {
         if (!data?.legs) {
-            return { rows: [], yesterdayDate: '', todayDate: '' };
+            return { rows: [] };
         }
         if (totalTeamTab === 'active') {
-            return buildActiveLegRows(data.legs, t, data?.matching?.active_panel, data?.leg_match?.active_panel);
+            return buildActiveLegRows(data.legs, t, null, data?.leg_match?.active_panel);
         }
         if (totalTeamTab === 'sub') {
-            return buildSubLegRows(data.legs, t, data?.matching?.sub_panel, data?.leg_match?.panel);
+            return buildSubLegRows(data.legs, t, null, data?.leg_match?.panel);
         }
-        return buildSuperLegRows(data.legs, t, data?.matching?.super_sub_panel, data?.leg_match?.super);
-    }, [
-        data?.legs,
-        data?.leg_match,
-        data?.matching?.active_panel,
-        data?.matching?.sub_panel,
-        data?.matching?.super_sub_panel,
-        todayDate,
-        totalTeamTab,
-        t,
-        i18n.resolvedLanguage,
-    ]);
+        return buildSuperLegRows(data.legs, t, null, data?.leg_match?.super);
+    }, [data?.legs, data?.leg_match, totalTeamTab, t, i18n.resolvedLanguage]);
 
     const tabBtn =
         'rounded-2xl border px-3 py-2 text-[12px] font-semibold transition sm:px-3 sm:text-sm';
@@ -949,6 +998,12 @@ export default function MemberTeamPage() {
 
             {err ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{err}</p> : null}
 
+            {pageLoading ? (
+                <RmsCard variant="elevated" className="!p-6 text-center text-sm text-slate-400">
+                    {t('common.loading')}
+                </RmsCard>
+            ) : null}
+
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 {showTree && tree ? (
                     <button
@@ -971,7 +1026,11 @@ export default function MemberTeamPage() {
                         <p className="text-base font-bold text-white">{t('member.team.binaryTreeTitle')}</p>
                         <p className="mt-0.5 text-[11px] text-[#A0AEC0]">{t('member.team.sameLegStatsHint')}</p>
                         {data?.legs && totalTeamTables.rows?.length > 0 ? (
-                            <LegsCompareTable rows={totalTeamTables.rows} accent={totalTeamTab} />
+                            <LegsCompareTable
+                                title={binarySummaryTitle(t, totalTeamTab)}
+                                rows={totalTeamTables.rows}
+                                accent={totalTeamTab}
+                            />
                         ) : (
                             <p className="mt-2 text-[12px] text-[#94A3B8]">{t('member.team.reloadIfStatsMissing')}</p>
                         )}
@@ -1085,7 +1144,7 @@ export default function MemberTeamPage() {
                 </div>
             ) : null}
 
-            {data ? (
+            {data && !pageLoading ? (
                 <>
                     <RmsCard variant="elevated" className="!rounded-[24px] !border-white/10 !bg-[#0e1529]/95 !p-4 sm:!p-4">
                         <div className="mb-3 flex items-center justify-between gap-2">
@@ -1111,7 +1170,12 @@ export default function MemberTeamPage() {
                                         : 'border-emerald-500/15 bg-emerald-950/15 text-emerald-200/70 hover:border-emerald-500/35 hover:text-emerald-100',
                                 ].join(' ')}
                             >
-                                Active Panel
+                                {t('member.team.tabActivePanel')}
+                                {scopeTabTotals.active ? (
+                                    <span className="ml-1 tabular-nums opacity-90">
+                                        ({formatLrPair(scopeTabTotals.active.left, scopeTabTotals.active.right)})
+                                    </span>
+                                ) : null}
                             </button>
                             <button
                                 type="button"
@@ -1126,7 +1190,12 @@ export default function MemberTeamPage() {
                                         : 'border-sky-500/20 bg-[#0f2037]/70 text-sky-200/80 hover:border-sky-500/35 hover:text-sky-100',
                                 ].join(' ')}
                             >
-                                Sub Panel
+                                {t('member.team.tabSubPanel')}
+                                {scopeTabTotals.sub ? (
+                                    <span className="ml-1 tabular-nums opacity-90">
+                                        ({formatLrPair(scopeTabTotals.sub.left, scopeTabTotals.sub.right)})
+                                    </span>
+                                ) : null}
                             </button>
                             <button
                                 type="button"
@@ -1141,7 +1210,12 @@ export default function MemberTeamPage() {
                                         : 'border-amber-500/20 bg-[#2a1a0e]/70 text-amber-200/80 hover:border-amber-500/35 hover:text-amber-100',
                                 ].join(' ')}
                             >
-                                Super Panel
+                                {t('member.team.tabSuperPanel')}
+                                {scopeTabTotals.super ? (
+                                    <span className="ml-1 tabular-nums opacity-90">
+                                        ({formatLrPair(scopeTabTotals.super.left, scopeTabTotals.super.right)})
+                                    </span>
+                                ) : null}
                             </button>
                         </div>
                         {data.self?.is_active === false ? (
@@ -1150,31 +1224,12 @@ export default function MemberTeamPage() {
                             </p>
                         ) : null}
                         <div className="mt-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
-                            <div className="mb-3 flex flex-wrap items-end gap-3">
-                                <label className="flex min-w-[200px] flex-1 flex-col gap-1">
-                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                                        {t('member.team.pickViewDate')}
-                                    </span>
-                                    <input
-                                        type="date"
-                                        value={viewDate}
-                                        min={data.team_volume?.min_date ?? undefined}
-                                        max={data.team_volume?.max_date ?? undefined}
-                                        onChange={onViewDateChange}
-                                        className="w-full rounded-xl border border-white/15 bg-[#0f172a] px-3 py-2 text-sm font-medium text-white outline-none ring-[#8B5CF6]/40 focus:border-[#8B5CF6]/50 focus:ring-2"
-                                    />
-                                </label>
-                                {viewDate ? (
-                                    <p className="pb-2 text-[12px] font-semibold text-amber-100/90">
-                                        {t('member.team.viewingDate', { date: viewDate })}
-                                    </p>
-                                ) : null}
-                                {tableLoading ? (
-                                    <span className="pb-2 text-[12px] text-slate-400">{t('common.loading')}</span>
-                                ) : null}
-                            </div>
                             {totalTeamTables.rows?.length > 0 ? (
-                                <LegsCompareTable rows={totalTeamTables.rows} accent={totalTeamTab} />
+                                <LegsCompareTable
+                                    title={binarySummaryTitle(t, totalTeamTab)}
+                                    rows={totalTeamTables.rows}
+                                    accent={totalTeamTab}
+                                />
                             ) : null}
                         </div>
                     </RmsCard>
@@ -1264,8 +1319,12 @@ export default function MemberTeamPage() {
                                 </button>
                             </div>
                         </div>
-                        {levelIncomeExpanded && lv ? (
+                        {levelIncomeExpanded ? (
                             <div id="level-income-panel" className="mt-2 space-y-2">
+                                {levelIncomeLoading ? (
+                                    <p className="text-sm text-slate-400">{t('common.loading')}</p>
+                                ) : null}
+                                {lv ? (
                                 <div className="flex flex-wrap gap-3 text-[12px]">
                                     <span className="text-[#A0AEC0]">
                                         {t('member.team.todayLabel')}{' '}
@@ -1275,7 +1334,9 @@ export default function MemberTeamPage() {
                                         {lv.eligible ? t('member.team.payoutOk') : t('member.team.needActivePanel')}
                                     </span>
                                 </div>
+                                ) : null}
 
+                                {lv?.levels?.length ? (
                                 <div className="max-h-52 overflow-x-auto overflow-y-auto rounded-lg border border-white/[0.08]">
                                     <table className="w-full min-w-[480px] text-left text-[12px]">
                                         <thead className="sticky top-0 bg-[#0f172a] text-[11px] text-[#94A3B8]">
@@ -1302,6 +1363,7 @@ export default function MemberTeamPage() {
                                         </tbody>
                                     </table>
                                 </div>
+                                ) : null}
                             </div>
                         ) : null}
                     </RmsCard>
@@ -1379,10 +1441,14 @@ export default function MemberTeamPage() {
                                 </>
                             ) : null}
                             {matchingIncomeTab === 'sub' && !subMatchData ? (
-                                <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
+                                <p className="text-sm text-[#94A3B8]">
+                                    {matchingLoading ? t('common.loading') : t('member.team.dataNotLoaded')}
+                                </p>
                             ) : null}
                             {matchingIncomeTab === 'super' && !superMatchData ? (
-                                <p className="text-sm text-[#94A3B8]">{t('member.team.dataNotLoaded')}</p>
+                                <p className="text-sm text-[#94A3B8]">
+                                    {matchingLoading ? t('common.loading') : t('member.team.dataNotLoaded')}
+                                </p>
                             ) : null}
                         </div>
                     </RmsCard>
@@ -1437,7 +1503,7 @@ export default function MemberTeamPage() {
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         <StatCard
                             label={t('member.team.statActiveNetwork')}
-                            value={data.network.active_members}
+                            value={(data.legs?.left?.total_active ?? 0) + (data.legs?.right?.total_active ?? 0)}
                             hint={t('member.team.statActiveNetworkHint')}
                             tone="active"
                         />

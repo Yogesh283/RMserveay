@@ -62,6 +62,7 @@ Route::middleware(['auth:sanctum', 'account.not_blocked', 'session.max_age'])->g
     Route::get('/member/dashboard/summary', [MemberDashboardController::class, 'summary']);
 
     Route::get('/member/team/overview', [MemberTeamController::class, 'overview']);
+    Route::get('/member/team/level-income', [MemberTeamController::class, 'levelIncome']);
     Route::get('/member/team/binary-tree', [MemberTeamController::class, 'binaryTree']);
 
     Route::get('/member/surveys/available', [MemberSurveyController::class, 'available']);
