@@ -261,6 +261,23 @@ class MemberTeamService
             }
         }
 
+        $lastDayClosing = $closing ?? $todayClosing;
+        $lastClosedDate = $lastDayClosing?->closing_date?->toDateString() ?? $yesterday;
+        $lastDayTeamLeft = 0;
+        $lastDayTeamRight = 0;
+        if ($lastDayClosing !== null) {
+            $lastMeta = is_array($lastDayClosing->meta) ? $lastDayClosing->meta : [];
+            $lastDayTeamLeft = (int) ($lastMeta['daily_left'] ?? 0);
+            $lastDayTeamRight = (int) ($lastMeta['daily_right'] ?? 0);
+        }
+        if ($lastDayTeamLeft === 0 && $lastDayTeamRight === 0) {
+            $lastDayTeamLeft = (int) $todayInputs['yesterday_left'];
+            $lastDayTeamRight = (int) $todayInputs['yesterday_right'];
+        }
+
+        $displayCarryLeft = $incomeEligible ? $currentCarryLeft : $totalL;
+        $displayCarryRight = $incomeEligible ? $currentCarryRight : $totalR;
+
         return [
             'team_volume_date' => $yesterday,
             'today_date' => $today,
@@ -319,6 +336,11 @@ class MemberTeamService
             'latest_paid_pairs' => $latestPaidClosing !== null
                 ? (int) $latestPaidClosing->pairs_matched
                 : 0,
+            'last_closed_date' => $lastClosedDate,
+            'last_day_team_left' => $lastDayTeamLeft,
+            'last_day_team_right' => $lastDayTeamRight,
+            'display_carry_left' => $displayCarryLeft,
+            'display_carry_right' => $displayCarryRight,
         ];
     }
 

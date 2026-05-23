@@ -338,8 +338,17 @@ function LegsCompareTable({ rows, caption, accent = 'default' }) {
                 </thead>
                 <tbody className="text-white">
                     {rows.map((row, idx) => (
-                        <tr key={idx} className="border-t border-white/[0.07]">
-                            <td className="bg-black/20 px-3 py-2 text-left text-[12px] font-medium text-white/90 sm:px-4 sm:text-sm">{row.label}</td>
+                        <tr
+                            key={idx}
+                            className={`border-t border-white/[0.07] ${row.highlight ? 'bg-white/[0.06]' : ''}`}
+                        >
+                            <td
+                                className={`px-3 py-2 text-left text-[12px] font-medium sm:px-4 sm:text-sm ${
+                                    row.highlight ? 'bg-white/[0.04] text-amber-100' : 'bg-black/20 text-white/90'
+                                }`}
+                            >
+                                {row.label}
+                            </td>
                             <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.lTd}`}>
                                 {row.left ?? t('member.ui.dash')}
                             </td>
@@ -400,11 +409,27 @@ function totalRowLabel(t, scope) {
     return t('member.team.rowTotalSubLr');
 }
 
-/** Team tables: total, carry in, today new, match (if closed), live carry, income. */
+function lastDayInTeamLabel(t, scope, date) {
+    if (scope === 'active_panel') {
+        return t('member.team.rowLastDayInTeamActive', { date });
+    }
+    if (scope === 'super') {
+        return t('member.team.rowLastDayInTeamSuper', { date });
+    }
+
+    return t('member.team.rowLastDayInTeamSub', { date });
+}
+
+/** Team tables: total, last closed day volume, matching carry, match, income. */
 function buildCompactLegRows(t, legMatch, scope = 'panel') {
     const m = legMatch ?? {};
+    const lastClosedDate = m.last_closed_date ?? m.team_volume_date ?? m.today_date ?? '';
+    const lastDayLeft = m.last_day_team_left ?? m.today_new_left ?? 0;
+    const lastDayRight = m.last_day_team_right ?? m.today_new_right ?? 0;
     const carryIn = carryOutDisplay(m.total_carry_left ?? 0, m.total_carry_right ?? 0);
-    const carryNow = carryOutDisplay(m.current_carry_left ?? 0, m.current_carry_right ?? 0);
+    const carryAfterLeft = m.display_carry_left ?? m.current_carry_left ?? 0;
+    const carryAfterRight = m.display_carry_right ?? m.current_carry_right ?? 0;
+    const carryNow = carryOutDisplay(carryAfterLeft, carryAfterRight);
     const rows = [
         {
             label: totalRowLabel(t, scope),
@@ -412,14 +437,15 @@ function buildCompactLegRows(t, legMatch, scope = 'panel') {
             right: m.total_right ?? 0,
         },
         {
-            label: t('member.team.rowCarryInToday'),
-            left: carryIn.left,
-            right: carryIn.right,
+            label: lastDayInTeamLabel(t, scope, lastClosedDate),
+            left: lastDayLeft,
+            right: lastDayRight,
+            highlight: true,
         },
         {
-            label: t('member.team.rowTodayNewLr'),
-            left: m.today_new_left ?? 0,
-            right: m.today_new_right ?? 0,
+            label: t('member.team.rowMatchingCarryBefore', { date: lastClosedDate }),
+            left: carryIn.left,
+            right: carryIn.right,
         },
     ];
 
@@ -451,7 +477,9 @@ function buildCompactLegRows(t, legMatch, scope = 'panel') {
 
     rows.push(
         {
-            label: t('member.team.rowCarryForwardNow'),
+            label: m.income_eligible
+                ? t('member.team.rowMatchingCarryAfter', { date: lastClosedDate })
+                : t('member.team.rowTeamCarryDisplay', { date: lastClosedDate }),
             left: carryNow.left,
             right: carryNow.right,
         },
@@ -910,16 +938,11 @@ export default function MemberTeamPage() {
                     <RmsCard variant="elevated" className="!p-3 sm:!p-4">
                         <p className="text-base font-bold text-white">{t('member.team.binaryTreeTitle')}</p>
                         <p className="mt-0.5 text-[11px] text-[#A0AEC0]">{t('member.team.sameLegStatsHint')}</p>
-                        {data?.legs ? (
+                        {data?.legs && totalTeamRows.length > 0 ? (
                             <LegsCompareTable
-                                rows={buildActiveLegRows(
-                                    data.legs,
-                                    t,
-                                    data?.matching?.active_panel,
-                                    data?.leg_match?.active_panel,
-                                )}
-                                caption={totalTeamTableCaption('active', t, data?.team_volume?.date)}
-                                accent="active"
+                                rows={totalTeamRows}
+                                caption={totalTeamTableCaption(totalTeamTab, t, data?.team_volume?.date)}
+                                accent={totalTeamTab}
                             />
                         ) : (
                             <p className="mt-2 text-[12px] text-[#94A3B8]">{t('member.team.reloadIfStatsMissing')}</p>
