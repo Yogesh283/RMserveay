@@ -420,9 +420,99 @@ function lastDayInTeamLabel(t, scope, date) {
     return t('member.team.rowLastDayInTeamSub', { date });
 }
 
-/** Team tables: total, last closed day volume, matching carry, match, income. */
-function buildCompactLegRows(t, legMatch, scope = 'panel') {
+/** Per-day rows (yesterday / today blocks) — same detail as admin explanation tables. */
+function buildDayDetailRows(t, day, scope) {
+    if (!day?.date) {
+        return [];
+    }
+    const carryIn = carryOutDisplay(day.carry_in_left ?? 0, day.carry_in_right ?? 0);
+    const carryOut = carryOutDisplay(day.display_carry_left ?? day.carry_out_left ?? 0, day.display_carry_right ?? day.carry_out_right ?? 0);
+    const rows = [
+        {
+            label: lastDayInTeamLabel(t, scope, day.date),
+            left: day.team_new_left ?? 0,
+            right: day.team_new_right ?? 0,
+            highlight: true,
+        },
+        {
+            label: t('member.team.rowMatchingCarryBefore', { date: day.date }),
+            left: carryIn.left,
+            right: carryIn.right,
+        },
+    ];
+
+    const pairs = Number(day.pairs_matched ?? 0) | 0;
+    const matchLabel =
+        pairs > 0
+            ? t('member.team.rowDayMatchBuckets', { pairs, date: day.date })
+            : t('member.team.rowNoMatchDay', { date: day.date });
+    rows.push({
+        label: day.closing_recorded
+            ? matchLabel
+            : t('member.team.rowDayMatchPending', { date: day.date }),
+        left: day.carry_in_left ?? 0,
+        right: day.carry_in_right ?? 0,
+    });
+
+    rows.push({
+        label: day.income_eligible
+            ? t('member.team.rowMatchingCarryAfter', { date: day.date })
+            : t('member.team.rowTeamCarryDisplay', { date: day.date }),
+        left: carryOut.left,
+        right: carryOut.right,
+    });
+
+    const payout = day.payout_usd ?? '0.00';
+    rows.push({
+        label: t('member.team.rowDayIncome', { date: day.date }),
+        left: fmtUsdShort(payout),
+        right: fmtUsdShort(payout),
+    });
+
+    if (!day.income_eligible && pairs > 0) {
+        rows.push({
+            label: t('member.team.rowPairsHeldDay', { date: day.date, pairs: day.pairs_held ?? pairs }),
+            left: '—',
+            right: '—',
+        });
+    }
+
+    return rows;
+}
+
+/** Team total + yesterday table + today table (Active / Sub / Super). */
+function buildDualDayLegTables(t, legMatch, scope = 'panel') {
     const m = legMatch ?? {};
+    const y = m.days?.yesterday;
+    const td = m.days?.today;
+
+    if (y?.date && td?.date) {
+        return {
+            totalRows: [
+                {
+                    label: totalRowLabel(t, scope),
+                    left: m.total_left ?? y.total_left ?? 0,
+                    right: m.total_right ?? y.total_right ?? 0,
+                },
+            ],
+            yesterdayRows: buildDayDetailRows(t, y, scope),
+            todayRows: buildDayDetailRows(t, td, scope),
+            yesterdayDate: y.date,
+            todayDate: td.date,
+        };
+    }
+
+    return {
+        totalRows: buildCompactLegRowsLegacy(t, m, scope).filter((r) => r.label === totalRowLabel(t, scope)),
+        yesterdayRows: buildCompactLegRowsLegacy(t, m, scope).slice(1),
+        todayRows: [],
+        yesterdayDate: m.team_volume_date ?? '',
+        todayDate: m.today_date ?? '',
+    };
+}
+
+/** Fallback when API has no `days` yet. */
+function buildCompactLegRowsLegacy(t, m, scope) {
     const lastClosedDate = m.last_closed_date ?? m.team_volume_date ?? m.today_date ?? '';
     const lastDayLeft = m.last_day_team_left ?? m.today_new_left ?? 0;
     const lastDayRight = m.last_day_team_right ?? m.today_new_right ?? 0;
@@ -430,7 +520,7 @@ function buildCompactLegRows(t, legMatch, scope = 'panel') {
     const carryAfterLeft = m.display_carry_left ?? m.current_carry_left ?? 0;
     const carryAfterRight = m.display_carry_right ?? m.current_carry_right ?? 0;
     const carryNow = carryOutDisplay(carryAfterLeft, carryAfterRight);
-    const rows = [
+    return [
         {
             label: totalRowLabel(t, scope),
             left: m.total_left ?? 0,
@@ -447,35 +537,6 @@ function buildCompactLegRows(t, legMatch, scope = 'panel') {
             left: carryIn.left,
             right: carryIn.right,
         },
-    ];
-
-    if (m.today_closing_recorded === true) {
-        const pairs = Number(m.today_pairs_matched_closed ?? 0) | 0;
-        const matchLabel =
-            pairs > 0
-                ? t('member.team.rowTodayMatchBuckets', { pairs, date: m.today_date })
-                : t('member.team.rowNoMatchToday', { date: m.today_date });
-        rows.push({
-            label: matchLabel,
-            left: m.today_match_left_closed ?? m.today_match_left ?? 0,
-            right: m.today_match_right_closed ?? m.today_match_right ?? 0,
-        });
-    }
-
-    const todayPaid = Number.parseFloat(String(m.today_payout_usd ?? '0')) || 0;
-    const latestPaid = Number.parseFloat(String(m.latest_paid_usd ?? '0')) || 0;
-    if (m.today_closing_recorded === true && todayPaid <= 0 && latestPaid > 0 && m.latest_paid_date) {
-        rows.push({
-            label: t('member.team.rowLastMatchingIncome', {
-                date: m.latest_paid_date,
-                pairs: m.latest_paid_pairs ?? 0,
-            }),
-            left: fmtUsdShort(m.latest_paid_usd),
-            right: fmtUsdShort(m.latest_paid_usd),
-        });
-    }
-
-    rows.push(
         {
             label: m.income_eligible
                 ? t('member.team.rowMatchingCarryAfter', { date: lastClosedDate })
@@ -484,9 +545,11 @@ function buildCompactLegRows(t, legMatch, scope = 'panel') {
             right: carryNow.right,
         },
         matchingIncomeRow(t, m),
-    );
+    ];
+}
 
-    return rows;
+function buildCompactLegRows(t, legMatch, scope = 'panel') {
+    return buildDualDayLegTables(t, legMatch, scope);
 }
 
 function buildCompactSubSuperLegRows(t, legMatch) {
@@ -868,9 +931,9 @@ export default function MemberTeamPage() {
 
     const todayDate = data?.team_volume?.today_date ?? data?.leg_match?.active_panel?.today_date ?? '';
 
-    const totalTeamRows = useMemo(() => {
+    const totalTeamTables = useMemo(() => {
         if (!data?.legs) {
-            return [];
+            return { totalRows: [], yesterdayRows: [], todayRows: [], yesterdayDate: '', todayDate: '' };
         }
         if (totalTeamTab === 'active') {
             return buildActiveLegRows(data.legs, t, data?.matching?.active_panel, data?.leg_match?.active_panel);
@@ -938,12 +1001,32 @@ export default function MemberTeamPage() {
                     <RmsCard variant="elevated" className="!p-3 sm:!p-4">
                         <p className="text-base font-bold text-white">{t('member.team.binaryTreeTitle')}</p>
                         <p className="mt-0.5 text-[11px] text-[#A0AEC0]">{t('member.team.sameLegStatsHint')}</p>
-                        {data?.legs && totalTeamRows.length > 0 ? (
-                            <LegsCompareTable
-                                rows={totalTeamRows}
-                                caption={totalTeamTableCaption(totalTeamTab, t, data?.team_volume?.date)}
-                                accent={totalTeamTab}
-                            />
+                        {data?.legs && totalTeamTables.totalRows?.length > 0 ? (
+                            <div className="space-y-3">
+                                <LegsCompareTable
+                                    rows={totalTeamTables.totalRows}
+                                    caption={t('member.team.captionTeamTotalAllTime')}
+                                    accent={totalTeamTab}
+                                />
+                                {totalTeamTables.yesterdayRows?.length > 0 ? (
+                                    <LegsCompareTable
+                                        rows={totalTeamTables.yesterdayRows}
+                                        caption={t('member.team.captionDayYesterday', {
+                                            date: totalTeamTables.yesterdayDate,
+                                        })}
+                                        accent={totalTeamTab}
+                                    />
+                                ) : null}
+                                {totalTeamTables.todayRows?.length > 0 ? (
+                                    <LegsCompareTable
+                                        rows={totalTeamTables.todayRows}
+                                        caption={t('member.team.captionDayToday', {
+                                            date: totalTeamTables.todayDate,
+                                        })}
+                                        accent={totalTeamTab}
+                                    />
+                                ) : null}
+                            </div>
                         ) : (
                             <p className="mt-2 text-[12px] text-[#94A3B8]">{t('member.team.reloadIfStatsMissing')}</p>
                         )}
@@ -1121,12 +1204,37 @@ export default function MemberTeamPage() {
                                 {t('member.team.inactivePanelistCarryOnly')}
                             </p>
                         ) : null}
-                        <div className="mt-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
-                            <LegsCompareTable
-                                rows={totalTeamRows}
-                                caption={totalTeamTableCaption(totalTeamTab, t, data?.team_volume?.date)}
-                                accent={totalTeamTab}
-                            />
+                        <div className="mt-3 space-y-3" role="tabpanel" aria-labelledby={`team-tab-${totalTeamTab}`}>
+                            <p className="text-[11px] leading-snug text-slate-400">
+                                {totalTeamTableCaption(totalTeamTab, t, data?.team_volume?.date)}
+                            </p>
+                            {totalTeamTables.totalRows?.length > 0 ? (
+                                <>
+                                    <LegsCompareTable
+                                        rows={totalTeamTables.totalRows}
+                                        caption={t('member.team.captionTeamTotalAllTime')}
+                                        accent={totalTeamTab}
+                                    />
+                                    {totalTeamTables.yesterdayRows?.length > 0 ? (
+                                        <LegsCompareTable
+                                            rows={totalTeamTables.yesterdayRows}
+                                            caption={t('member.team.captionDayYesterday', {
+                                                date: totalTeamTables.yesterdayDate,
+                                            })}
+                                            accent={totalTeamTab}
+                                        />
+                                    ) : null}
+                                    {totalTeamTables.todayRows?.length > 0 ? (
+                                        <LegsCompareTable
+                                            rows={totalTeamTables.todayRows}
+                                            caption={t('member.team.captionDayToday', {
+                                                date: totalTeamTables.todayDate,
+                                            })}
+                                            accent={totalTeamTab}
+                                        />
+                                    ) : null}
+                                </>
+                            ) : null}
                         </div>
                     </RmsCard>
 

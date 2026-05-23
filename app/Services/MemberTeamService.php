@@ -144,6 +144,108 @@ class MemberTeamService
     }
 
     /**
+     * One calendar closing-date snapshot for the team table (yesterday / today blocks).
+     *
+     * @return array<string, mixed>
+     */
+    private function buildTeamLegDaySnapshot(User $user, string $scope, string $closingDateStr): array
+    {
+        $tz = BinaryClosingCalendar::timezone();
+        $maxPairs = match ($scope) {
+            BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (int) config('binary_closing.scopes.active_panel.max_pairs_per_day', 20),
+            BinaryDailyClosing::SCOPE_SUPER => (int) config('binary_closing.scopes.super.max_pairs_per_day', 20),
+            default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
+        };
+
+        $inputs = $this->subtreeVolumes->closingMatchInputs(
+            $user,
+            $scope,
+            CarbonImmutable::parse($closingDateStr, $tz),
+        );
+        $split = BinaryWeakSideLapse::splitFromLegCounts(
+            (int) $inputs['left_in'],
+            (int) $inputs['right_in'],
+            $maxPairs,
+        );
+
+        $closing = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->where('scope', $scope)
+            ->whereDate('closing_date', $closingDateStr)
+            ->orderByDesc('id')
+            ->first();
+
+        $incomeEligible = $user->qualifiesBinaryClosingIncome($scope);
+        $incomeBlockedReason = $user->binaryClosingIncomeBlockedReason($scope);
+        $totalL = (int) $inputs['total_left'];
+        $totalR = (int) $inputs['total_right'];
+
+        $teamNewLeft = 0;
+        $teamNewRight = 0;
+        $carryInL = (int) $inputs['left_in'];
+        $carryInR = (int) $inputs['right_in'];
+        $carryOutL = (int) $split['left_out'];
+        $carryOutR = (int) $split['right_out'];
+        $pairsMatched = (int) $split['pairs_matched'];
+        $payoutUsd = '0.00';
+        $milestoneUsd = '0.00';
+        $pairsHeld = 0;
+        $closingRecorded = $closing !== null;
+
+        if ($closing !== null) {
+            $meta = is_array($closing->meta) ? $closing->meta : [];
+            $teamNewLeft = (int) ($meta['daily_left'] ?? 0);
+            $teamNewRight = (int) ($meta['daily_right'] ?? 0);
+            $carryInL = (int) $closing->left_carry_in;
+            $carryInR = (int) $closing->right_carry_in;
+            $carryOutL = (int) $closing->left_carry_out;
+            $carryOutR = (int) $closing->right_carry_out;
+            $pairsMatched = (int) $closing->pairs_matched;
+            $payoutUsd = number_format((float) $closing->payout_usd, 2, '.', '');
+            $milestoneUsd = (string) ($meta['milestone_paid_usd'] ?? '0.00');
+            $pairsHeld = (int) ($meta['pairs_held'] ?? 0);
+        } else {
+            $teamNewLeft = (int) $inputs['yesterday_left'];
+            $teamNewRight = (int) $inputs['yesterday_right'];
+            $milestoneUsd = $incomeEligible ? $this->projectedMilestoneUsd($scope, $pairsMatched) : '0.00';
+            $perPair = match ($scope) {
+                BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'),
+                default => '0.00',
+            };
+            $payoutUsd = $incomeEligible
+                ? bcadd(bcmul((string) $pairsMatched, $perPair, 2), $milestoneUsd, 2)
+                : '0.00';
+            if (! $incomeEligible) {
+                $pairsHeld = min($carryInL, $carryInR);
+            }
+        }
+
+        $displayCarryL = $incomeEligible ? $carryOutL : $totalL;
+        $displayCarryR = $incomeEligible ? $carryOutR : $totalR;
+
+        return [
+            'date' => $closingDateStr,
+            'closing_recorded' => $closingRecorded,
+            'total_left' => $totalL,
+            'total_right' => $totalR,
+            'team_new_left' => $teamNewLeft,
+            'team_new_right' => $teamNewRight,
+            'carry_in_left' => $carryInL,
+            'carry_in_right' => $carryInR,
+            'carry_out_left' => $carryOutL,
+            'carry_out_right' => $carryOutR,
+            'display_carry_left' => $displayCarryL,
+            'display_carry_right' => $displayCarryR,
+            'pairs_matched' => $pairsMatched,
+            'pairs_held' => $pairsHeld,
+            'payout_usd' => $payoutUsd,
+            'milestone_paid_usd' => $milestoneUsd,
+            'income_eligible' => $incomeEligible,
+            'income_blocked_reason' => $incomeBlockedReason,
+        ];
+    }
+
+    /**
      * Team-page binary math: lifetime leg totals, yesterday match on carry buckets, carry forward on strong leg only.
      *
      * @param  array<string, mixed>  $leftLeg
@@ -341,6 +443,10 @@ class MemberTeamService
             'last_day_team_right' => $lastDayTeamRight,
             'display_carry_left' => $displayCarryLeft,
             'display_carry_right' => $displayCarryRight,
+            'days' => [
+                'yesterday' => $this->buildTeamLegDaySnapshot($user, $scope, $yesterday),
+                'today' => $this->buildTeamLegDaySnapshot($user, $scope, $today),
+            ],
         ];
     }
 
