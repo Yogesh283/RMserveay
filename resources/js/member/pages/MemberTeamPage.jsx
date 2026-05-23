@@ -1500,13 +1500,7 @@ export default function MemberTeamPage() {
                         )}
                     </RmsCard>
 
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <StatCard
-                            label={t('member.team.statActiveNetwork')}
-                            value={(data.legs?.left?.total_active ?? 0) + (data.legs?.right?.total_active ?? 0)}
-                            hint={t('member.team.statActiveNetworkHint')}
-                            tone="active"
-                        />
+                    <div className="grid gap-2 sm:grid-cols-2">
                         <StatCard label={t('member.team.statYourSubPanels')} value={data.self.sub_panel_count} tone="sub" />
                         <StatCard
                             label={t('member.team.statSuperSubPanels')}
