@@ -157,11 +157,9 @@ class MemberTeamService
             default => (int) config('binary_closing.scopes.panel.max_pairs_per_day', 20),
         };
 
-        $inputs = $this->subtreeVolumes->closingMatchInputs(
-            $user,
-            $scope,
-            CarbonImmutable::parse($closingDateStr, $tz),
-        );
+        $date = CarbonImmutable::parse($closingDateStr, $tz);
+        $inputs = $this->subtreeVolumes->closingMatchInputs($user, $scope, $date);
+        $volumeOnDate = $this->subtreeVolumes->todayLegVolumes($user, $scope, $date);
         $split = BinaryWeakSideLapse::splitFromLegCounts(
             (int) $inputs['left_in'],
             (int) $inputs['right_in'],
@@ -205,8 +203,14 @@ class MemberTeamService
             $milestoneUsd = (string) ($meta['milestone_paid_usd'] ?? '0.00');
             $pairsHeld = (int) ($meta['pairs_held'] ?? 0);
         } else {
-            $teamNewLeft = (int) $inputs['yesterday_left'];
-            $teamNewRight = (int) $inputs['yesterday_right'];
+            $teamNewLeft = (int) $volumeOnDate['left'];
+            $teamNewRight = (int) $volumeOnDate['right'];
+            if ($closingDateStr === BinaryClosingCalendar::todayDateString()) {
+                [$carryOutL, $carryOutR] = $this->scopeCarryBuckets($user, $scope);
+                $carryInL = (int) $inputs['left_in'];
+                $carryInR = (int) $inputs['right_in'];
+                $pairsMatched = (int) $split['pairs_matched'];
+            }
             $milestoneUsd = $incomeEligible ? $this->projectedMilestoneUsd($scope, $pairsMatched) : '0.00';
             $perPair = match ($scope) {
                 BinaryDailyClosing::SCOPE_ACTIVE_PANEL => (string) config('binary_closing.scopes.active_panel.pair_income_usd', '1.00'),
@@ -252,9 +256,39 @@ class MemberTeamService
      * @param  array<string, mixed>  $rightLeg
      * @return array<string, mixed>
      */
-    private function buildTeamLegMatch(User $user, string $scope, array $leftLeg, array $rightLeg): array
+    private function resolveTeamViewDate(?string $viewDate): string
+    {
+        $today = BinaryClosingCalendar::todayDateString();
+        if ($viewDate === null || trim($viewDate) === '') {
+            return BinaryClosingCalendar::yesterdayDateString();
+        }
+
+        try {
+            $parsed = CarbonImmutable::parse($viewDate, BinaryClosingCalendar::timezone())->toDateString();
+        } catch (\Throwable) {
+            return BinaryClosingCalendar::yesterdayDateString();
+        }
+
+        return $parsed > $today ? $today : $parsed;
+    }
+
+    private function minClosingDateForUser(User $user): ?string
+    {
+        $min = BinaryDailyClosing::query()
+            ->where('user_id', $user->id)
+            ->min('closing_date');
+
+        if ($min === null) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($min, BinaryClosingCalendar::timezone())->toDateString();
+    }
+
+    private function buildTeamLegMatch(User $user, string $scope, array $leftLeg, array $rightLeg, ?string $viewDate = null): array
     {
         $tz = BinaryClosingCalendar::timezone();
+        $selectedDate = $this->resolveTeamViewDate($viewDate);
         $yesterday = BinaryClosingCalendar::yesterdayDateString();
         $today = BinaryClosingCalendar::todayDateString();
         $maxPairs = match ($scope) {
@@ -443,7 +477,9 @@ class MemberTeamService
             'last_day_team_right' => $lastDayTeamRight,
             'display_carry_left' => $displayCarryLeft,
             'display_carry_right' => $displayCarryRight,
+            'view_date' => $selectedDate,
             'days' => [
+                'selected' => $this->buildTeamLegDaySnapshot($user, $scope, $selectedDate),
                 'yesterday' => $this->buildTeamLegDaySnapshot($user, $scope, $yesterday),
                 'today' => $this->buildTeamLegDaySnapshot($user, $scope, $today),
             ],
@@ -602,9 +638,10 @@ class MemberTeamService
     /**
      * @return array<string, mixed>
      */
-    public function overview(User $user): array
+    public function overview(User $user, ?string $viewDate = null): array
     {
         $user->refresh();
+        $viewDate = $this->resolveTeamViewDate($viewDate);
 
         $direct = User::query()
             ->where('sponsor_id', $user->id)
@@ -664,14 +701,17 @@ class MemberTeamService
                 'right' => $rightLeg,
             ],
             'team_volume' => [
-                'period' => 'yesterday',
+                'period' => 'selected',
                 'date' => $yesterdayDate,
+                'view_date' => $viewDate,
                 'today_date' => BinaryClosingCalendar::todayDateString(),
+                'min_date' => $this->minClosingDateForUser($user) ?? $viewDate,
+                'max_date' => BinaryClosingCalendar::todayDateString(),
             ],
             'leg_match' => [
-                'active_panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $leftLeg, $rightLeg),
-                'panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_PANEL, $leftLeg, $rightLeg),
-                'super' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_SUPER, $leftLeg, $rightLeg),
+                'active_panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_ACTIVE_PANEL, $leftLeg, $rightLeg, $viewDate),
+                'panel' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_PANEL, $leftLeg, $rightLeg, $viewDate),
+                'super' => $this->buildTeamLegMatch($user, BinaryDailyClosing::SCOPE_SUPER, $leftLeg, $rightLeg, $viewDate),
             ],
             'matching' => [
                 'active_panel' => $this->matchingForTeamYesterday(

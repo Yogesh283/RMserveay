@@ -16,7 +16,12 @@ class MemberTeamController extends Controller
 
     public function overview(Request $request): JsonResponse
     {
-        return response()->json($this->team->overview($request->user()));
+        $date = $request->query('date');
+
+        return response()->json($this->team->overview(
+            $request->user(),
+            is_string($date) && $date !== '' ? $date : null,
+        ));
     }
 
     public function binaryTree(Request $request): JsonResponse
