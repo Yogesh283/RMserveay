@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\WalletTransaction;
 use App\Support\AdminDashboardTodayMetrics;
 use App\Support\BinaryClosingCalendar;
@@ -31,10 +32,7 @@ class TodayDepositsWidget extends TableWidget
         return $table
             ->query(fn (): Builder => $this->getTableQuery())
             ->columns([
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable(),

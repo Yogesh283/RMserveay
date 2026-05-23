@@ -68,12 +68,7 @@ final class AdminUserReportsTableColumns
     private static function identityColumns(): array
     {
         return [
-            TextColumn::make('login_uid')
-                ->label('User ID')
-                ->badge()
-                ->searchable()
-                ->sortable()
-                ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+            ...AdminUserTableColumns::identity(),
             TextColumn::make('name')
                 ->searchable()
                 ->sortable(),

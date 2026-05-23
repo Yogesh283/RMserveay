@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Users\Tables;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\AdminMemberAccountService;
@@ -29,14 +30,8 @@ class UsersTable
         return $table
             ->recordUrl(fn ($record): string => UserResource::getUrl('view', ['record' => $record]))
             ->columns([
-                TextColumn::make('login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->color('info')
-                    ->copyable()
-                    ->searchable()
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                AdminUserTableColumns::userDbId(),
+                AdminUserTableColumns::userLoginUid(),
                 TextColumn::make('name')
                     ->weight('semibold')
                     ->color('primary')

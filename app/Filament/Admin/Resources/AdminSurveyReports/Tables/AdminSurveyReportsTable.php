@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\AdminSurveyReports\Tables;
 
 use App\Filament\Admin\Resources\Surveys\SurveyResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\Survey;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -17,11 +18,7 @@ class AdminSurveyReportsTable
                     ->searchable()
                     ->sortable()
                     ->limit(40),
-                TextColumn::make('publisher.login_uid')
-                    ->label('Publisher ID')
-                    ->badge()
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('publisher'),
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),

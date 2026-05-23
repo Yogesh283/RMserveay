@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\WalletTransactions\Tables;
 
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -15,15 +16,7 @@ class WalletTransactionsTable
     {
         return $table
             ->columns([
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->color('info')
-                    ->copyable()
-                    ->searchable()
-                    ->sortable()
-                    ->placeholder('—')
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable()

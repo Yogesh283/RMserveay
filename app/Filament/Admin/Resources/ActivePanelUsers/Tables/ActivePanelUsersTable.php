@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\ActivePanelUsers\Tables;
 
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\ActivePanelUser;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -16,11 +17,7 @@ class ActivePanelUsersTable
     {
         return $table
             ->columns([
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable()

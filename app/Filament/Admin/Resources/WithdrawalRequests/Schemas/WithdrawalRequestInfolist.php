@@ -14,7 +14,10 @@ class WithdrawalRequestInfolist
             ->components([
                 Section::make('Member')
                     ->schema([
-                        TextEntry::make('user.login_uid')->label('User ID'),
+                        TextEntry::make('user.id')->label('ID'),
+                        TextEntry::make('user.login_uid')
+                            ->label('UID')
+                            ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
                         TextEntry::make('user.name'),
                         TextEntry::make('user.email'),
                         TextEntry::make('user.phone')->label('Mobile')->placeholder('—'),

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\LevelIncomeReports\Tables;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\WalletTransaction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -17,11 +18,7 @@ class LevelIncomeReportsTable
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('amount')
                     ->money('USD')
                     ->sortable(),

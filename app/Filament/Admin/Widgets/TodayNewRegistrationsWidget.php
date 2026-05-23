@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\User;
 use App\Support\BinaryClosingCalendar;
 use Filament\Tables\Columns\TextColumn;
@@ -32,12 +33,7 @@ class TodayNewRegistrationsWidget extends TableWidget
         return $table
             ->query(fn (): Builder => $this->getTableQuery())
             ->columns([
-                TextColumn::make('login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->color('info')
-                    ->searchable()
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                ...AdminUserTableColumns::identity(),
                 TextColumn::make('name')
                     ->label('Name')
                     ->searchable()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\DepositNotifications\Tables;
 
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -15,6 +16,7 @@ class DepositNotificationsTable
     {
         return $table
             ->columns([
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->searchable(),
                 TextColumn::make('amount')

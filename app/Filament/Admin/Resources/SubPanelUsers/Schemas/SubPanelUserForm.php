@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\SubPanelUsers\Schemas;
 
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -17,9 +18,9 @@ class SubPanelUserForm
                 Select::make('user_id')
                     ->relationship('user', 'name')
                     ->getOptionLabelFromRecordUsing(
-                        fn (User $record): string => trim(($record->login_uid ?? '#'.$record->id).' — '.($record->name ?? ''))
+                        fn (User $record): string => AdminUserTableColumns::selectOptionLabel($record)
                     )
-                    ->searchable(['login_uid', 'name', 'email'])
+                    ->searchable(['id', 'login_uid', 'name', 'email'])
                     ->required()
                     ->unique(ignoreRecord: true),
                 TextInput::make('panels_count')

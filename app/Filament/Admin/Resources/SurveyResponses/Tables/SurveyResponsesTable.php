@@ -19,9 +19,11 @@ class SurveyResponsesTable
                 TextColumn::make('survey.title')
                     ->searchable(),
                 TextColumn::make('user_id')
+                    ->label('User ID')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('respondent_user_id')
+                    ->label('Respondent ID')
                     ->numeric()
                     ->sortable(),
                 IconColumn::make('completed')

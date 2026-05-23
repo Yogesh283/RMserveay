@@ -16,6 +16,7 @@ class EarningsTable
         return $table
             ->columns([
                 TextColumn::make('user_id')
+                    ->label('User ID')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('survey.title')

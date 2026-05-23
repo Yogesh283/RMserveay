@@ -414,8 +414,8 @@ class BinaryDailyClosingTest extends TestCase
         $this->assertNotNull($closing);
         $this->assertSame(0, (int) $closing->pairs_matched);
         $this->assertSame('0.00', (string) $closing->payout_usd);
-        $this->assertSame((int) $closing->left_carry_in, (int) $closing->left_carry_out, 'Inactive: full L/R held, no match');
-        $this->assertSame((int) $closing->right_carry_in, (int) $closing->right_carry_out);
+        $this->assertSame(72, (int) $closing->left_carry_out, 'Inactive: carry out = full team left leg');
+        $this->assertSame(243, (int) $closing->right_carry_out, 'Inactive: carry out = full team right leg');
         $this->assertSame(min((int) $closing->left_carry_in, (int) $closing->right_carry_in), (int) ($closing->meta['pairs_held'] ?? 0));
 
         $inactive->refresh();
@@ -447,9 +447,13 @@ class BinaryDailyClosingTest extends TestCase
     {
         config(['binary_closing.use_daily_carry_ledger' => false]);
 
+        $leftLeg = User::factory()->create(['sub_panel_count' => 10]);
+        $rightLeg = User::factory()->create(['sub_panel_count' => 10]);
         $inactive = User::factory()->create([
             'activation_fee_paid_at' => null,
             'minimum_panel_fee_paid_at' => null,
+            'left_child_id' => $leftLeg->id,
+            'right_child_id' => $rightLeg->id,
             'panel_match_carry_left' => 10,
             'panel_match_carry_right' => 10,
             'wallet_balance' => '0.00',
@@ -480,10 +484,14 @@ class BinaryDailyClosingTest extends TestCase
     {
         config(['binary_closing.use_daily_carry_ledger' => false]);
 
+        $leftLeg = User::factory()->create(['sub_panel_count' => 8]);
+        $rightLeg = User::factory()->create(['sub_panel_count' => 8]);
         $user = User::factory()->create([
             'activation_fee_paid_at' => now(),
             'minimum_panel_fee_paid_at' => now(),
             'sub_panel_count' => 5,
+            'left_child_id' => $leftLeg->id,
+            'right_child_id' => $rightLeg->id,
             'panel_match_carry_left' => 8,
             'panel_match_carry_right' => 8,
             'wallet_balance' => '0.00',

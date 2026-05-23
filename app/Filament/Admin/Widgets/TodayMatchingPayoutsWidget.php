@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\MatchingPayout;
 use App\Support\BinaryClosingCalendar;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -31,10 +32,7 @@ class TodayMatchingPayoutsWidget extends TableWidget
         return $table
             ->query(fn (): Builder => $this->getTableQuery())
             ->columns([
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable()

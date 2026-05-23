@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\WithdrawalRequests\Tables;
 
 use App\Filament\Admin\Resources\WithdrawalRequests\WithdrawalPayoutActions;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\WalletTransaction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -21,11 +22,7 @@ class WithdrawalRequestsTable
                 TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->searchable()
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable(),

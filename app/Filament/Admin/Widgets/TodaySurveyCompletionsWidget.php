@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Resources\SurveyResponses\SurveyResponseResource;
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\SurveyResponse;
 use App\Support\AdminDashboardTodayMetrics;
 use App\Support\BinaryClosingCalendar;
@@ -33,10 +34,7 @@ class TodaySurveyCompletionsWidget extends TableWidget
         return $table
             ->query(fn (): Builder => $this->getTableQuery())
             ->columns([
-                TextColumn::make('respondent.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => $state ? strtoupper((string) $state) : '—'),
+                ...AdminUserTableColumns::identity('respondent'),
                 TextColumn::make('respondent.name')
                     ->label('Name')
                     ->searchable(),

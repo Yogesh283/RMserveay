@@ -314,6 +314,11 @@ class BinaryDailyClosingService
                     'left_in' => $leftIn,
                     'right_in' => $rightIn,
                 ]);
+
+                // Ineligible: carry = full team L|R (aaj tak) so team page stays in sync as downline grows.
+                $lifetime = $this->subtreeVolumes->lifetimeLegVolumes($user, $scope);
+                $leftOut = (int) $lifetime['left'];
+                $rightOut = (int) $lifetime['right'];
             }
 
             $expectedMilestoneUsd = $incomeEligible
@@ -350,7 +355,7 @@ class BinaryDailyClosingService
                 $walletTxId = $tx->id;
             }
 
-            // Inactive panelists: no payout, but per-leg carry columns always follow closing math.
+            // Ineligible: carry columns = full team L|R; eligible users follow match/lapse math above.
             $user->{$leftCol} = $leftOut;
             $user->{$rightCol} = $rightOut;
             $user->save();

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\SuperSubPanelUsers\Tables;
 
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,11 +16,7 @@ class SuperSubPanelUsersTable
     {
         return $table
             ->columns([
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('user.name')
                     ->label('Name')
                     ->searchable()

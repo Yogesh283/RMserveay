@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\MatchingReports\Tables;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Support\AdminUserTableColumns;
 use App\Models\BinaryDailyClosing;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -17,11 +18,7 @@ class MatchingReportsTable
                 TextColumn::make('closing_date')
                     ->date()
                     ->sortable(),
-                TextColumn::make('user.login_uid')
-                    ->label('User ID')
-                    ->badge()
-                    ->searchable()
-                    ->sortable(),
+                ...AdminUserTableColumns::identity('user'),
                 TextColumn::make('scope')
                     ->badge()
                     ->sortable(),

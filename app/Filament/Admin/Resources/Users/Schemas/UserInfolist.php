@@ -178,10 +178,11 @@ class UserInfolist
     {
         return $schema
             ->components([
+                TextEntry::make('id')->label('ID'),
                 TextEntry::make('name'),
                 TextEntry::make('email')
                     ->label('Email address'),
-                TextEntry::make('login_uid'),
+                TextEntry::make('login_uid')->label('UID'),
                 TextEntry::make('email_verified_at')
                     ->dateTime()
                     ->placeholder('-'),

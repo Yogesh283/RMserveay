@@ -1,18 +1,17 @@
 <?php
 
 /**
- * One-time: inactive users only — set carry = team leg totals (same as simple SQL).
+ * Backfill only (daily closing now auto-updates ineligible carry — see BinaryDailyClosingService).
  *
- *   Super:  SUM(downline super_sub_panel_count)  LEFT | RIGHT
- *   Sub:    SUM(downline sub_panel_count)         LEFT | RIGHT
- *   Active: COUNT(active panelists in downline)  LEFT | RIGHT
+ * INACTIVE / ineligible users: team page "Carry forward now" = full L/R (aaj tak).
  *
- * Wallet / payout / pairs_matched on closings are NOT changed.
+ *   Super / Sub / Active: downline leg totals (same as admin SQL SUM) — e.g. user 157 super → 18|68
+ *   Wallet / payout / pairs_matched are NOT changed.
  *
  * Usage:
  *   php tools/sync_inactive_team_carry_display.php --dry
  *   php tools/sync_inactive_team_carry_display.php
- *   php tools/sync_inactive_team_carry_display.php --user=LOGIN_OR_ID
+ *   php tools/sync_inactive_team_carry_display.php --user=157
  */
 
 require __DIR__.'/../vendor/autoload.php';
@@ -45,28 +44,15 @@ $today = CarbonImmutable::parse(BinaryClosingCalendar::todayDateString(), Binary
 
 echo $dry ? "=== DRY RUN ===\n" : "=== APPLY ===\n";
 echo "Today (IST): {$today->toDateString()}\n";
-echo "Rule: carry L|R = team leg total (same as SUM in tree SQL)\n\n";
+echo "Inactive only: carry forward = full team L|R (downline SUM / active count)\n\n";
 
-$userQuery = User::query()->select('id');
+$userQuery = User::query()->select('id')->where('email', 'not like', '%@dummy.test');
 if ($userFilter !== null && $userFilter !== '') {
     if (ctype_digit((string) $userFilter)) {
         $userQuery->where('id', (int) $userFilter);
     } else {
         $userQuery->where('login_uid', $userFilter);
     }
-} else {
-    $idsFromClosings = BinaryDailyClosing::query()->distinct()->pluck('user_id');
-    $idsFromCarry = User::query()
-        ->where(function ($q) {
-            $q->where('panel_match_carry_left', '>', 0)
-                ->orWhere('panel_match_carry_right', '>', 0)
-                ->orWhere('active_panel_match_carry_left', '>', 0)
-                ->orWhere('active_panel_match_carry_right', '>', 0)
-                ->orWhere('super_panel_match_carry_left', '>', 0)
-                ->orWhere('super_panel_match_carry_right', '>', 0);
-        })
-        ->pluck('id');
-    $userQuery->whereIn('id', $idsFromClosings->merge($idsFromCarry)->unique());
 }
 
 $userIds = $userQuery->orderBy('id')->pluck('id')->all();
@@ -78,11 +64,21 @@ $stats = [
     'closings_carry_fixed' => 0,
 ];
 
+/**
+ * @return array{0: int, 1: int}
+ */
+function inactiveDisplayCarry(User $user, string $scope, BinarySubtreeVolumeService $volume): array
+{
+    $leg = $volume->lifetimeLegVolumes($user, $scope);
+
+    return [(int) $leg['left'], (int) $leg['right']];
+}
+
 $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void {
     foreach ($userIds as $uid) {
         /** @var User|null $user */
         $user = User::query()->find($uid);
-        if ($user === null) {
+        if ($user === null || $user->isDummy()) {
             continue;
         }
         $stats['users_checked']++;
@@ -94,16 +90,14 @@ $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void
             }
 
             $stats['scope_syncs']++;
-            $legTotals = $volume->lifetimeLegVolumes($user, $scope);
-            $targetLeft = (int) $legTotals['left'];
-            $targetRight = (int) $legTotals['right'];
+            [$targetLeft, $targetRight] = inactiveDisplayCarry($user, $scope, $volume);
             $reason = $user->binaryClosingIncomeBlockedReason($scope) ?? 'ineligible';
 
             $curLeft = (int) $user->{$cols['left']};
             $curRight = (int) $user->{$cols['right']};
             if ($curLeft !== $targetLeft || $curRight !== $targetRight) {
                 echo sprintf(
-                    "  user #%d (%s) scope=%s [%s] carry %d|%d → %d|%d (team SQL L|R)\n",
+                    "  user #%d (%s) scope=%s [%s] carry %d|%d → %d|%d\n",
                     $user->id,
                     $user->login_uid,
                     $scope,
@@ -121,54 +115,55 @@ $run = function () use ($userIds, $scopes, $volume, $today, $dry, &$stats): void
                 $stats['users_carry_updated']++;
             }
 
-            $closings = BinaryDailyClosing::query()
+            /** @var BinaryDailyClosing|null $latest */
+            $latest = BinaryDailyClosing::query()
                 ->where('user_id', $user->id)
                 ->where('scope', $scope)
                 ->orderByDesc('closing_date')
                 ->orderByDesc('id')
-                ->limit(3)
-                ->get();
+                ->first();
 
-            foreach ($closings as $closing) {
-                $wantL = $targetLeft;
-                $wantR = $targetRight;
-
-                if ($wantL === (int) $closing->left_carry_out && $wantR === (int) $closing->right_carry_out) {
-                    continue;
-                }
-
-                echo sprintf(
-                    "  closing #%d user=%d scope=%s date=%s carry_out %d|%d → %d|%d (payout=%s kept)\n",
-                    $closing->id,
-                    $user->id,
-                    $scope,
-                    $closing->closing_date->toDateString(),
-                    $closing->left_carry_out,
-                    $closing->right_carry_out,
-                    $wantL,
-                    $wantR,
-                    $closing->payout_usd,
-                );
-
-                if (! $dry) {
-                    $meta = is_array($closing->meta) ? $closing->meta : [];
-                    $meta['team_display_carry_sync'] = $today->toDateString();
-                    $meta['team_display_carry_left'] = $wantL;
-                    $meta['team_display_carry_right'] = $wantR;
-                    $meta['income_eligible'] = false;
-                    $meta['income_blocked_reason'] = $reason;
-                    $meta['pairs_held'] = min($wantL, $wantR);
-
-                    $closing->update([
-                        'left_carry_out' => $wantL,
-                        'right_carry_out' => $wantR,
-                        'left_lapsed' => 0,
-                        'right_lapsed' => 0,
-                        'meta' => $meta,
-                    ]);
-                }
-                $stats['closings_carry_fixed']++;
+            if ($latest === null) {
+                continue;
             }
+
+            if ($targetLeft === (int) $latest->left_carry_out && $targetRight === (int) $latest->right_carry_out) {
+                continue;
+            }
+
+            echo sprintf(
+                "  closing #%d user=%d scope=%s date=%s carry_out %d|%d → %d|%d (payout=%s kept)\n",
+                $latest->id,
+                $user->id,
+                $scope,
+                $latest->closing_date->toDateString(),
+                $latest->left_carry_out,
+                $latest->right_carry_out,
+                $targetLeft,
+                $targetRight,
+                $latest->payout_usd,
+            );
+
+            if (! $dry) {
+                $meta = is_array($latest->meta) ? $latest->meta : [];
+                $meta['team_display_carry_sync'] = $today->toDateString();
+                $meta['team_display_carry_left'] = $targetLeft;
+                $meta['team_display_carry_right'] = $targetRight;
+                $meta['income_eligible'] = false;
+                $meta['income_blocked_reason'] = $reason;
+                $meta['pairs_held'] = min($targetLeft, $targetRight);
+
+                $latest->update([
+                    'left_carry_in' => $targetLeft,
+                    'right_carry_in' => $targetRight,
+                    'left_carry_out' => $targetLeft,
+                    'right_carry_out' => $targetRight,
+                    'left_lapsed' => 0,
+                    'right_lapsed' => 0,
+                    'meta' => $meta,
+                ]);
+            }
+            $stats['closings_carry_fixed']++;
         }
 
         if (! $dry && $userDirty) {
