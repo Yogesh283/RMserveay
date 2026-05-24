@@ -3,7 +3,6 @@
 namespace App\Services\NowPayments;
 
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class NowPaymentsClient
@@ -22,10 +21,12 @@ class NowPaymentsClient
             throw new RuntimeException('NOWPayments API key is not configured.');
         }
 
-        return Http::withHeaders([
-            'x-api-key' => $this->apiKey,
-            'Content-Type' => 'application/json',
-        ])->timeout(30)->post($this->baseUrl.$path, $payload);
+        return NowPaymentsHttp::pending()
+            ->withHeaders([
+                'x-api-key' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])
+            ->post($this->baseUrl.$path, $payload);
     }
 
     public function get(string $path): Response
@@ -34,8 +35,10 @@ class NowPaymentsClient
             throw new RuntimeException('NOWPayments API key is not configured.');
         }
 
-        return Http::withHeaders([
-            'x-api-key' => $this->apiKey,
-        ])->timeout(30)->get($this->baseUrl.$path);
+        return NowPaymentsHttp::pending()
+            ->withHeaders([
+                'x-api-key' => $this->apiKey,
+            ])
+            ->get($this->baseUrl.$path);
     }
 }

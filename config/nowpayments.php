@@ -28,6 +28,14 @@ return [
     'api_key' => env('NOWPAYMENTS_API_KEY', ''),
     'ipn_secret' => env('NOWPAYMENTS_IPN_SECRET', ''),
     'base_url' => rtrim((string) env('NOWPAYMENTS_API_URL', 'https://api.nowpayments.io/v1'), '/'),
+
+    /** Outbound HTTP to api.nowpayments.io (raise if you see cURL 28 connect timeouts). */
+    'http_connect_timeout' => (int) env('NOWPAYMENTS_HTTP_CONNECT_TIMEOUT', 60),
+    'http_timeout' => (int) env('NOWPAYMENTS_HTTP_TIMEOUT', 120),
+    'http_retries' => (int) env('NOWPAYMENTS_HTTP_RETRIES', 3),
+    'http_retry_delay_ms' => (int) env('NOWPAYMENTS_HTTP_RETRY_DELAY_MS', 2000),
+    /** Prefer IPv4 when IPv6 routes are slow or blocked (common on some ISPs). */
+    'http_ipv4' => filter_var(env('NOWPAYMENTS_HTTP_IPV4', true), FILTER_VALIDATE_BOOL),
     /** USDT on BSC — see NOWPayments currency list */
     'pay_currency' => env('NOWPAYMENTS_PAY_CURRENCY', 'usdtbsc'),
 

@@ -31,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
             return new NowPaymentsMassPayoutClient(
                 (string) ($config['base_url'] ?? 'https://api.nowpayments.io/v1'),
                 (string) ($config['api_key'] ?? ''),
-                (string) ($payouts['email'] ?? ''),
+                trim((string) ($payouts['email'] ?? '')),
                 (string) ($payouts['password'] ?? ''),
             );
         });

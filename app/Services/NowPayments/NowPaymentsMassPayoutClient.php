@@ -4,7 +4,6 @@ namespace App\Services\NowPayments;
 
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
@@ -50,7 +49,9 @@ class NowPaymentsMassPayoutClient
         ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException($this->errorMessage($response, 'NOWPayments authentication failed.'));
+            throw new RuntimeException($this->friendlyError(
+                $this->errorMessage($response, 'NOWPayments authentication failed.'),
+            ));
         }
 
         /** @var array<string, mixed> $body */
@@ -84,7 +85,9 @@ class NowPaymentsMassPayoutClient
         ], $token);
 
         if (! $response->successful()) {
-            throw new RuntimeException($this->errorMessage($response, 'NOWPayments payout creation failed.'));
+            throw new RuntimeException($this->friendlyError(
+                $this->errorMessage($response, 'NOWPayments payout creation failed.'),
+            ));
         }
 
         /** @var array<string, mixed> */
@@ -158,15 +161,18 @@ class NowPaymentsMassPayoutClient
      */
     protected function request(string $method, string $path, ?array $body = null, ?string $bearerToken = null): Response
     {
-        if ($this->apiKey === '') {
-            throw new RuntimeException('NOWPayments API key is not configured.');
-        }
-
         $headers = [
-            'x-api-key' => $this->apiKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
+
+        // POST /auth only needs email+password (NOWPayments docs); other routes need the API key.
+        if ($path !== '/auth') {
+            if ($this->apiKey === '') {
+                throw new RuntimeException('NOWPayments API key is not configured.');
+            }
+            $headers['x-api-key'] = $this->apiKey;
+        }
 
         if ($bearerToken !== null && $bearerToken !== '') {
             $headers['Authorization'] = 'Bearer '.$bearerToken;
@@ -174,7 +180,7 @@ class NowPaymentsMassPayoutClient
 
         $url = rtrim($this->baseUrl, '/').$path;
 
-        $pending = Http::withHeaders($headers)->timeout(45);
+        $pending = NowPaymentsHttp::pending()->withHeaders($headers);
 
         return match (strtoupper($method)) {
             'GET' => $pending->get($url),
@@ -199,5 +205,28 @@ class NowPaymentsMassPayoutClient
         }
 
         return $fallback.' HTTP '.$response->status();
+    }
+
+    protected function friendlyError(string $msg): string
+    {
+        $lower = strtolower($msg);
+
+        if (str_contains($lower, 'invalid ip')) {
+            $ip = 'your server public IP';
+            if (preg_match('/invalid ip\s*[-–]?\s*([\d.a-f:]+)/i', $msg, $m)) {
+                $ip = trim($m[1]);
+            }
+
+            return 'NOWPayments IP whitelist: your server public IP '.$ip.' is not allowed. '
+                .'In https://account.nowpayments.io open Settings → IP whitelist (or Security) and add '.$ip.'. '
+                .'Whitelist the live server IP too if payouts run on production (rmsurveyai.com).';
+        }
+
+        if (str_contains($lower, 'incorrect login')) {
+            return 'NOWPayments login failed (email/password in .env do not match your dashboard account at account.nowpayments.io). '
+                .'Use the exact registration email (case-sensitive) and master-account password.';
+        }
+
+        return $msg;
     }
 }
