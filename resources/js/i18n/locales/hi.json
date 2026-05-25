@@ -508,6 +508,7 @@
             "tabSuperPanel": "Super Panel",
             "summaryTodayNew": "Today New Joining",
             "summaryCarryForward": "Carry Forward",
+            "summaryCarryForwardTeam": "Team carry (poora L / R)",
             "summaryMatchingTotal": "Matching Total",
             "ariaTotalTeam": "Total team breakdown",
             "captionActive": "Active panel — total team alag; last day + matching carry alag (har closing ke baad).",

@@ -412,13 +412,13 @@ function LegsCompareTable({ rows, caption, title, accent = 'default' }) {
                                         <span>{row.label}</span>
                                     </span>
                                 </td>
-                                <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.lTd}`}>
-                                    {row.left ?? t('member.ui.dash')}
-                                </td>
-                                <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.rTd}`}>
-                                    {row.right ?? t('member.ui.dash')}
-                                </td>
-                            </tr>
+                            <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.lTd}`}>
+                                {row.left ?? t('member.ui.dash')}
+                            </td>
+                            <td className={`border-l px-3 py-2 text-right text-sm font-semibold tabular-nums text-white sm:px-4 sm:text-base ${s.rTd}`}>
+                                {row.right ?? t('member.ui.dash')}
+                            </td>
+                        </tr>
                         ),
                     )}
                 </tbody>
@@ -479,7 +479,7 @@ function formatLrPair(left, right) {
     return `${left}|${right}`;
 }
 
-/** Carry = strong leg total minus weak leg total (same scope L/R panel counts). */
+/** Carry = strong leg total minus weak leg total (eligible / active matching). */
 function carryForwardFromTotals(left, right) {
     const l = Number(left) | 0;
     const r = Number(right) | 0;
@@ -492,6 +492,20 @@ function carryForwardFromTotals(left, right) {
     return { left: 0, right: r - l };
 }
 
+/** Inactive: full team L|R. Eligible: strong − weak (same as daily closing weak-lapse display). */
+function carryForwardForDisplay(totals, day, legMatch) {
+    const eligible = day.income_eligible === true || legMatch?.income_eligible === true;
+    if (!eligible) {
+        return {
+            left: totals.left,
+            right: totals.right,
+            teamCarry: true,
+        };
+    }
+    const diff = carryForwardFromTotals(totals.left, totals.right);
+    return { ...diff, teamCarry: false };
+}
+
 /** Binary Team Summary — 5 rows like dashboard mock (registration, scope total, new, carry, income). */
 function buildBinarySummaryRows(t, legs, legMatch, scope) {
     const m = legMatch ?? {};
@@ -502,7 +516,7 @@ function buildBinarySummaryRows(t, legs, legMatch, scope) {
 
     const payout = day.payout_usd ?? m.payout_usd ?? '0.00';
     const totals = scopeLegTotals(legs, scope, m);
-    const carry = carryForwardFromTotals(totals.left, totals.right);
+    const carry = carryForwardForDisplay(totals, day, m);
 
     const rows = [];
 
@@ -534,7 +548,9 @@ function buildBinarySummaryRows(t, legs, legMatch, scope) {
     rows.push(
         {
             icon: 'carry',
-            label: t('member.team.summaryCarryForward'),
+            label: carry.teamCarry
+                ? t('member.team.summaryCarryForwardTeam')
+                : t('member.team.summaryCarryForward'),
             left: carry.left,
             right: carry.right,
         },
@@ -1414,30 +1430,30 @@ export default function MemberTeamPage() {
                             {matchingIncomeTab === 'sub' && subMatchData ? (
                                 <>
                                     <p className="mb-2 text-xs text-sky-200/80">{t('member.team.subMatchingHint')}</p>
-                                    <MatchingIncomeTable
-                                        dark
-                                        embedded
-                                        comfortable
-                                        hideEarnedHighlight
-                                        hideLiveData
-                                        variant="sub"
-                                        panelData={panelMatchData}
-                                        subData={subMatchData}
-                                    />
+                                <MatchingIncomeTable
+                                    dark
+                                    embedded
+                                    comfortable
+                                    hideEarnedHighlight
+                                    hideLiveData
+                                    variant="sub"
+                                    panelData={panelMatchData}
+                                    subData={subMatchData}
+                                />
                                 </>
                             ) : null}
                             {matchingIncomeTab === 'super' && superMatchData ? (
                                 <>
                                     <p className="mb-2 text-xs text-amber-200/80">{t('member.team.superMatchingHint')}</p>
-                                    <MatchingIncomeTable
-                                        dark
-                                        embedded
-                                        comfortable
-                                        hideEarnedHighlight
-                                        hideLiveData
-                                        variant="super"
-                                        superData={superMatchData}
-                                    />
+                                <MatchingIncomeTable
+                                    dark
+                                    embedded
+                                    comfortable
+                                    hideEarnedHighlight
+                                    hideLiveData
+                                    variant="super"
+                                    superData={superMatchData}
+                                />
                                 </>
                             ) : null}
                             {matchingIncomeTab === 'sub' && !subMatchData ? (

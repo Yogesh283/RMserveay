@@ -535,6 +535,7 @@
             "tabSuperPanel": "Super Panel",
             "summaryTodayNew": "Today New Joining",
             "summaryCarryForward": "Carry Forward",
+            "summaryCarryForwardTeam": "Team carry (full L / R)",
             "summaryMatchingTotal": "Matching Total",
             "ariaTotalTeam": "Total team breakdown",
             "captionActive": "Active panel — team total vs last-day volume vs matching carry (updates each closing).",
