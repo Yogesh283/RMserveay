@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class MemberWalletController extends Controller
@@ -99,6 +100,7 @@ class MemberWalletController extends Controller
                 'min_withdraw_usd' => config('wallet_display.min_withdraw_usd'),
                 'min_p2p_usd' => config('wallet_display.min_p2p_usd'),
                 'direct_withdrawal_fee_rate' => config('wallet_display.direct_withdrawal_fee_rate'),
+                'survey_withdrawal_fee_rate' => config('wallet_display.survey_withdrawal_fee_rate'),
                 'main_to_p2p_bonus_rate' => config('wallet_display.main_to_p2p_bonus_rate'),
             ],
         ]);
@@ -500,27 +502,33 @@ class MemberWalletController extends Controller
         ]);
     }
 
-    /** Direct withdrawal debits main wallet only; 15% fee — net sent on-chain is gross − fee. */
+    /** On-chain withdrawal from main or survey wallet; fee rate depends on wallet_source. */
     public function withdraw(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
+            'wallet_source' => ['sometimes', 'string', Rule::in(['main', 'survey'])],
             'bep20_address' => ['required', 'string', 'max:128', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'save_address' => ['sometimes', 'boolean'],
             'otp' => ['required', 'string', 'digits:6'],
         ]);
 
+        $walletSource = $validated['wallet_source'] ?? 'main';
+        $walletLabel = $walletSource === 'survey' ? 'survey wallet' : 'main wallet';
+
         $min = (string) config('wallet_display.min_withdraw_usd');
         $gross = number_format((float) $validated['amount_usd'], 2, '.', '');
         if (bccomp($gross, $min, 2) < 0) {
-            throw ValidationException::withMessages(['amount_usd' => ["Minimum withdrawal request is {$min} USDT (gross from main wallet)."]]);
+            throw ValidationException::withMessages(['amount_usd' => ["Minimum withdrawal request is {$min} USDT (gross from {$walletLabel})."]]);
         }
 
-        $feeRate = (string) config('wallet_display.direct_withdrawal_fee_rate');
+        $feeRate = $walletSource === 'survey'
+            ? (string) config('wallet_display.survey_withdrawal_fee_rate')
+            : (string) config('wallet_display.direct_withdrawal_fee_rate');
         $fee = bcmul($gross, $feeRate, 2);
         $net = bcsub($gross, $fee, 2);
 
-        return DB::transaction(function () use ($request, $validated, $gross, $fee, $net, $feeRate) {
+        return DB::transaction(function () use ($request, $validated, $gross, $fee, $net, $feeRate, $walletSource) {
             /** @var User $user */
             $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
 
@@ -530,7 +538,11 @@ class MemberWalletController extends Controller
                 ]);
             }
 
-            if (bccomp((string) $user->wallet_balance, $gross, 2) < 0) {
+            if ($walletSource === 'survey') {
+                if (bccomp((string) $user->survey_wallet_balance, $gross, 2) < 0) {
+                    abort(422, 'Insufficient survey wallet balance.');
+                }
+            } elseif (bccomp((string) $user->wallet_balance, $gross, 2) < 0) {
                 abort(422, 'Insufficient main wallet balance. Move funds from P2P to main first if needed.');
             }
 
@@ -538,30 +550,43 @@ class MemberWalletController extends Controller
                 $user->usdt_bep20_withdrawal_address = $validated['bep20_address'];
             }
 
-            $this->walletBuckets->debitMain($user, $gross);
-            $newMain = (string) $user->wallet_balance;
+            if ($walletSource === 'survey') {
+                $balanceAfter = $this->walletBuckets->debitSurvey($user, $gross);
+            } else {
+                $this->walletBuckets->debitMain($user, $gross);
+                $balanceAfter = (string) $user->wallet_balance;
+            }
+
             $user->save();
+
+            $meta = [
+                'wallet_source' => $walletSource,
+                'bep20_address' => $validated['bep20_address'],
+                'network' => config('wallet_display.network_label'),
+                'status' => 'queued',
+                'gross_usd' => $gross,
+                'fee_usd' => $fee,
+                'fee_rate' => $feeRate,
+                'net_sent_usd' => $net,
+                'p2p_balance_after' => (string) $user->p2p_wallet_balance,
+            ];
+            if ($walletSource === 'survey') {
+                $meta['survey_balance_after'] = $balanceAfter;
+            }
 
             WalletTransaction::create([
                 'user_id' => $user->id,
                 'type' => WalletTransaction::TYPE_WITHDRAWAL,
                 'amount' => '-'.$gross,
-                'balance_after' => $newMain,
-                'meta' => [
-                    'bep20_address' => $validated['bep20_address'],
-                    'network' => config('wallet_display.network_label'),
-                    'status' => 'queued',
-                    'gross_usd' => $gross,
-                    'fee_usd' => $fee,
-                    'fee_rate' => $feeRate,
-                    'net_sent_usd' => $net,
-                    'p2p_balance_after' => (string) $user->p2p_wallet_balance,
-                ],
+                'balance_after' => $balanceAfter,
+                'meta' => $meta,
             ]);
 
             return response()->json([
                 'message' => 'Withdrawal recorded.',
-                'wallet_balance' => $newMain,
+                'wallet_source' => $walletSource,
+                'wallet_balance' => (string) $user->wallet_balance,
+                'survey_wallet_balance' => (string) $user->survey_wallet_balance,
                 'p2p_wallet_balance' => (string) $user->p2p_wallet_balance,
                 'gross_usd' => $gross,
                 'fee_usd' => $fee,

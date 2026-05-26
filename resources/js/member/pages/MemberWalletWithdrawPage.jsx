@@ -10,6 +10,7 @@ function fmtUsd(s) {
 
 export default function MemberWalletWithdrawPage() {
     const [overview, setOverview] = useState(null);
+    const [walletSource, setWalletSource] = useState('main');
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
     const [otp, setOtp] = useState('');
@@ -37,13 +38,22 @@ export default function MemberWalletWithdrawPage() {
         load();
     }, [load]);
 
-    const feeRateStr = overview?.limits?.direct_withdrawal_fee_rate ?? '0.15';
+    const feeRateStr =
+        walletSource === 'survey'
+            ? (overview?.limits?.survey_withdrawal_fee_rate ?? '0.15')
+            : (overview?.limits?.direct_withdrawal_fee_rate ?? '0.15');
     const minWithdraw = overview?.limits?.min_withdraw_usd ?? '10';
+    const feePercentLabel = useMemo(() => {
+        const r = Number.parseFloat(feeRateStr);
+        const rate = Number.isNaN(r) ? 0 : r;
+        if (rate <= 0) return '0%';
+        return `${(rate * 100).toFixed(0)}%`;
+    }, [feeRateStr]);
     const feePreview = useMemo(() => {
         const gross = Number.parseFloat(amount);
         if (Number.isNaN(gross) || gross <= 0) return null;
         const r = Number.parseFloat(feeRateStr);
-        const rate = Number.isNaN(r) ? 0.15 : r;
+        const rate = Number.isNaN(r) ? 0 : r;
         const fee = gross * rate;
         const net = gross - fee;
         return { fee, net, rate };
@@ -58,6 +68,7 @@ export default function MemberWalletWithdrawPage() {
             await prepareSanctum();
             const { data } = await window.axios.post('api/member/wallet/withdraw', {
                 amount_usd: Number.parseFloat(amount),
+                wallet_source: walletSource,
                 bep20_address: address.trim(),
                 save_address: saveAddress,
                 otp: otp.trim(),
@@ -67,7 +78,8 @@ export default function MemberWalletWithdrawPage() {
                 o
                     ? {
                           ...o,
-                          wallet_balance: data.wallet_balance,
+                          wallet_balance: data.wallet_balance ?? o.wallet_balance,
+                          survey_wallet_balance: data.survey_wallet_balance ?? o.survey_wallet_balance,
                           p2p_wallet_balance: data.p2p_wallet_balance ?? o.p2p_wallet_balance,
                       }
                     : o,
@@ -109,11 +121,42 @@ export default function MemberWalletWithdrawPage() {
                 <div className="pointer-events-none absolute -right-6 top-0 h-28 w-28 rounded-full bg-violet-500/15 blur-2xl" aria-hidden />
 
                 <div className="relative border-b border-white/10 pb-3 mb-3">
-                    <p className={walletFlowLabel}>Main wallet (withdraw from)</p>
-                    <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl">{overview ? fmtUsd(overview.wallet_balance) : '—'}</p>
+                    <p className={walletFlowLabel}>Withdraw from</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setWalletSource('main')}
+                            className={`rounded-xl border px-3 py-2 text-left transition ${
+                                walletSource === 'main'
+                                    ? 'border-violet-400/50 bg-violet-500/15 text-white'
+                                    : 'border-white/10 bg-slate-950/40 text-slate-400 hover:border-white/20'
+                            }`}
+                        >
+                            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Main wallet</span>
+                            <span className="mt-0.5 block text-sm font-bold tabular-nums text-white">
+                                {overview ? fmtUsd(overview.wallet_balance) : '—'}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setWalletSource('survey')}
+                            className={`rounded-xl border px-3 py-2 text-left transition ${
+                                walletSource === 'survey'
+                                    ? 'border-cyan-400/50 bg-cyan-500/15 text-white'
+                                    : 'border-white/10 bg-slate-950/40 text-slate-400 hover:border-white/20'
+                            }`}
+                        >
+                            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Survey wallet</span>
+                            <span className="mt-0.5 block text-sm font-bold tabular-nums text-white">
+                                {overview ? fmtUsd(overview.survey_wallet_balance) : '—'}
+                            </span>
+                        </button>
+                    </div>
                     {overview?.limits ? (
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Min. withdrawal <span className="font-semibold text-slate-400">${minWithdraw}</span> USDT · Fee {(Number.parseFloat(feeRateStr) * 100 || 15).toFixed(0)}%
+                            Min. withdrawal <span className="font-semibold text-slate-400">${minWithdraw}</span> USDT · Fee {feePercentLabel}
+                            {' · '}
+                            {walletSource === 'survey' ? 'Survey wallet' : 'Main wallet'}
                         </p>
                     ) : null}
                 </div>
@@ -131,7 +174,9 @@ export default function MemberWalletWithdrawPage() {
                     ) : null}
 
                     <div>
-                        <label className={walletFlowLabel}>Amount (USDT, from main)</label>
+                        <label className={walletFlowLabel}>
+                            Amount (USDT, from {walletSource === 'survey' ? 'survey' : 'main'} wallet)
+                        </label>
                         <input type="number" step="0.01" min="0" required value={amount} onChange={(ev) => setAmount(ev.target.value)} className={`mt-1 ${walletFlowInput} tabular-nums`} />
                     </div>
                     <div>

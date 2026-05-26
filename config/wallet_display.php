@@ -23,8 +23,11 @@ return [
 
     'min_p2p_usd' => env('WALLET_MIN_P2P_USD', '0.01'),
 
-    /** Direct on-chain withdrawal fee (applied to gross amount debited from main wallet). */
+    /** On-chain withdrawal fee on gross amount debited from main wallet. */
     'direct_withdrawal_fee_rate' => env('WALLET_DIRECT_WITHDRAWAL_FEE_RATE', '0.15'),
+
+    /** On-chain withdrawal fee on gross amount debited from survey wallet (independent of main). */
+    'survey_withdrawal_fee_rate' => env('WALLET_SURVEY_WITHDRAWAL_FEE_RATE', '0.15'),
 
     /** Bonus when moving funds main → P2P internal wallet (extra % credited to P2P bucket). */
     'main_to_p2p_bonus_rate' => env('WALLET_MAIN_TO_P2P_BONUS_RATE', '0.10'),

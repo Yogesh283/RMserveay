@@ -124,4 +124,21 @@ class WalletBucketService
 
         return $new;
     }
+
+    /** Debit survey income bucket (on-chain withdrawal). */
+    public function debitSurvey(User $user, string $amount): string
+    {
+        if (bccomp($amount, '0.00', 2) <= 0) {
+            abort(422, 'Invalid amount.');
+        }
+
+        if (bccomp((string) $user->survey_wallet_balance, $amount, 2) < 0) {
+            abort(422, 'Insufficient survey wallet balance.');
+        }
+
+        $new = bcsub((string) $user->survey_wallet_balance, $amount, 2);
+        $user->survey_wallet_balance = $new;
+
+        return $new;
+    }
 }
