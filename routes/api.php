@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum', 'account.not_blocked', 'session.max_age'])->g
         Route::post('/nowpayments/payment', [MemberNowPaymentsController::class, 'create'])->middleware('throttle:15,1');
         Route::get('/nowpayments/{paymentId}', [MemberNowPaymentsController::class, 'show'])->middleware('throttle:60,1');
         Route::post('/main-to-p2p', [MemberWalletController::class, 'mainToP2p'])->middleware('throttle:30,1');
+        Route::post('/survey-to-p2p', [MemberWalletController::class, 'surveyToP2p'])->middleware('throttle:30,1');
         Route::post('/p2p-to-main', [MemberWalletController::class, 'p2pToMain'])->middleware('throttle:30,1');
         Route::get('/p2p-recipient-lookup', [MemberWalletController::class, 'p2pRecipientLookup'])->middleware('throttle:60,1');
         Route::post('/p2p-transfer', [MemberWalletController::class, 'p2pTransfer'])->middleware('throttle:30,1');

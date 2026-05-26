@@ -29,14 +29,17 @@ function fmtWhen(iso) {
 export default function MemberWalletInternalTransferPage() {
     const [overview, setOverview] = useState(null);
     const [mainAmt, setMainAmt] = useState('');
+    const [surveyAmt, setSurveyAmt] = useState('');
     const [p2pAmt, setP2pAmt] = useState('');
     const [busy1, setBusy1] = useState(false);
     const [busy2, setBusy2] = useState(false);
     const [mainErr, setMainErr] = useState(null);
+    const [surveyErr, setSurveyErr] = useState(null);
     const [p2pErr, setP2pErr] = useState(null);
-    const [mainConfirmOpen, setMainConfirmOpen] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmSource, setConfirmSource] = useState('main'); // 'main' | 'survey'
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [lastMainTransfer, setLastMainTransfer] = useState(null);
+    const [lastTransfer, setLastTransfer] = useState(null);
     const [overviewErr, setOverviewErr] = useState(null);
 
     const load = useCallback(async () => {
@@ -61,72 +64,90 @@ export default function MemberWalletInternalTransferPage() {
         return Number.isFinite(r) ? Math.round(r * 100) : 10;
     })();
     const preview = useMemo(() => {
-        const a = Number.parseFloat(mainAmt);
+        const a = Number.parseFloat(confirmSource === 'survey' ? surveyAmt : mainAmt);
         if (Number.isNaN(a) || a <= 0) return null;
         const b = Number.parseFloat(bonusRate);
         const bonus = a * (Number.isNaN(b) ? 0.1 : b);
         const total = a + bonus;
         return { bonus, total };
-    }, [mainAmt, bonusRate]);
+    }, [mainAmt, surveyAmt, bonusRate, confirmSource]);
 
-    function openMainConfirm() {
+    function openConfirm(source) {
         setMainErr(null);
-        const a = Number.parseFloat(mainAmt);
+        setSurveyErr(null);
+        setConfirmSource(source);
+        const a = Number.parseFloat(source === 'survey' ? surveyAmt : mainAmt);
         if (Number.isNaN(a) || a <= 0) {
-            setMainErr('Enter a valid amount greater than zero.');
+            if (source === 'survey') setSurveyErr('Enter a valid amount greater than zero.');
+            else setMainErr('Enter a valid amount greater than zero.');
             return;
         }
-        const transferable = Number.parseFloat(
-            overview?.main_transferable_to_p2p_usd ?? overview?.wallet_balance ?? '0',
-        );
-        if (overview && a > transferable) {
-            setMainErr(
-                'Only programme income can move to P2P. Deposited funds stay in the main wallet.',
+        if (source === 'main') {
+            const transferable = Number.parseFloat(
+                overview?.main_transferable_to_p2p_usd ?? overview?.wallet_balance ?? '0',
             );
+            if (overview && a > transferable) {
+                setMainErr(
+                    'Only programme income can move to P2P. Deposited funds stay in the main wallet.',
+                );
+                return;
+            }
+        } else if (overview && a > Number.parseFloat(overview?.survey_wallet_balance ?? '0')) {
+            setSurveyErr('Amount exceeds your survey wallet balance.');
             return;
         }
         setConfirmPassword('');
-        setMainConfirmOpen(true);
+        setConfirmOpen(true);
     }
 
-    function closeMainConfirm() {
-        setMainConfirmOpen(false);
+    function closeConfirm() {
+        setConfirmOpen(false);
         setConfirmPassword('');
     }
 
     useEffect(() => {
-        if (!mainConfirmOpen) return undefined;
+        if (!confirmOpen) return undefined;
         const onKey = (e) => {
-            if (e.key === 'Escape') closeMainConfirm();
+            if (e.key === 'Escape') closeConfirm();
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [mainConfirmOpen]);
+    }, [confirmOpen]);
 
-    async function submitMainToP2pConfirmed(e) {
+    async function submitConfirmed(e) {
         e.preventDefault();
         setMainErr(null);
+        setSurveyErr(null);
         setBusy1(true);
         try {
             await prepareSanctum();
-            const { data } = await window.axios.post('api/member/wallet/main-to-p2p', {
-                amount_usd: Number.parseFloat(mainAmt),
+            const source = confirmSource;
+            const amountStr = source === 'survey' ? surveyAmt : mainAmt;
+            const endpoint =
+                source === 'survey'
+                    ? 'api/member/wallet/survey-to-p2p'
+                    : 'api/member/wallet/main-to-p2p';
+            const { data } = await window.axios.post(endpoint, {
+                amount_usd: Number.parseFloat(amountStr),
                 password: confirmPassword,
             });
-            setLastMainTransfer({
+            setLastTransfer({
                 message: data.message,
                 transaction: data.transaction,
                 bonus_usd: data.bonus_usd,
                 total_credited_p2p_usd: data.total_credited_p2p_usd,
             });
-            setMainAmt('');
-            closeMainConfirm();
+            if (source === 'survey') setSurveyAmt('');
+            else setMainAmt('');
+            closeConfirm();
             await load();
         } catch (e) {
             const errs = e.response?.data?.errors;
             const pwMsg = errs?.password?.[0];
             const m = pwMsg ?? e.response?.data?.message ?? errs;
-            setMainErr(typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Failed'));
+            const msg = typeof m === 'object' ? JSON.stringify(m) : (m ?? 'Failed');
+            if (confirmSource === 'survey') setSurveyErr(msg);
+            else setMainErr(msg);
         } finally {
             setBusy1(false);
         }
@@ -164,17 +185,17 @@ export default function MemberWalletInternalTransferPage() {
         }
     }
 
-    const tx = lastMainTransfer?.transaction;
+    const tx = lastTransfer?.transaction;
     const glass = walletFlowGlass;
     const soft = walletFlowGlassSoft;
 
     return (
-        <WalletFlowShell overview={overview} loadError={overviewErr} footerTag="Wallet · Main ↔ P2P">
-            {lastMainTransfer && tx ? (
+        <WalletFlowShell overview={overview} loadError={overviewErr} footerTag="Wallet · Main / Survey ↔ P2P">
+            {lastTransfer && tx ? (
                 <section className={`relative mt-4 overflow-hidden border border-emerald-500/35 bg-emerald-950/25 p-3 text-xs text-emerald-100 ${soft}`} role="status" aria-live="polite">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                        <p className="font-semibold text-emerald-200">{lastMainTransfer.message}</p>
-                        <button type="button" onClick={() => setLastMainTransfer(null)} className="shrink-0 font-semibold text-emerald-300 underline underline-offset-2">
+                        <p className="font-semibold text-emerald-200">{lastTransfer.message}</p>
+                        <button type="button" onClick={() => setLastTransfer(null)} className="shrink-0 font-semibold text-emerald-300 underline underline-offset-2">
                             Dismiss
                         </button>
                     </div>
@@ -185,7 +206,9 @@ export default function MemberWalletInternalTransferPage() {
                         </div>
                         <div className="flex justify-between gap-2 sm:block">
                             <dt className="text-slate-500">Debited</dt>
-                            <dd className="font-semibold tabular-nums text-white">{fmtUsd(tx.amount_debited_main_usd)}</dd>
+                            <dd className="font-semibold tabular-nums text-white">
+                                {fmtUsd(tx.amount_debited_main_usd ?? tx.amount_debited_survey_usd)}
+                            </dd>
                         </div>
                         <div className="flex justify-between gap-2 sm:block">
                             <dt className="text-slate-500">Bonus</dt>
@@ -203,7 +226,7 @@ export default function MemberWalletInternalTransferPage() {
                 <div className="pointer-events-none absolute -right-6 top-0 h-24 w-24 rounded-full bg-violet-500/15 blur-2xl" aria-hidden />
 
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className={walletFlowLabel}>Main → P2P (bonus)</p>
+                    <p className={walletFlowLabel}>Main / Survey → P2P (bonus)</p>
                     <div
                         className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.18)]"
                         title={`${bonusTransferCount} bonus transfer${bonusTransferCount === 1 ? '' : 's'} so far · ${bonusRatePct}% per transfer`}
@@ -240,13 +263,32 @@ export default function MemberWalletInternalTransferPage() {
                         step="0.01"
                         min="0"
                         required
-                        placeholder="Amount (USDT)"
+                        placeholder="Amount from main (USDT)"
                         value={mainAmt}
                         onChange={(e) => setMainAmt(e.target.value)}
                         className={`${walletFlowInput} tabular-nums`}
                     />
-                    {mainErr && !mainConfirmOpen ? <p className="text-xs text-red-400">{mainErr}</p> : null}
-                    <button type="button" onClick={openMainConfirm} className={walletFlowPrimaryBtn}>
+                    {mainErr && !confirmOpen ? <p className="text-xs text-red-400">{mainErr}</p> : null}
+                    <button type="button" onClick={() => openConfirm('main')} className={walletFlowPrimaryBtn}>
+                        Continue (password)
+                    </button>
+                </div>
+
+                <div className="my-4 border-t border-white/10" />
+
+                <div className="mt-3 space-y-2">
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        placeholder="Amount from survey (USDT)"
+                        value={surveyAmt}
+                        onChange={(e) => setSurveyAmt(e.target.value)}
+                        className={`${walletFlowInput} tabular-nums`}
+                    />
+                    {surveyErr && !confirmOpen ? <p className="text-xs text-red-400">{surveyErr}</p> : null}
+                    <button type="button" onClick={() => openConfirm('survey')} className={walletFlowPrimaryBtn}>
                         Continue (password)
                     </button>
                 </div>
@@ -272,19 +314,25 @@ export default function MemberWalletInternalTransferPage() {
                 </form> */}
             </section>
 
-            {mainConfirmOpen ? (
+            {confirmOpen ? (
                 <div className="fixed inset-0 z-[200] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="main-p2p-confirm-title">
-                    <button type="button" className="absolute inset-0 bg-black/60" aria-label="Close" onClick={closeMainConfirm} />
+                    <button type="button" className="absolute inset-0 bg-black/60" aria-label="Close" onClick={closeConfirm} />
                     <div className={walletFlowModalSurface}>
                         <h2 id="main-p2p-confirm-title" className="text-base font-bold text-white">
-                            Confirm Main → P2P
+                            Confirm {confirmSource === 'survey' ? 'Survey' : 'Main'} → P2P
                         </h2>
                         <p className="mt-1 text-xs text-slate-400">Enter your login password.</p>
                         {preview ? (
                             <ul className="mt-3 space-y-1 rounded-xl border border-white/10 bg-black/25 p-2 text-xs">
                                 <li className="flex justify-between gap-2">
-                                    <span className="text-slate-500">From main</span>
-                                    <span className="font-semibold tabular-nums text-white">{fmtUsd(Number.parseFloat(mainAmt))}</span>
+                                    <span className="text-slate-500">From {confirmSource === 'survey' ? 'survey' : 'main'}</span>
+                                    <span className="font-semibold tabular-nums text-white">
+                                        {fmtUsd(
+                                            Number.parseFloat(
+                                                confirmSource === 'survey' ? surveyAmt : mainAmt,
+                                            ),
+                                        )}
+                                    </span>
                                 </li>
                                 <li className="flex justify-between gap-2">
                                     <span className="text-slate-500">Bonus</span>
@@ -296,7 +344,7 @@ export default function MemberWalletInternalTransferPage() {
                                 </li>
                             </ul>
                         ) : null}
-                        <form onSubmit={submitMainToP2pConfirmed} className="mt-3 space-y-2">
+                        <form onSubmit={submitConfirmed} className="mt-3 space-y-2">
                             <label className="block">
                                 <span className={walletFlowLabel}>Password</span>
                                 <input
@@ -308,9 +356,10 @@ export default function MemberWalletInternalTransferPage() {
                                     className={`mt-1 ${walletFlowInput} text-sm`}
                                 />
                             </label>
-                            {mainErr && mainConfirmOpen ? <p className="text-xs text-red-400">{mainErr}</p> : null}
+                            {mainErr && confirmOpen && confirmSource === 'main' ? <p className="text-xs text-red-400">{mainErr}</p> : null}
+                            {surveyErr && confirmOpen && confirmSource === 'survey' ? <p className="text-xs text-red-400">{surveyErr}</p> : null}
                             <div className="flex flex-wrap gap-2 pt-1">
-                                <button type="button" onClick={closeMainConfirm} className={walletFlowSecondaryBtn}>
+                                <button type="button" onClick={closeConfirm} className={walletFlowSecondaryBtn}>
                                     Cancel
                                 </button>
                                 <button type="submit" disabled={busy1} className={`${walletFlowPrimaryBtn} !w-auto px-6 disabled:opacity-50`}>

@@ -50,7 +50,7 @@ class MemberWalletController extends Controller
          */
         $bonusRows = WalletTransaction::query()
             ->where('user_id', $user->id)
-            ->where('type', WalletTransaction::TYPE_MAIN_TO_P2P)
+            ->whereIn('type', [WalletTransaction::TYPE_MAIN_TO_P2P, WalletTransaction::TYPE_SURVEY_TO_P2P])
             ->get(['amount', 'meta']);
         $bonusLifetime = '0.00';
         $bonusCount = 0;
@@ -235,6 +235,79 @@ class MemberWalletController extends Controller
                     'bonus_rate' => $bonusRate,
                     'total_credited_p2p_usd' => $totalToP2p,
                     'main_wallet_balance_after' => (string) $user->wallet_balance,
+                    'p2p_wallet_balance_after' => (string) $user->p2p_wallet_balance,
+                    'created_at' => $transaction->created_at?->toIso8601String(),
+                ],
+            ]);
+        });
+    }
+
+    /** Move USDT from survey wallet → internal P2P wallet (+bonus rate from config). */
+    public function surveyToP2p(Request $request): JsonResponse
+    {
+        $this->assertActivePanelistForP2p($request->user());
+
+        $validated = $request->validate([
+            'amount_usd' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+
+        $amount = number_format((float) $validated['amount_usd'], 2, '.', '');
+        $bonusRate = (string) config('wallet_display.main_to_p2p_bonus_rate');
+        $bonus = bcmul($amount, $bonusRate, 2);
+        $totalToP2p = bcadd($amount, $bonus, 2);
+
+        return DB::transaction(function () use ($request, $validated, $amount, $bonus, $totalToP2p, $bonusRate) {
+            /** @var User $user */
+            $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+            $user->reconcileBalancesFromWalletTableIfBlank();
+            $user->refresh();
+
+            if (! Hash::check($validated['password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'password' => ['The password you entered is incorrect.'],
+                ]);
+            }
+
+            if (bccomp((string) $user->survey_wallet_balance, $amount, 2) < 0) {
+                throw ValidationException::withMessages([
+                    'amount_usd' => ['Insufficient survey wallet balance for this amount.'],
+                ]);
+            }
+
+            $newSurvey = $this->walletBuckets->debitSurvey($user, $amount);
+            $user->p2p_wallet_balance = bcadd((string) $user->p2p_wallet_balance, $totalToP2p, 2);
+            $user->save();
+
+            $transaction = WalletTransaction::create([
+                'user_id' => $user->id,
+                'type' => WalletTransaction::TYPE_SURVEY_TO_P2P,
+                'amount' => '-'.$amount,
+                'balance_after' => $newSurvey,
+                'meta' => [
+                    'source' => 'survey',
+                    'bonus_usd' => $bonus,
+                    'bonus_rate' => $bonusRate,
+                    'credited_to_p2p_usd' => $totalToP2p,
+                    'survey_balance_after' => $newSurvey,
+                    'p2p_balance_after' => (string) $user->p2p_wallet_balance,
+                ],
+            ]);
+
+            return response()->json([
+                'message' => 'Funds moved from survey wallet to P2P with bonus.',
+                'survey_wallet_balance' => (string) $user->survey_wallet_balance,
+                'p2p_wallet_balance' => (string) $user->p2p_wallet_balance,
+                'bonus_usd' => $bonus,
+                'total_credited_p2p_usd' => $totalToP2p,
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'type' => $transaction->type,
+                    'amount_debited_survey_usd' => $amount,
+                    'bonus_usd' => $bonus,
+                    'bonus_rate' => $bonusRate,
+                    'total_credited_p2p_usd' => $totalToP2p,
+                    'survey_wallet_balance_after' => $newSurvey,
                     'p2p_wallet_balance_after' => (string) $user->p2p_wallet_balance,
                     'created_at' => $transaction->created_at?->toIso8601String(),
                 ],
@@ -837,6 +910,13 @@ class MemberWalletController extends Controller
                     ? 'Main → P2P · credited $'.(string) $b.' to P2P (incl. bonus)'
                     : 'Main → P2P wallet transfer';
             })(),
+            WalletTransaction::TYPE_SURVEY_TO_P2P => (function () use ($m) {
+                $b = $m['credited_to_p2p_usd'] ?? null;
+
+                return $b !== null && $b !== ''
+                    ? 'Survey → P2P · credited $'.(string) $b.' to P2P (incl. bonus)'
+                    : 'Survey → P2P wallet transfer';
+            })(),
             WalletTransaction::TYPE_P2P_TO_MAIN => (function () use ($m) {
                 $a = $m['from_p2p_usd'] ?? null;
 
@@ -930,6 +1010,8 @@ class MemberWalletController extends Controller
             }
         } elseif ($t->type === WalletTransaction::TYPE_MAIN_TO_P2P) {
             $metaSummary = 'Main→P2P';
+        } elseif ($t->type === WalletTransaction::TYPE_SURVEY_TO_P2P) {
+            $metaSummary = 'Survey→P2P';
         } elseif ($t->type === WalletTransaction::TYPE_P2P_TO_MAIN) {
             $metaSummary = 'P2P→Main';
         } elseif ($t->type === WalletTransaction::TYPE_PLAN_PURCHASE) {

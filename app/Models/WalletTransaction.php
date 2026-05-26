@@ -39,6 +39,8 @@ class WalletTransaction extends Model
 
     public const TYPE_MAIN_TO_P2P = 'main_to_p2p';
 
+    public const TYPE_SURVEY_TO_P2P = 'survey_to_p2p';
+
     public const TYPE_P2P_TO_MAIN = 'p2p_to_main';
 
     public const TYPE_PLAN_PURCHASE = 'plan_purchase';
