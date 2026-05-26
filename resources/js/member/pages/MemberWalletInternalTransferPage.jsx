@@ -243,14 +243,22 @@ export default function MemberWalletInternalTransferPage() {
                     Lifetime {bonusRatePct}% bonus credited to your P2P wallet from {bonusTransferCount} transfer{bonusTransferCount === 1 ? '' : 's'}.
                 </p>
                 {overview ? (
-                    <p className="mt-1 text-[10px] text-amber-200/85">
-                        Income available for Main→P2P:{' '}
-                        <span className="font-semibold tabular-nums text-white">
-                            {fmtUsd(overview.main_transferable_to_p2p_usd ?? '0')}
-                        </span>
-                        {' '}
-                        (deposits cannot be moved to P2P)
-                    </p>
+                    <>
+                        <p className="mt-1 text-[10px] text-amber-200/85">
+                            Income available for Main→P2P:{' '}
+                            <span className="font-semibold tabular-nums text-white">
+                                {fmtUsd(overview.main_transferable_to_p2p_usd ?? '0')}
+                            </span>
+                            {' '}
+                            (deposits cannot be moved to P2P)
+                        </p>
+                        <p className="mt-1 text-[10px] text-cyan-200/85">
+                            Survey wallet balance:{' '}
+                            <span className="font-semibold tabular-nums text-white">
+                                {fmtUsd(overview.survey_wallet_balance ?? '0')}
+                            </span>
+                        </p>
+                    </>
                 ) : null}
                 {preview ? (
                     <p className="mt-1 text-xs text-emerald-300/90">
