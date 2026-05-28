@@ -74,15 +74,16 @@ class NowPaymentsMassPayoutClient
     }
 
     /**
-     * Nested withdrawals payload required by NOWPayments (see Technical FAQ).
+     * Create a mass payout. Body shape:
+     * { "withdrawals": [ { "address": "...", "currency": "...", "amount": 1.23, ... } ] }
      *
-     * @param  array<int, array<string, mixed>>  $batchItems
+     * @param  array<int, array<string, mixed>>  $withdrawals
      * @return array<string, mixed>
      */
-    public function createPayout(array $batchItems): array
+    public function createPayout(array $withdrawals): array
     {
         $response = $this->requestWithAuthRetry('POST', '/payout', [
-            'withdrawals' => $batchItems,
+            'withdrawals' => $withdrawals,
         ]);
 
         if (! $response->successful()) {

@@ -65,20 +65,18 @@ class NowPaymentsWithdrawalService
         $ipnUrl = url('/api/payments/nowpayments/ipn');
         $externalId = 'wallet_tx_'.$tx->id;
 
-        $batchItem = [
+        // NOWPayments Mass Payout expects withdrawals[] items at the top level,
+        // each item containing address/currency/amount (no extra nested withdrawals array).
+        $withdrawalItem = [
+            'unique_external_id' => $externalId,
+            'address' => $address,
+            'currency' => $currency,
+            'amount' => $amount,
             'ipn_callback_url' => $ipnUrl,
             'payout_description' => 'RM Survey withdrawal #'.$tx->id,
-            'withdrawals' => [
-                [
-                    'unique_external_id' => $externalId,
-                    'address' => $address,
-                    'currency' => $currency,
-                    'amount' => $amount,
-                ],
-            ],
         ];
 
-        $response = $this->client->createPayout([$batchItem]);
+        $response = $this->client->createPayout([$withdrawalItem]);
 
         $payoutId = $this->extractPayoutId($response);
 
