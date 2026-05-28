@@ -13,6 +13,14 @@ use RuntimeException;
  */
 class NowPaymentsMassPayoutClient
 {
+    private const BEARER_TOKEN_CACHE_KEY = 'nowpayments.mass_payout_bearer_token';
+
+    /**
+     * NOWPayments bearer tokens are short-lived (commonly ~5 minutes).
+     * Cache slightly below that to avoid reusing expired tokens.
+     */
+    private const BEARER_TOKEN_CACHE_TTL_SECONDS = 240;
+
     public function __construct(
         protected string $baseUrl,
         protected string $apiKey,
@@ -34,10 +42,8 @@ class NowPaymentsMassPayoutClient
             throw new RuntimeException('NOWPayments payout credentials are not configured (API key, email, password).');
         }
 
-        $cacheKey = 'nowpayments.mass_payout_bearer_token';
-
         if (! $forceRefresh) {
-            $cached = Cache::get($cacheKey);
+            $cached = Cache::get(self::BEARER_TOKEN_CACHE_KEY);
             if (is_string($cached) && $cached !== '') {
                 return ['token' => $cached];
             }
@@ -62,7 +68,7 @@ class NowPaymentsMassPayoutClient
             throw new RuntimeException('NOWPayments auth response did not include a token.');
         }
 
-        Cache::put($cacheKey, $token, now()->addMinutes(50));
+        Cache::put(self::BEARER_TOKEN_CACHE_KEY, $token, self::BEARER_TOKEN_CACHE_TTL_SECONDS);
 
         return $body;
     }
@@ -75,14 +81,9 @@ class NowPaymentsMassPayoutClient
      */
     public function createPayout(array $batchItems): array
     {
-        $token = $this->authenticate()['token'] ?? '';
-        if (! is_string($token) || $token === '') {
-            throw new RuntimeException('Missing NOWPayments bearer token.');
-        }
-
-        $response = $this->request('POST', '/payout', [
+        $response = $this->requestWithAuthRetry('POST', '/payout', [
             'withdrawals' => $batchItems,
-        ], $token);
+        ]);
 
         if (! $response->successful()) {
             throw new RuntimeException($this->friendlyError(
@@ -99,7 +100,6 @@ class NowPaymentsMassPayoutClient
      */
     public function verifyPayout(string $payoutId, string $verificationCode): array
     {
-        $token = $this->authenticate()['token'] ?? '';
         $code = trim($verificationCode);
 
         $attempts = [
@@ -110,7 +110,7 @@ class NowPaymentsMassPayoutClient
 
         $lastResponse = null;
         foreach ($attempts as [$method, $path, $body]) {
-            $response = $this->request($method, $path, $body, is_string($token) ? $token : null);
+            $response = $this->requestWithAuthRetry($method, $path, $body);
             $lastResponse = $response;
             if ($response->successful()) {
                 /** @var array<string, mixed> */
@@ -144,9 +144,7 @@ class NowPaymentsMassPayoutClient
      */
     public function getBalance(): array
     {
-        $token = $this->authenticate()['token'] ?? '';
-
-        $response = $this->request('GET', '/balance', null, is_string($token) ? $token : null);
+        $response = $this->requestWithAuthRetry('GET', '/balance', null);
 
         if (! $response->successful()) {
             throw new RuntimeException($this->errorMessage($response, 'NOWPayments balance request failed.'));
@@ -187,6 +185,53 @@ class NowPaymentsMassPayoutClient
             'POST' => $pending->post($url, $body ?? []),
             default => throw new RuntimeException('Unsupported HTTP method: '.$method),
         };
+    }
+
+    /**
+     * Make an authenticated request, and if the short-lived JWT is expired,
+     * re-authenticate once and retry with a fresh token.
+     *
+     * @param  array<string, mixed>|null  $body
+     */
+    protected function requestWithAuthRetry(string $method, string $path, ?array $body = null): Response
+    {
+        $token = $this->authenticate()['token'] ?? '';
+        if (! is_string($token) || $token === '') {
+            throw new RuntimeException('Missing NOWPayments bearer token.');
+        }
+
+        $response = $this->request($method, $path, $body, $token);
+
+        if ($response->successful()) {
+            return $response;
+        }
+
+        if (! $this->looksLikeExpiredBearerToken($response)) {
+            return $response;
+        }
+
+        Cache::forget(self::BEARER_TOKEN_CACHE_KEY);
+        $fresh = $this->authenticate(forceRefresh: true)['token'] ?? '';
+        if (! is_string($fresh) || $fresh === '') {
+            return $response;
+        }
+
+        return $this->request($method, $path, $body, $fresh);
+    }
+
+    protected function looksLikeExpiredBearerToken(Response $response): bool
+    {
+        if (in_array($response->status(), [401, 403], true)) {
+            return true;
+        }
+
+        $msg = strtolower($this->errorMessage($response, ''));
+        return $msg !== '' && (
+            str_contains($msg, 'jwt') && str_contains($msg, 'expired')
+            || str_contains($msg, 'token has expired')
+            || str_contains($msg, 'token expired')
+            || str_contains($msg, 'need to be logged in')
+        );
     }
 
     protected function errorMessage(Response $response, string $fallback): string
