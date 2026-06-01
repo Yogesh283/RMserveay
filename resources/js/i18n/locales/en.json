@@ -326,7 +326,7 @@
             "earnMatchingHint": "Panel & sub-panel",
             "surveyCredits": "Survey credits",
             "payouts": "{{count}} payouts",
-            "availableSurveys": "Available surveys",
+            "availableSurveys": "All Time surveys",
             "surveysDoneTap": "{{done}} completed · tap to open",
             "tapToOpen": "Tap to open",
             "idActive": "Account active",
