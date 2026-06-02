@@ -100,17 +100,18 @@ class MemberSurveyController extends Controller
                 ? (float) $r->respondent_reward_usd
                 : $defaultReward;
             /** Paid only after wallet credit (see SelfSurveyIncomeService::creditPublisherSurveyResponsePayout). */
+            $payoutSuppressed = $r->respondent_payout_suppressed_at !== null;
             $walletCredited = $r->respondent_payout_wallet_tx_id !== null;
-            $paymentStatus = $walletCredited ? 'success' : 'unpaid';
+            $paymentStatus = $payoutSuppressed ? 'suppressed' : ($walletCredited ? 'success' : 'unpaid');
 
             /** Expected wallet credit time: stored on row, or completion + delay when still uncredited. */
             $expectedAt = $r->respondent_payout_at;
-            if ($expectedAt === null && ! $walletCredited && bccomp((string) $amount, '0', 2) > 0 && $r->updated_at !== null) {
+            if ($expectedAt === null && ! $walletCredited && ! $payoutSuppressed && bccomp((string) $amount, '0', 2) > 0 && $r->updated_at !== null) {
                 $expectedAt = $r->updated_at->copy()->addDays($delayDays);
             }
 
             $hasReward = bccomp((string) $amount, '0', 2) > 0;
-            $expectedInWallet = ! $walletCredited && $hasReward ? $expectedAt?->toIso8601String() : null;
+            $expectedInWallet = ! $walletCredited && ! $payoutSuppressed && $hasReward ? $expectedAt?->toIso8601String() : null;
             $walletCreditedAt = $walletCredited
                 ? $r->respondentPayoutWalletTransaction?->created_at?->toIso8601String()
                 : null;

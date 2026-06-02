@@ -75,6 +75,10 @@ class SelfSurveyIncomeService
             /** @var User $locked */
             $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
 
+            if (! $locked->receivesSurveyIncomeToWallet()) {
+                abort(422, 'Survey income wallet credit is disabled for this account.');
+            }
+
             $breakdown = $this->perSurveyBreakdown($locked);
             $amount = $breakdown['total'];
 
@@ -143,6 +147,15 @@ class SelfSurveyIncomeService
         return DB::transaction(function () use ($response, $amount) {
             /** @var User $locked */
             $locked = User::whereKey($response->respondent_user_id)->lockForUpdate()->firstOrFail();
+
+            if (! $locked->receivesSurveyIncomeToWallet()) {
+                if ($response->respondent_payout_suppressed_at === null) {
+                    $response->respondent_payout_suppressed_at = now();
+                    $response->save();
+                }
+
+                return null;
+            }
 
             $existing = WalletTransaction::query()
                 ->where('user_id', $locked->id)

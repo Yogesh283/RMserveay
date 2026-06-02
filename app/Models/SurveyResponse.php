@@ -20,6 +20,7 @@ class SurveyResponse extends Model
         'respondent_reward_usd',
         'respondent_payout_at',
         'respondent_payout_wallet_tx_id',
+        'respondent_payout_suppressed_at',
     ];
 
     protected function casts(): array
@@ -31,7 +32,14 @@ class SurveyResponse extends Model
             'completion_time_sec' => 'integer',
             'respondent_reward_usd' => 'decimal:2',
             'respondent_payout_at' => 'datetime',
+            'respondent_payout_suppressed_at' => 'datetime',
         ];
+    }
+
+    public function isRespondentPayoutSettled(): bool
+    {
+        return $this->respondent_payout_wallet_tx_id !== null
+            || $this->respondent_payout_suppressed_at !== null;
     }
 
     public function survey(): BelongsTo

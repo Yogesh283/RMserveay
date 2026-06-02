@@ -66,6 +66,7 @@ class User extends Authenticatable implements FilamentUser
         'sspm_pair_carry_forward',
         'profile_completed_at',
         'account_blocked_at',
+        'survey_income_wallet_credit_enabled',
     ];
 
     /**
@@ -108,6 +109,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'account_blocked_at' => 'datetime',
+            'survey_income_wallet_credit_enabled' => 'boolean',
             'password' => 'hashed',
             'survey_profile' => 'array',
             'wallet_balance' => 'decimal:2',
@@ -232,6 +234,12 @@ class User extends Authenticatable implements FilamentUser
     public function isAccountBlocked(): bool
     {
         return $this->account_blocked_at !== null;
+    }
+
+    /** When false, survey form income is not credited to this member's survey wallet. */
+    public function receivesSurveyIncomeToWallet(): bool
+    {
+        return (bool) ($this->survey_income_wallet_credit_enabled ?? true);
     }
 
     /**

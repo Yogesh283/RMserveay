@@ -7,6 +7,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class UserForm
@@ -25,6 +26,10 @@ class UserForm
                     ->required(),
                 DateTimePicker::make('email_verified_at'),
                 DateTimePicker::make('profile_completed_at'),
+                Toggle::make('survey_income_wallet_credit_enabled')
+                    ->label('Credit survey income to wallet')
+                    ->helperText('When off, income from self-survey and publisher surveys is not added to this member\'s survey wallet.')
+                    ->default(true),
                 TextInput::make('password')
                     ->password()
                     ->required(),

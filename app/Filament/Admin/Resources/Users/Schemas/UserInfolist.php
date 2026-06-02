@@ -189,6 +189,11 @@ class UserInfolist
                 TextEntry::make('profile_completed_at')
                     ->dateTime()
                     ->placeholder('-'),
+                TextEntry::make('survey_income_wallet_credit_enabled')
+                    ->label('Survey income → wallet')
+                    ->formatStateUsing(fn ($state): string => $state ? 'Enabled' : 'Disabled')
+                    ->badge()
+                    ->color(fn ($state): string => $state ? 'success' : 'danger'),
                 TextEntry::make('user_type'),
                 TextEntry::make('profile')
                     ->placeholder('-')

@@ -22,6 +22,7 @@ class ViewUser extends ViewRecord
                 UsersTable::activateMinimumPanelAction(),
                 UsersTable::addOneSubPanelAction(),
                 UsersTable::addOneSuperSubPanelAction(),
+                UsersTable::toggleSurveyWalletCreditAction(),
             ])
                 ->label('Activate panels')
                 ->icon(Heroicon::OutlinedCheckBadge)

@@ -224,5 +224,26 @@ class IncomeFlowsTest extends TestCase
         $this->assertSame(5, $superStatus['total_left_supers']);
         $this->assertSame(5, $superStatus['total_right_supers']);
     }
+
+    public function test_survey_credit_skipped_when_admin_disables_wallet_credit_for_user(): void
+    {
+        $earner = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 1,
+            'survey_wallet_balance' => '0.00',
+            'survey_income_wallet_credit_enabled' => false,
+        ]);
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+        try {
+            app(SelfSurveyIncomeService::class)->creditSurvey($earner, 'disabled-wallet-ref');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            $this->assertSame(422, $e->getStatusCode());
+            throw $e;
+        }
+    }
 }
 

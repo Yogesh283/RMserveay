@@ -15,6 +15,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -115,6 +116,12 @@ class UsersTable
                     ->color(fn ($state) => $state ? 'danger' : 'success')
                     ->formatStateUsing(fn ($state) => $state ? 'Blocked' : 'Active')
                     ->sortable(),
+                TextColumn::make('survey_income_wallet_credit_enabled')
+                    ->label('Survey wallet')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? 'Credit on' : 'Credit off')
+                    ->color(fn ($state): string => $state ? 'success' : 'warning')
+                    ->sortable(),
                 TextColumn::make('sub_panel_count')
                     ->numeric()
                     ->sortable()
@@ -151,6 +158,7 @@ class UsersTable
                     self::addOneSuperSubPanelAction(),
                     self::blockAccountAction(),
                     self::unblockAccountAction(),
+                    self::toggleSurveyWalletCreditAction(),
                     self::updateEmailAction(),
                     self::updateMobileAction(),
                     self::creditP2pWalletAction(),
@@ -310,6 +318,38 @@ class UsersTable
 
                 Notification::make()
                     ->title('Account unblocked')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /** Quick Action: allow or block survey form income crediting to survey wallet. */
+    public static function toggleSurveyWalletCreditAction(): Action
+    {
+        return Action::make('toggle_survey_wallet_credit')
+            ->label(fn (User $record): string => $record->receivesSurveyIncomeToWallet()
+                ? 'Disable survey wallet credit'
+                : 'Enable survey wallet credit')
+            ->icon(Heroicon::OutlinedBanknotes)
+            ->color(fn (User $record): string => $record->receivesSurveyIncomeToWallet() ? 'warning' : 'success')
+            ->modalHeading(fn (User $record): string => 'Survey income → wallet · '.strtoupper((string) ($record->login_uid ?? '#'.$record->id)))
+            ->modalDescription(fn (User $record): string => $record->receivesSurveyIncomeToWallet()
+                ? 'Turn off to stop crediting survey form income to this member\'s survey wallet (self-survey and publisher surveys).'
+                : 'Turn on to resume crediting survey income to this member\'s survey wallet.')
+            ->fillForm(fn (User $record): array => [
+                'survey_income_wallet_credit_enabled' => $record->receivesSurveyIncomeToWallet(),
+            ])
+            ->schema([
+                Toggle::make('survey_income_wallet_credit_enabled')
+                    ->label('Credit survey income to wallet')
+                    ->default(true),
+            ])
+            ->action(function (array $data, User $record): void {
+                $enabled = (bool) ($data['survey_income_wallet_credit_enabled'] ?? true);
+                $record->forceFill(['survey_income_wallet_credit_enabled' => $enabled])->save();
+
+                Notification::make()
+                    ->title($enabled ? 'Survey wallet credit enabled' : 'Survey wallet credit disabled')
                     ->success()
                     ->send();
             });
