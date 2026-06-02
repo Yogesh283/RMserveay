@@ -99,21 +99,23 @@ class MemberSurveyController extends Controller
             $amount = $r->respondent_reward_usd !== null
                 ? (float) $r->respondent_reward_usd
                 : $defaultReward;
-            /** Paid only after wallet credit (see SelfSurveyIncomeService::creditPublisherSurveyResponsePayout). */
-            $payoutSuppressed = $r->respondent_payout_suppressed_at !== null;
-            $walletCredited = $r->respondent_payout_wallet_tx_id !== null;
-            $paymentStatus = $payoutSuppressed ? 'suppressed' : ($walletCredited ? 'success' : 'unpaid');
+            /** Paid only after survey wallet credit (see SelfSurveyIncomeService::creditPublisherSurveyResponsePayout). */
+            $payoutTx = $r->respondentPayoutWalletTransaction;
+            $walletCredited = $payoutTx !== null
+                && ($payoutTx->meta['earner_wallet_credited'] ?? true) !== false;
+            $payoutSettled = $r->respondent_payout_wallet_tx_id !== null;
+            $paymentStatus = $walletCredited ? 'success' : ($payoutSettled ? 'no_wallet_credit' : 'unpaid');
 
             /** Expected wallet credit time: stored on row, or completion + delay when still uncredited. */
             $expectedAt = $r->respondent_payout_at;
-            if ($expectedAt === null && ! $walletCredited && ! $payoutSuppressed && bccomp((string) $amount, '0', 2) > 0 && $r->updated_at !== null) {
+            if ($expectedAt === null && ! $payoutSettled && bccomp((string) $amount, '0', 2) > 0 && $r->updated_at !== null) {
                 $expectedAt = $r->updated_at->copy()->addDays($delayDays);
             }
 
             $hasReward = bccomp((string) $amount, '0', 2) > 0;
-            $expectedInWallet = ! $walletCredited && ! $payoutSuppressed && $hasReward ? $expectedAt?->toIso8601String() : null;
+            $expectedInWallet = ! $payoutSettled && $hasReward ? $expectedAt?->toIso8601String() : null;
             $walletCreditedAt = $walletCredited
-                ? $r->respondentPayoutWalletTransaction?->created_at?->toIso8601String()
+                ? $payoutTx?->created_at?->toIso8601String()
                 : null;
 
             return [

@@ -19,7 +19,6 @@ class PayRespondentSurveyPayouts extends Command
             ->whereNotNull('respondent_user_id')
             ->whereNotNull('respondent_payout_at')
             ->whereNull('respondent_payout_wallet_tx_id')
-            ->whereNull('respondent_payout_suppressed_at')
             ->where('respondent_payout_at', '<=', now());
 
         $dueCount = (clone $dueQuery)->count();
@@ -30,7 +29,6 @@ class PayRespondentSurveyPayouts extends Command
             ->whereNotNull('respondent_user_id')
             ->whereNotNull('respondent_payout_at')
             ->whereNull('respondent_payout_wallet_tx_id')
-            ->whereNull('respondent_payout_suppressed_at')
             ->where('respondent_payout_at', '>', now())
             ->count();
         if ($waiting > 0) {

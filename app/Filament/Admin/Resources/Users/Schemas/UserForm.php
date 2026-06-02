@@ -28,7 +28,7 @@ class UserForm
                 DateTimePicker::make('profile_completed_at'),
                 Toggle::make('survey_income_wallet_credit_enabled')
                     ->label('Credit survey income to wallet')
-                    ->helperText('When off, income from self-survey and publisher surveys is not added to this member\'s survey wallet.')
+                    ->helperText('When off, only this member\'s survey wallet is not credited. Direct, level, panel matching, and other income stay the same; upline still earns from their surveys.')
                     ->default(true),
                 TextInput::make('password')
                     ->password()

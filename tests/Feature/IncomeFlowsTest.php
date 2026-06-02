@@ -225,10 +225,19 @@ class IncomeFlowsTest extends TestCase
         $this->assertSame(5, $superStatus['total_right_supers']);
     }
 
-    public function test_survey_credit_skipped_when_admin_disables_wallet_credit_for_user(): void
+    public function test_only_survey_wallet_skipped_when_admin_disables_wallet_credit_upline_still_paid(): void
     {
+        $sponsor = User::factory()->create([
+            'user_type' => 'normal',
+            'activation_fee_paid_at' => now(),
+            'minimum_panel_fee_paid_at' => now(),
+            'sub_panel_count' => 1,
+            'wallet_balance' => '0.00',
+        ]);
+
         $earner = User::factory()->create([
             'user_type' => 'normal',
+            'sponsor_id' => $sponsor->id,
             'activation_fee_paid_at' => now(),
             'minimum_panel_fee_paid_at' => now(),
             'sub_panel_count' => 1,
@@ -236,14 +245,23 @@ class IncomeFlowsTest extends TestCase
             'survey_income_wallet_credit_enabled' => false,
         ]);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        app(SelfSurveyIncomeService::class)->creditSurvey($earner, 'disabled-wallet-ref');
 
-        try {
-            app(SelfSurveyIncomeService::class)->creditSurvey($earner, 'disabled-wallet-ref');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-            $this->assertSame(422, $e->getStatusCode());
-            throw $e;
-        }
+        $earner->refresh();
+        $this->assertSame('0.00', number_format((float) $earner->survey_wallet_balance, 2, '.', ''));
+
+        $surveyTx = WalletTransaction::query()
+            ->where('user_id', $earner->id)
+            ->where('type', WalletTransaction::TYPE_SURVEY_CREDIT)
+            ->first();
+        $this->assertNotNull($surveyTx);
+        $this->assertFalse($surveyTx->meta['earner_wallet_credited'] ?? true);
+
+        $directTx = WalletTransaction::query()
+            ->where('user_id', $sponsor->id)
+            ->where('type', WalletTransaction::TYPE_DIRECT_COMMISSION)
+            ->first();
+        $this->assertNotNull($directTx, 'Sponsor direct income should still run when earner survey wallet credit is off.');
     }
 }
 

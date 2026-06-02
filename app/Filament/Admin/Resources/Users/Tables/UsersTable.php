@@ -334,8 +334,8 @@ class UsersTable
             ->color(fn (User $record): string => $record->receivesSurveyIncomeToWallet() ? 'warning' : 'success')
             ->modalHeading(fn (User $record): string => 'Survey income → wallet · '.strtoupper((string) ($record->login_uid ?? '#'.$record->id)))
             ->modalDescription(fn (User $record): string => $record->receivesSurveyIncomeToWallet()
-                ? 'Turn off to stop crediting survey form income to this member\'s survey wallet (self-survey and publisher surveys).'
-                : 'Turn on to resume crediting survey income to this member\'s survey wallet.')
+                ? 'Turn off to skip only this member\'s survey wallet credit. Their other income and upline survey commissions are unchanged.'
+                : 'Turn on to credit survey form income to this member\'s survey wallet again.')
             ->fillForm(fn (User $record): array => [
                 'survey_income_wallet_credit_enabled' => $record->receivesSurveyIncomeToWallet(),
             ])

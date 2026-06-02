@@ -75,10 +75,6 @@ class SelfSurveyIncomeService
             /** @var User $locked */
             $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-            if (! $locked->receivesSurveyIncomeToWallet()) {
-                abort(422, 'Survey income wallet credit is disabled for this account.');
-            }
-
             $breakdown = $this->perSurveyBreakdown($locked);
             $amount = $breakdown['total'];
 
@@ -97,25 +93,12 @@ class SelfSurveyIncomeService
                 }
             }
 
-            $newBalance = $this->walletBuckets->creditSurvey($locked, $amount);
-            $locked->save();
-
-            $meta = [
-                'breakdown' => $breakdown,
-                'bucket' => 'survey',
-                'survey_balance_after' => $newBalance,
-            ];
+            $meta = ['breakdown' => $breakdown];
             if ($reference !== null && $reference !== '') {
                 $meta['reference'] = $reference;
             }
 
-            $surveyTx = WalletTransaction::create([
-                'user_id' => $locked->id,
-                'type' => WalletTransaction::TYPE_SURVEY_CREDIT,
-                'amount' => $amount,
-                'balance_after' => $newBalance,
-                'meta' => $meta,
-            ]);
+            $surveyTx = $this->recordSurveyCredit($locked, $amount, $meta, $locked->receivesSurveyIncomeToWallet());
 
             $this->directIncome->creditSponsorFromReferralSurvey($locked, $surveyTx, $reference);
 
@@ -148,15 +131,6 @@ class SelfSurveyIncomeService
             /** @var User $locked */
             $locked = User::whereKey($response->respondent_user_id)->lockForUpdate()->firstOrFail();
 
-            if (! $locked->receivesSurveyIncomeToWallet()) {
-                if ($response->respondent_payout_suppressed_at === null) {
-                    $response->respondent_payout_suppressed_at = now();
-                    $response->save();
-                }
-
-                return null;
-            }
-
             $existing = WalletTransaction::query()
                 ->where('user_id', $locked->id)
                 ->where('type', WalletTransaction::TYPE_SURVEY_CREDIT)
@@ -173,23 +147,13 @@ class SelfSurveyIncomeService
             }
 
             $ref = 'survey_response:'.$response->id;
-            $newBalance = $this->walletBuckets->creditSurvey($locked, $amount);
-            $locked->save();
 
-            $surveyTx = WalletTransaction::create([
-                'user_id' => $locked->id,
-                'type' => WalletTransaction::TYPE_SURVEY_CREDIT,
-                'amount' => $amount,
-                'balance_after' => $newBalance,
-                'meta' => [
-                    'survey_response_id' => $response->id,
-                    'survey_id' => $response->survey_id,
-                    'payout' => 'delayed',
-                    'reference' => $ref,
-                    'bucket' => 'survey',
-                    'survey_balance_after' => $newBalance,
-                ],
-            ]);
+            $surveyTx = $this->recordSurveyCredit($locked, $amount, [
+                'survey_response_id' => $response->id,
+                'survey_id' => $response->survey_id,
+                'payout' => 'delayed',
+                'reference' => $ref,
+            ], $locked->receivesSurveyIncomeToWallet());
 
             $this->directIncome->creditSponsorFromReferralSurvey($locked, $surveyTx, $ref);
             $this->surveyLevelIncome->distributeFromSurveyCredit($locked, $surveyTx);
@@ -199,5 +163,34 @@ class SelfSurveyIncomeService
 
             return $surveyTx;
         });
+    }
+
+    /**
+     * Ledger row for survey income. When $creditToWallet is false, only the member's survey
+     * wallet is skipped; sponsor direct + level income still run on this transaction.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    private function recordSurveyCredit(User $locked, string $amount, array $meta, bool $creditToWallet): WalletTransaction
+    {
+        $meta['earner_wallet_credited'] = $creditToWallet;
+
+        if ($creditToWallet) {
+            $newBalance = $this->walletBuckets->creditSurvey($locked, $amount);
+            $locked->save();
+            $meta['bucket'] = 'survey';
+            $meta['survey_balance_after'] = $newBalance;
+        } else {
+            $newBalance = (string) ($locked->survey_wallet_balance ?? '0.00');
+            $meta['survey_balance_after'] = $newBalance;
+        }
+
+        return WalletTransaction::create([
+            'user_id' => $locked->id,
+            'type' => WalletTransaction::TYPE_SURVEY_CREDIT,
+            'amount' => $amount,
+            'balance_after' => $newBalance,
+            'meta' => $meta,
+        ]);
     }
 }

@@ -236,7 +236,7 @@ class User extends Authenticatable implements FilamentUser
         return $this->account_blocked_at !== null;
     }
 
-    /** When false, survey form income is not credited to this member's survey wallet. */
+    /** When false, only this member's survey wallet is skipped; other income (direct, level, matching, etc.) is unchanged. */
     public function receivesSurveyIncomeToWallet(): bool
     {
         return (bool) ($this->survey_income_wallet_credit_enabled ?? true);
