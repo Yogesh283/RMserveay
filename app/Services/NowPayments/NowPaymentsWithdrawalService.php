@@ -181,6 +181,46 @@ class NowPaymentsWithdrawalService
         $tx->save();
     }
 
+    /**
+     * Admin sent USDT manually (off NOWPayments). Marks queued/processing rows as sent; no wallet refund.
+     */
+    public function markManualSuccess(WalletTransaction $tx, string $note = '', ?string $txHash = null): void
+    {
+        $this->assertWithdrawalRow($tx);
+
+        DB::transaction(function () use ($tx, $note, $txHash): void {
+            /** @var WalletTransaction $locked */
+            $locked = WalletTransaction::whereKey($tx->id)->lockForUpdate()->firstOrFail();
+
+            $status = $this->withdrawalStatus($locked);
+            if ($status === 'sent') {
+                return;
+            }
+
+            if ($status === 'rejected') {
+                throw ValidationException::withMessages([
+                    'status' => ['This withdrawal was rejected and refunded. It cannot be marked as paid.'],
+                ]);
+            }
+
+            $meta = is_array($locked->meta) ? $locked->meta : [];
+            $meta['status'] = 'sent';
+            $meta['manual_payout'] = true;
+            $meta['manual_payout_at'] = now()->toIso8601String();
+            $meta['manual_payout_note'] = $note !== '' ? $note : null;
+            $meta['manual_payout_tx_hash'] = ($txHash !== null && $txHash !== '') ? trim($txHash) : null;
+            $meta['admin_last_action_at'] = now()->toIso8601String();
+            $locked->meta = $meta;
+            $locked->save();
+
+            Log::info('withdrawal.manual_success', [
+                'wallet_transaction_id' => $locked->id,
+                'user_id' => $locked->user_id,
+                'net_usd' => $meta['net_sent_usd'] ?? null,
+            ]);
+        });
+    }
+
     public function rejectAndRefund(WalletTransaction $tx, string $reason = ''): void
     {
         $this->assertWithdrawalRow($tx);

@@ -30,6 +30,43 @@ final class WithdrawalPayoutActions
         $payoutsOn = self::payoutsEnabled();
 
         return [
+            Action::make('markManualSuccess')
+                ->label('Mark paid (manual)')
+                ->icon(Heroicon::OutlinedCheckCircle)
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Confirm manual payout')
+                ->modalDescription(
+                    'Use when you have already sent USDT to the member\'s BEP20 address yourself. '
+                    .'The member\'s wallet debit stays; status becomes Sent. This does not call NOWPayments.'
+                )
+                ->visible(fn (WalletTransaction $record): bool => ! in_array(
+                    WithdrawalRequestsTable::rawStatus($record),
+                    ['sent', 'rejected'],
+                    true,
+                ))
+                ->schema([
+                    TextInput::make('tx_hash')
+                        ->label('On-chain TX hash (optional)')
+                        ->maxLength(128),
+                    Textarea::make('note')
+                        ->label('Admin note (optional)')
+                        ->rows(2),
+                ])
+                ->action(function (WalletTransaction $record, array $data): void {
+                    self::run($record, function (NowPaymentsWithdrawalService $svc) use ($record, $data): void {
+                        $svc->markManualSuccess(
+                            $record->fresh(),
+                            (string) ($data['note'] ?? ''),
+                            isset($data['tx_hash']) ? (string) $data['tx_hash'] : null,
+                        );
+                        Notification::make()
+                            ->title('Withdrawal marked as paid')
+                            ->body('Manual payout recorded. Member will see status as sent.')
+                            ->success()
+                            ->send();
+                    });
+                }),
             Action::make('sendNowPayments')
                 ->label('Pay via NOWPayments')
                 ->icon(Heroicon::OutlinedPaperAirplane)

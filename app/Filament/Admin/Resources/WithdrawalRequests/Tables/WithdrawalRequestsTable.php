@@ -110,11 +110,13 @@ class WithdrawalRequestsTable
 
     public static function statusLabel(WalletTransaction $record): string
     {
+        $meta = is_array($record->meta) ? $record->meta : [];
+
         return match (self::rawStatus($record)) {
             'queued' => 'Queued → pay via NP',
             'np_creating' => 'NP — verify 2FA',
             'np_processing' => 'NP processing',
-            'sent' => 'Sent',
+            'sent' => ! empty($meta['manual_payout']) ? 'Sent (manual)' : 'Sent',
             'failed' => 'Failed',
             'rejected' => 'Rejected',
             default => Str::headline(self::rawStatus($record)),
