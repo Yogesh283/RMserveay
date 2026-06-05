@@ -481,6 +481,14 @@
             "colDetail": "What happened",
             "colAmount": "Amount",
             "colBalanceAfter": "Balance after",
+            "withdrawalStatus": {
+                "queued": "Pending",
+                "np_creating": "Verifying",
+                "np_processing": "Processing",
+                "sent": "Sent",
+                "failed": "Failed",
+                "rejected": "Rejected"
+            },
             "noTransactions": "No transactions yet.",
             "p2pOutDetail": "P2P sent to {{name}} · User ID {{uid}} · #{{id}}",
             "p2pInDetail": "P2P received from {{name}} · User ID {{uid}} · #{{id}}",

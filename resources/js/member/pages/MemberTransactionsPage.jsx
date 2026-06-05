@@ -82,6 +82,39 @@ function TypePill({ type, t }) {
     );
 }
 
+function withdrawalStatusRaw(row) {
+    if (row.type !== 'withdrawal') return null;
+    const meta = row.meta && typeof row.meta === 'object' ? row.meta : {};
+    return String(meta.status || 'queued');
+}
+
+function withdrawalStatusTone(status) {
+    const tones = {
+        queued: 'border-amber-400/40 bg-amber-500/[0.12] text-amber-100',
+        np_creating: 'border-sky-400/35 bg-sky-500/[0.12] text-sky-100',
+        np_processing: 'border-violet-400/35 bg-violet-500/[0.12] text-violet-100',
+        sent: 'border-emerald-400/40 bg-emerald-500/[0.12] text-emerald-100',
+        failed: 'border-red-400/40 bg-red-500/[0.12] text-red-100',
+        rejected: 'border-slate-400/35 bg-slate-500/[0.12] text-slate-200',
+    };
+    return tones[status] ?? 'border-white/[0.14] bg-white/[0.06] text-[#CBD5E1]';
+}
+
+function WithdrawalStatusPill({ row, t }) {
+    const status = withdrawalStatusRaw(row);
+    if (!status) return null;
+    const label = t(`member.transactionsPage.withdrawalStatus.${status}`, {
+        defaultValue: humanizeType(status),
+    });
+    return (
+        <span
+            className={`inline-flex max-w-full items-center rounded-lg border px-2 py-0.5 text-[10px] font-semibold leading-snug ${withdrawalStatusTone(status)}`}
+        >
+            {label}
+        </span>
+    );
+}
+
 function fmtRowDate(iso, locale) {
     if (!iso) return '—';
     try {
@@ -209,7 +242,10 @@ export default function MemberTransactionsPage() {
                                         ].join(' ')}
                                     >
                                         <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <TypePill type={row.type} t={t} />
+                                            <div className="flex min-w-0 flex-col gap-1">
+                                                <TypePill type={row.type} t={t} />
+                                                <WithdrawalStatusPill row={row} t={t} />
+                                            </div>
                                             <span
                                                 className={`shrink-0 text-[15px] font-bold tabular-nums tracking-tight ${
                                                     isCredit ? 'text-emerald-400' : 'text-amber-300'
@@ -274,7 +310,10 @@ export default function MemberTransactionsPage() {
                                                 {row.id}
                                             </td>
                                             <td className="max-w-[14rem] px-3 py-2">
-                                                <TypePill type={row.type} t={t} />
+                                                <div className="flex flex-col gap-1">
+                                                    <TypePill type={row.type} t={t} />
+                                                    <WithdrawalStatusPill row={row} t={t} />
+                                                </div>
                                             </td>
                                             <td className="max-w-md px-3 py-2 text-xs leading-snug text-[#94A3B8]">
                                                 {formatTransactionDetailRow(row, t)}
