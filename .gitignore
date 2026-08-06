@@ -1,0 +1,55 @@
+# Android release signing (do not commit)
+Unity_Game/Keystore/*.keystore
+Unity_Game/Keystore/*.jks
+Unity_Game/Keystore/signing.local.json
+
+# Unity
+Unity_Game/Library/
+Unity_Game/Logs/
+Unity_Game/Temp/
+Unity_Game/Obj/
+Unity_Game/Builds/*.apk
+Unity_Game/UserSettings/
+Unity_Game/Assets/_Recovery/
+Unity_Game/.utmp/
+Unity_Game/*.apk
+Unity_Game/*_BackUpThisFolder_ButDontShipItWithYourGame/
+Unity_Game/*_BurstDebugInformation_DoNotShip/
+Unity_Game/Assets/Resources/BillingMode.json
+Unity_Game/Assets/Resources/PerformanceTestRun*.json
+
+# Python
+Backend/venv/
+Backend/__pycache__/
+Backend/.env
+Backend/secrets/google-play-service-account.json
+*.pyc
+
+# PHP / Laravel
+AdminPanel/vendor/
+AdminPanel/.env
+AdminPanel/storage/logs/
+AdminPanel/storage/framework/cache/
+
+# Database backups
+Database/backups/*.sql
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MatchIQ App (Expo / RN)
+MatchIQ_App/node_modules/
+MatchIQ_App/android/
+MatchIQ_App/ios/
+MatchIQ_App/.expo/
+MatchIQ_App/*.apk
+MatchIQ_App/.env
+
+# Root Unity leftovers
+/Library/
+/Logs/
+/UserSettings/
+/Temp/
+/_tmp_RMserveay/
+/_push_RMserveay/

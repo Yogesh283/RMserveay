@@ -1,0 +1,1246 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Mkey;
+using Mkey.Network;
+using Newtonsoft.Json.Linq;
+using UnityEngine;
+
+namespace Mkey.Tournament
+{
+    /// <summary>
+    /// Unified tournament match lifecycle for all room sizes (2–1000 players).
+    /// </summary>
+    [DefaultExecutionOrder(-88)]
+    public class TournamentMatchManager : MonoBehaviour
+    {
+        private static TournamentMatchManager instance;
+        private static TournamentRoom room;
+
+        private static int pendingRank;
+        private static int pendingPrize;
+        private static bool pendingDuelWin;
+        private static bool pendingResultCached;
+        private static int? pendingWalletBalance;
+
+        private float onlineRoomPollTimer;
+        private bool onlineRoomPollInFlight;
+
+        private const float OnlineRoomPollIntervalSeconds = 2.5f;
+        // 0.1s (10 req/s/client) hammered the API and contributed to matchmaking-lock contention.
+        // WebSocket push + submit response are the primary finish signals; this poll is only a
+        // backstop, so 0.5s is plenty responsive while cutting duel-match server load ~5x.
+        private const float DuelOnlinePollIntervalSeconds = 0.5f;
+
+        private static bool duelServerScoreSubmitted;
+        private static bool apiRoomUpdateHooked;
+
+        private static bool UseSimulatedDuelOpponent => ApiConfig.Current.UseLocalSimulation;
+        private static bool UseOnlineDuelAuthority =>
+            TournamentApiBridge.IsOnlineMode && !UseSimulatedDuelOpponent;
+
+        public static bool HasActiveRoom => room != null && !room.IsDestroyed;
+        public static bool IsDuelMode => HasActiveRoom && room.IsDuel;
+        public static bool IsMatchResolved => HasActiveRoom && room.isResolved;
+        public static bool IsMatchLocked => HasActiveRoom && room.isLocked;
+
+        public static bool IsWaitingForOpponentSync =>
+            HasActiveRoom &&
+            room.IsDuel &&
+            TournamentApiBridge.IsOnlineMode &&
+            !TournamentSession.LobbyCountdownCompleted &&
+            room.state != TournamentRoomState.Playing &&
+            !room.isResolved &&
+            !room.isLocked;
+        public static string ActiveRoomId => HasActiveRoom ? room.roomId : null;
+        public static int MatchLevelIndex => HasActiveRoom ? room.selectedLevelIndex : -1;
+        public static int ActiveRoomSeed => HasActiveRoom ? room.roomSeed : 0;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Bootstrap()
+        {
+            if (instance) return;
+            GameObject host = new GameObject(nameof(TournamentMatchManager));
+            instance = host.AddComponent<TournamentMatchManager>();
+            DontDestroyOnLoad(host);
+        }
+
+        private void Awake()
+        {
+            if (instance && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+            EnsureApiRoomUpdateHook();
+        }
+
+        private static void EnsureApiRoomUpdateHook()
+        {
+            if (apiRoomUpdateHooked) return;
+            TournamentApiBridge.RoomUpdated += OnApiRoomUpdated;
+            apiRoomUpdateHooked = true;
+        }
+
+        private static void OnApiRoomUpdated()
+        {
+            if (!HasActiveRoom || room.isResolved || !UseOnlineDuelAuthority || !room.IsDuel)
+                return;
+            if (!TournamentApiBridge.HasActiveApiSession)
+                return;
+
+            RoomResponseDto snapshot = TournamentApiBridge.CurrentRoom;
+            if (snapshot == null || snapshot.status == "waiting" || snapshot.status == "starting")
+                return;
+
+            ApplyOnlineRoomSnapshot(snapshot);
+        }
+
+        public static void TryApplyOnlineSnapshot()
+        {
+            if (!HasActiveRoom || room.isResolved || !UseOnlineDuelAuthority || !room.IsDuel)
+                return;
+            if (!TournamentApiBridge.HasActiveApiSession)
+                return;
+
+            RoomResponseDto snapshot = TournamentApiBridge.CurrentRoom;
+            if (snapshot == null || snapshot.status == "waiting" || snapshot.status == "starting")
+                return;
+
+            ApplyOnlineRoomSnapshot(snapshot);
+        }
+
+        public static void CreateRoom(TournamentDefinition tournament) =>
+            AttachRoom(TournamentRoomRegistry.JoinOrGetRoom(tournament));
+
+        public static void AttachRoom(TournamentRoom existingRoom)
+        {
+            room = existingRoom;
+        }
+
+        public static bool PrepareMatchFromRoom()
+        {
+            if (!HasActiveRoom) return false;
+            if (room.matchPrepared) return room.levelGenerated;
+
+            SyncLevelFromServerAuthority();
+
+            if (!room.joinLocked)
+                room.LockForMatch();
+
+            if (!room.levelGenerated)
+                room.GenerateSharedLevel();
+
+            if (room.IsDuel)
+                PrepareDuelOpponent();
+            else
+                GenerateSimulatedOpponents(room.maxPlayerCount - 1);
+
+            room.matchPrepared = true;
+            room.joinedPlayerCount = room.maxPlayerCount;
+
+            Debug.Log(
+                $"Tournament match prepared: {room.roomId} | {room.tournamentId} | " +
+                $"players {room.maxPlayerCount} | level {room.selectedLevelIndex + 1}");
+
+            return room.levelGenerated && room.selectedLevelIndex >= 0;
+        }
+
+        public static void SyncLevelFromServerAuthority()
+        {
+            if (!HasActiveRoom || !TournamentApiBridge.HasActiveApiSession)
+                return;
+
+            RoomResponseDto apiRoom = TournamentApiBridge.CurrentRoom;
+            if (apiRoom == null || apiRoom.levelIndex < 0)
+                return;
+
+            room.ApplyApiRoomData(
+                apiRoom.roomId,
+                apiRoom.levelIndex,
+                apiRoom.levelSeed,
+                apiRoom.playerCount,
+                apiRoom.status,
+                apiRoom.waitingSeconds);
+            TournamentSession.BindRoom(apiRoom.roomId, apiRoom.levelIndex, apiRoom.levelSeed);
+        }
+
+        [Obsolete("Use AttachRoom + PrepareMatchFromRoom via TournamentRoomRegistry.")]
+        public static bool CreateRoomForLobbyFull(TournamentDefinition tournament)
+        {
+            AttachRoom(TournamentRoomRegistry.JoinOrGetRoom(tournament));
+            if (!HasActiveRoom) return false;
+            room.ForceReadyForLaunch();
+            return PrepareMatchFromRoom();
+        }
+
+        public static void BeginSynchronizedMatch()
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+            if (room.state == TournamentRoomState.Playing)
+            {
+                if (!TournamentSession.GameplayRunning)
+                    TournamentSession.StartGameplayTracking();
+                return;
+            }
+
+            if (!room.levelGenerated)
+            {
+                if (!PrepareMatchFromRoom())
+                    TournamentRoomRegistry.ForcePrepareForLaunch();
+            }
+
+            if (!room.levelGenerated) return;
+
+            TournamentServerClock.StartRoomClock();
+            room.synchronizedStartServerMs = TournamentServerClock.NowMs;
+            room.state = TournamentRoomState.Playing;
+            room.MarkMatchPlaying();
+
+            Debug.Log(
+                $"[TournamentMatchManager] BeginSynchronizedMatch room={room.roomId} " +
+                $"level={room.selectedLevelIndex} seed={room.roomSeed} " +
+                $"match_start_at_ms={TournamentServerClock.ScheduledStartMs} " +
+                $"synchronizedStartServerMs={room.synchronizedStartServerMs}");
+
+            if (room.IsDuel)
+            {
+                room.duelOpponentFinishServerMs =
+                    room.synchronizedStartServerMs + room.duelOpponentFinishOffsetMs;
+            }
+            else
+            {
+                ApplySimulatedOpponentTimestamps();
+            }
+
+            TournamentSession.StartGameplayTracking();
+        }
+
+        private void Update()
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+
+            if (IsWaitingForOpponentSync)
+            {
+                EnsureGameplayFrozen();
+                return;
+            }
+
+            if (room.state != TournamentRoomState.Playing) return;
+
+            if (UseSimulatedDuelOpponent)
+            {
+                if (room.IsDuel)
+                    TickSimulatedDuelOpponent();
+                else
+                    TickSimulatedRaceFinishers();
+                return;
+            }
+
+            if (!TournamentApiBridge.IsOnlineMode || string.IsNullOrEmpty(room.roomId)) return;
+
+            float pollInterval = room.IsDuel ? DuelOnlinePollIntervalSeconds : OnlineRoomPollIntervalSeconds;
+            onlineRoomPollTimer += Time.unscaledDeltaTime;
+            if (onlineRoomPollTimer < pollInterval || onlineRoomPollInFlight)
+                return;
+
+            onlineRoomPollTimer = 0f;
+            onlineRoomPollInFlight = true;
+            instance.StartCoroutine(PollOnlineRoomRoutine());
+        }
+
+        private static void TickSimulatedDuelOpponent()
+        {
+            TournamentMatchParticipant opponent = GetDuelOpponent();
+            if (opponent == null || opponent.hasCompleted || opponent.isEliminated) return;
+
+            if (TournamentServerClock.NowMs >= room.duelOpponentFinishServerMs)
+            {
+                int simulatedScore = Mathf.Max(
+                    500,
+                    TournamentSession.FinalScore > 0
+                        ? Mathf.RoundToInt(TournamentSession.FinalScore * UnityEngine.Random.Range(0.85f, 1.15f))
+                        : UnityEngine.Random.Range(800, 2400));
+                int simulatedMoves = Mathf.Max(1, TournamentSession.MoveCount + UnityEngine.Random.Range(2, 14));
+
+                RegisterDuelParticipant(
+                    opponent.id,
+                    room.duelOpponentFinishServerMs,
+                    simulatedScore,
+                    simulatedMoves,
+                    (float)(room.duelOpponentFinishServerMs / 1000d));
+                TryResolveDuelInstant();
+            }
+        }
+
+        private static void TickSimulatedRaceFinishers()
+        {
+            if (room.isResolved || room.isLocked || room.localPlayer.hasCompleted) return;
+
+            double nowMs = TournamentServerClock.NowMs;
+            foreach (TournamentMatchParticipant remote in room.remotePlayers)
+            {
+                if (remote.isEliminated || remote.hasCompleted) continue;
+                if (nowMs >= remote.completionServerMs)
+                    remote.hasCompleted = true;
+            }
+
+            int paidCount = TournamentPrizeTable.GetPaidRankCount(room.tournament.id);
+            if (paidCount <= 0) return;
+
+            int finishedCount = CountFinishedParticipants();
+            if (finishedCount >= paidCount)
+                FinalizeInstantRaceLoss(CountFinishedParticipantsExcludingLocal() + 1);
+        }
+
+        private static IEnumerator PollOnlineRoomRoutine()
+        {
+            try
+            {
+                if (!HasActiveRoom || room.isResolved)
+                    yield break;
+
+                var fetchTask = TournamentService.FetchRoomSnapshotAsync(room.roomId);
+                while (!fetchTask.IsCompleted)
+                    yield return null;
+
+                if (!fetchTask.Result.Success || fetchTask.Result.Data == null)
+                    yield break;
+
+                RoomResponseDto snapshot = fetchTask.Result.Data;
+                if (TournamentSession.Tournament != null)
+                    TournamentApiBridge.MergeAndNotify(snapshot);
+
+                if (snapshot.players != null)
+                    TournamentRoomRegistry.LocalRoom?.ApplyOnlinePlayers(snapshot.players);
+
+                ApplyOnlineRoomSnapshot(snapshot);
+            }
+            finally
+            {
+                if (instance)
+                    instance.onlineRoomPollInFlight = false;
+            }
+        }
+
+        private static bool IsRoomFinished(string status) =>
+            status == "finished" || status == "locked";
+
+        private static void ApplyOnlineRoomSnapshot(RoomResponseDto snapshot)
+        {
+            if (IsRoomFinished(snapshot.status))
+            {
+                ApplyServerRankFromSnapshot(snapshot);
+                return;
+            }
+
+            if (room.IsDuel)
+            {
+                ApplyDuelOpponentSubmission(snapshot);
+                return;
+            }
+
+            if (!room.localPlayer.hasCompleted && HasPaidWinnerSlotsFilled(snapshot))
+                ApplyInstantRaceLossFromSnapshot(snapshot);
+        }
+
+        private static bool HasPaidWinnerSlotsFilled(RoomResponseDto snapshot)
+        {
+            int paid = TournamentPrizeTable.GetPaidRankCount(room.tournament.id);
+            int submitted = CountSubmittedPlayers(snapshot);
+            return paid > 0 && submitted >= paid;
+        }
+
+        private static int CountSubmittedPlayers(RoomResponseDto snapshot)
+        {
+            if (snapshot.players == null) return 0;
+            int count = 0;
+            foreach (RoomPlayerDto player in snapshot.players)
+            {
+                if (player != null && player.hasSubmitted)
+                    count++;
+            }
+            return count;
+        }
+
+        private static void ApplyDuelOpponentSubmission(RoomResponseDto snapshot)
+        {
+            if (room.isResolved) return;
+
+            if (UseOnlineDuelAuthority)
+            {
+                if (IsRoomFinished(snapshot.status))
+                {
+                    ApplyServerRankFromSnapshot(snapshot);
+                    return;
+                }
+
+                RoomPlayerDto opponentDto = FindOpponentPlayer(snapshot);
+                if (opponentDto == null || !opponentDto.hasSubmitted)
+                    return;
+
+                bool localFinished = room.localPlayer != null && room.localPlayer.hasCompleted;
+                if (!localFinished)
+                {
+                    StopLocalGameplayInstant();
+                    ApplyServerFinish(2, 0, duelWin: false);
+                }
+                else
+                    ApplyServerRankFromSnapshot(snapshot);
+
+                return;
+            }
+
+            if (room.isLocked) return;
+
+            if (room.localPlayer.hasCompleted) return;
+
+            RoomPlayerDto opponentDtoLocal = FindOpponentPlayer(snapshot);
+            if (opponentDtoLocal == null || !opponentDtoLocal.hasSubmitted) return;
+
+            TournamentMatchParticipant opponent = GetDuelOpponent();
+            if (opponent == null)
+            {
+                room.ApplyOnlinePlayers(snapshot.players);
+                opponent = GetDuelOpponent();
+            }
+
+            if (opponent == null || opponent.hasCompleted) return;
+
+            double finishMs = room.synchronizedStartServerMs +
+                              Mathf.Max(1, opponentDtoLocal.elapsedSeconds) * 1000d;
+
+            RegisterDuelParticipant(
+                opponent.id,
+                finishMs,
+                Mathf.Max(0, opponentDtoLocal.score),
+                Mathf.Max(1, opponentDtoLocal.moves),
+                Mathf.Max(1f, opponentDtoLocal.elapsedSeconds));
+
+            ResolveDuel(localWon: false);
+        }
+
+        private static void StopLocalGameplayInstant()
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+
+            room.isLocked = true;
+            room.state = TournamentRoomState.Locked;
+            TournamentSession.StopGameplay();
+            FreezeLocalGameplay();
+            TournamentGameSessionController.StopTracking();
+        }
+
+        public static void EnsureGameplayFrozen()
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+            FreezeLocalGameplay();
+            TournamentSession.StopGameplay();
+        }
+
+        private static void ApplyInstantRaceLossFromSnapshot(RoomResponseDto snapshot)
+        {
+            int rank = CountSubmittedPlayers(snapshot) + 1;
+            FinalizeInstantRaceLoss(rank);
+        }
+
+        private static void ApplyServerRankFromSnapshot(RoomResponseDto snapshot)
+        {
+            if (room.isResolved) return;
+
+            int localUserId = NetworkManager.HasInstance ? NetworkManager.Instance.UserId : 0;
+            RoomPlayerDto localDto = null;
+            if (snapshot.players != null)
+            {
+                foreach (RoomPlayerDto player in snapshot.players)
+                {
+                    if (player != null && player.userId == localUserId)
+                    {
+                        localDto = player;
+                        break;
+                    }
+                }
+            }
+
+            if (localDto != null && (localDto.rank ?? 0) > 0)
+            {
+                int rank = localDto.rank.Value;
+                int prize = localDto.prize > 0
+                    ? localDto.prize
+                    : TournamentPrizeTable.GetPrize(room.tournament.id, rank);
+                bool duelWin = room.IsDuel && rank == 1;
+                ApplyServerFinish(rank, prize, duelWin);
+                return;
+            }
+
+            if (!room.IsDuel)
+                return;
+
+            RoomPlayerDto opponent = FindOpponentPlayer(snapshot);
+            if (opponent != null && opponent.hasSubmitted && (localDto == null || !localDto.hasSubmitted))
+            {
+                StopLocalGameplayInstant();
+                ApplyServerFinish(2, 0, duelWin: false);
+            }
+        }
+
+        private static RoomPlayerDto FindOpponentPlayer(RoomResponseDto snapshot)
+        {
+            if (snapshot.players == null) return null;
+            int localUserId = NetworkManager.HasInstance ? NetworkManager.Instance.UserId : 0;
+
+            foreach (RoomPlayerDto player in snapshot.players)
+            {
+                if (player == null || player.userId == localUserId)
+                    continue;
+                return player;
+            }
+
+            return null;
+        }
+
+        public static void OnLocalPlayerCompleted(int score, int moves, float elapsedSeconds)
+        {
+            if (!HasActiveRoom || room.isResolved || room.isLocked) return;
+            if (room.localPlayer != null && room.localPlayer.hasCompleted) return;
+
+            if (room.IsDuel)
+            {
+                HandleDuelLocalComplete(score, moves, elapsedSeconds);
+                return;
+            }
+
+            HandleMultiplayerLocalComplete(score, moves, elapsedSeconds);
+        }
+
+        public static void ForfeitAsLoss()
+        {
+            if (!HasActiveRoom || room.isResolved || room.isLocked) return;
+            if (TournamentResultDialog.IsVisible) return;
+
+            if (room.IsDuel)
+            {
+                if (UseSimulatedDuelOpponent)
+                {
+                    TournamentMatchParticipant duelOpponent = GetDuelOpponent();
+                    if (duelOpponent == null) return;
+
+                    double nowMs = TournamentServerClock.IsRunning
+                        ? TournamentServerClock.NowMs
+                        : room.synchronizedStartServerMs;
+
+                    float elapsed = TournamentSession.GetLiveElapsedSeconds();
+                    int score = ScoreHolder.Instance ? ScoreHolder.Count : 0;
+
+                    RegisterDuelParticipant(
+                        TournamentRoom.LocalPlayerId,
+                        nowMs,
+                        score,
+                        TournamentSession.MoveCount,
+                        elapsed);
+
+                    RegisterDuelParticipant(
+                        duelOpponent.id,
+                        nowMs,
+                        Mathf.Max(score + 100, 500),
+                        Mathf.Max(1, TournamentSession.MoveCount + 1),
+                        Mathf.Max(1f, elapsed * 0.85f));
+
+                    TryResolveDuelInstant();
+                    return;
+                }
+
+                TournamentSession.FinishGameplay(ScoreHolder.Instance ? ScoreHolder.Count : 0);
+                TournamentGameSessionController.StopTracking();
+                RegisterDuelParticipant(
+                    TournamentRoom.LocalPlayerId,
+                    TournamentServerClock.NowMs,
+                    ScoreHolder.Instance ? ScoreHolder.Count : 0,
+                    TournamentSession.MoveCount,
+                    TournamentSession.GetLiveElapsedSeconds());
+
+                if (instance != null)
+                    instance.StartCoroutine(OnlineSubmitAndResolveRoutine(
+                        ScoreHolder.Instance ? ScoreHolder.Count : 0,
+                        TournamentSession.MoveCount,
+                        Mathf.RoundToInt(TournamentSession.GetLiveElapsedSeconds()),
+                        duelMode: true));
+                return;
+            }
+
+            HandleMultiplayerLocalComplete(
+                ScoreHolder.Instance ? ScoreHolder.Count : 0,
+                TournamentSession.MoveCount,
+                TournamentSession.GetLiveElapsedSeconds());
+        }
+
+        private static void HandleDuelLocalComplete(int score, int moves, float elapsedSeconds)
+        {
+            TournamentFlowLog.PlayerFinished($"score={score} moves={moves} elapsed={elapsedSeconds:F1}s");
+            double nowMs = TournamentServerClock.NowMs;
+            TournamentMatchParticipant opponent = GetDuelOpponent();
+
+            if (UseSimulatedDuelOpponent &&
+                opponent != null && !opponent.hasCompleted && nowMs >= room.duelOpponentFinishServerMs)
+            {
+                RegisterDuelParticipant(
+                    opponent.id,
+                    room.duelOpponentFinishServerMs,
+                    Mathf.Max(500, Mathf.RoundToInt(score * UnityEngine.Random.Range(0.85f, 1.15f))),
+                    Mathf.Max(1, moves + UnityEngine.Random.Range(2, 14)),
+                    (float)(room.duelOpponentFinishServerMs / 1000d));
+            }
+
+            TournamentSession.FinishGameplay(score);
+            TournamentGameSessionController.StopTracking();
+            FreezeLocalGameplay();
+
+            RegisterDuelParticipant(TournamentRoom.LocalPlayerId, nowMs, score, moves, elapsedSeconds);
+
+            if (TournamentApiBridge.IsOnlineMode && !UseSimulatedDuelOpponent && instance != null)
+            {
+                instance.StartCoroutine(OnlineSubmitAndResolveRoutine(score, moves, elapsedSeconds, duelMode: true));
+                return;
+            }
+
+            TryResolveDuelInstant();
+        }
+
+        private static IEnumerator OnlineSubmitAndResolveRoutine(int score, int moves, float elapsedSeconds, bool duelMode)
+        {
+            FreezeLocalGameplay();
+            TournamentSession.FinishGameplay(score);
+            TournamentGameSessionController.StopTracking();
+
+            var submitTask = TournamentService.SubmitScoreAsync(
+                room.roomId,
+                score,
+                moves,
+                Mathf.RoundToInt(elapsedSeconds));
+
+            while (!submitTask.IsCompleted)
+                yield return null;
+
+            if (!submitTask.Result.Success || submitTask.Result.Data == null)
+            {
+                int statusCode = submitTask.Result?.StatusCode ?? 0;
+                string err = submitTask.Result?.ErrorMessage ?? "Unknown submit error";
+                TournamentFlowLog.SubmitScoreError(
+                    $"room={room.roomId} status={statusCode} detail={err}");
+
+                // 409 / "already ended" / "locked"/"finished" = the OPPONENT finished first and the
+                // server already finalized the match. This is a normal duel loss, NOT an error —
+                // resolve cleanly from the server snapshot instead of a scary "submit failed" popup.
+                if (IsMatchAlreadyEndedResponse(statusCode, err))
+                {
+                    Debug.Log(
+                        $"[TournamentMatchManager] Submit 409/ended room={room.roomId} — opponent " +
+                        "finished first; resolving as server-authoritative loss");
+                    duelServerScoreSubmitted = true;
+                    yield return ResolveFromServerSnapshotRoutine(duelMode);
+                    yield break;
+                }
+
+                TournamentMessagePopup.Show(
+                    "Score Submit Failed",
+                    err + "\n\nYour result could not be saved. Please try again.",
+                    null,
+                    autoCloseSeconds: 5f);
+                yield break;
+            }
+
+            TournamentFlowLog.SubmitScore(
+                $"ok finalized={submitTask.Result.Data.finalized} rank={submitTask.Result.Data.rank}");
+
+            duelServerScoreSubmitted = true;
+
+            if (submitTask.Result.Data.finalized)
+            {
+                if (submitTask.Result.Data.walletBalance.HasValue)
+                    pendingWalletBalance = submitTask.Result.Data.walletBalance;
+
+                ApplyServerFinish(
+                    submitTask.Result.Data.rank,
+                    submitTask.Result.Data.prize,
+                    duelMode && submitTask.Result.Data.rank == 1);
+            }
+            else if (!duelMode)
+            {
+                room.localPlayer.hasCompleted = true;
+                room.localPlayer.score = score;
+                room.localPlayer.moves = moves;
+                room.localPlayer.timeSeconds = elapsedSeconds;
+                room.localPlayer.completionServerMs = TournamentServerClock.NowMs;
+            }
+            else
+            {
+                room.localPlayer.hasCompleted = true;
+                room.localPlayer.score = score;
+                room.localPlayer.moves = moves;
+                room.localPlayer.timeSeconds = elapsedSeconds;
+                room.localPlayer.completionServerMs = TournamentServerClock.NowMs;
+            }
+
+            yield break;
+        }
+
+        private static bool IsMatchAlreadyEndedResponse(int statusCode, string message)
+        {
+            if (statusCode == 409)
+                return true;
+            if (string.IsNullOrEmpty(message))
+                return false;
+            string m = message.ToLowerInvariant();
+            return m.Contains("already ended") || m.Contains("match ended") ||
+                   m.Contains("locked") || m.Contains("finished") || m.Contains("not active");
+        }
+
+        /// <summary>
+        /// Fetches the authoritative room snapshot and applies the server-decided rank/prize.
+        /// Used when the local submit was rejected because the opponent already finalized the match,
+        /// so the loser sees a clean result popup instead of an error.
+        /// </summary>
+        private static IEnumerator ResolveFromServerSnapshotRoutine(bool duelMode)
+        {
+            if (!HasActiveRoom || room.isResolved)
+                yield break;
+
+            var fetchTask = TournamentService.FetchRoomSnapshotAsync(room.roomId);
+            while (!fetchTask.IsCompleted)
+                yield return null;
+
+            if (fetchTask.Result.Success && fetchTask.Result.Data != null)
+            {
+                if (TournamentSession.Tournament != null)
+                    TournamentApiBridge.MergeAndNotify(fetchTask.Result.Data);
+                ApplyServerRankFromSnapshot(fetchTask.Result.Data);
+            }
+
+            // Snapshot missing the local rank (rare) — fall back to a deterministic duel loss so the
+            // player is never left stuck on a frozen board.
+            if (!room.isResolved)
+            {
+                Debug.LogWarning(
+                    $"[TournamentMatchManager] No server rank in snapshot room={room.roomId} — " +
+                    "applying fallback loss");
+                ApplyServerFinish(duelMode ? 2 : Mathf.Max(2, room.maxPlayerCount), 0, duelWin: false);
+            }
+        }
+
+        private static void ApplyServerFinish(int rank, int prize, bool duelWin)
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+
+            rank = Mathf.Max(1, rank);
+            prize = Mathf.Max(0, prize);
+            if (duelWin)
+            {
+                TournamentFlowLog.WinnerSelected($"rank={rank} prize={prize}");
+                TournamentFlowLog.Winner($"rank={rank} prize={prize}");
+            }
+            else if (room.IsDuel)
+            {
+                TournamentFlowLog.LoserSelected($"rank={rank}");
+                TournamentFlowLog.Loser($"rank={rank}");
+            }
+
+            Debug.Log(
+                $"[TournamentMatchManager] ServerFinish room={room.roomId} rank={rank} prize={prize} " +
+                $"duelWin={duelWin} (server authoritative)");
+
+            room.isLocked = true;
+            room.state = TournamentRoomState.Locked;
+            TournamentSession.StopGameplay();
+            FreezeLocalGameplay();
+            TournamentGameSessionController.StopTracking();
+
+            // Relay the server-decided result over Nakama realtime when that path is enabled so the
+            // opponent's client ends instantly (no-op on the FastAPI path).
+            if (ApiConfig.Current.UseNakamaRealtimeNetworking)
+            {
+                Mkey.Network.NakamaTournamentRealtimeClient.ReportFinish(
+                    rank, room.localPlayer != null ? room.localPlayer.score : 0, prize, pendingWalletBalance);
+            }
+
+            FinalizeResult(rank, prize, duelWin: duelWin);
+        }
+
+        private static void RegisterDuelParticipant(
+            string playerId,
+            double serverCompletionMs,
+            int score,
+            int moves,
+            float elapsedSeconds)
+        {
+            if (!HasActiveRoom) return;
+
+            TournamentMatchParticipant participant = room.GetParticipant(playerId);
+            if (participant == null || participant.isEliminated) return;
+            if (participant.hasCompleted) return;
+
+            participant.hasCompleted = true;
+            participant.completionServerMs = serverCompletionMs;
+            participant.score = score;
+            participant.moves = moves;
+            participant.timeSeconds = elapsedSeconds;
+        }
+
+        private static void TryResolveDuelInstant()
+        {
+            if (!HasActiveRoom || room.isResolved || room.isLocked) return;
+
+            TournamentMatchParticipant local = room.localPlayer;
+            TournamentMatchParticipant opponent = GetDuelOpponent();
+            if (local == null || opponent == null) return;
+
+            bool localDone = local.hasCompleted;
+            bool oppDone = opponent.hasCompleted;
+            if (!localDone && !oppDone) return;
+
+            if (localDone && !oppDone)
+            {
+                ResolveDuel(localWon: true);
+                return;
+            }
+
+            if (oppDone && !localDone)
+            {
+                ResolveDuel(localWon: false);
+                return;
+            }
+
+            ResolveDuel(DidLocalWinDuel(local, opponent));
+        }
+
+        private static void ResolveDuel(bool localWon)
+        {
+            if (!HasActiveRoom || room.isResolved || room.isLocked) return;
+
+            room.duelWaitingForOpponent = false;
+            room.isLocked = true;
+            room.winnerId = localWon ? room.localPlayer.id : GetDuelOpponent()?.id;
+            room.state = TournamentRoomState.Locked;
+            TournamentSession.StopGameplay();
+            FreezeLocalGameplay();
+            TournamentGameSessionController.StopTracking();
+
+            int prize = localWon ? TournamentPrizeTable.GetPrize(room.tournament.id, 1) : 0;
+            FinalizeResult(rank: localWon ? 1 : 2, prize: prize, duelWin: localWon);
+        }
+
+        private static bool DidLocalWinDuel(
+            TournamentMatchParticipant local,
+            TournamentMatchParticipant opponent)
+        {
+            if (local.timeSeconds < opponent.timeSeconds) return true;
+            if (local.timeSeconds > opponent.timeSeconds) return false;
+            if (local.score > opponent.score) return true;
+            if (local.score < opponent.score) return false;
+            return local.moves <= opponent.moves;
+        }
+
+        private static void TryRegisterCompletion(
+            string playerId,
+            double serverCompletionMs,
+            int score,
+            int moves,
+            float elapsedSeconds)
+        {
+            RegisterDuelParticipant(playerId, serverCompletionMs, score, moves, elapsedSeconds);
+            TryResolveDuelInstant();
+        }
+
+        private static void ResolveDuelIfBothFinished()
+        {
+            TryResolveDuelInstant();
+        }
+
+        private static void HandleMultiplayerLocalComplete(int score, int moves, float elapsedSeconds)
+        {
+            if (room.isResolved || room.isLocked) return;
+
+            if (TournamentApiBridge.IsOnlineMode && !UseSimulatedDuelOpponent && instance != null)
+            {
+                instance.StartCoroutine(OnlineSubmitAndResolveRoutine(score, moves, elapsedSeconds, duelMode: false));
+                return;
+            }
+
+            FinalizeSimulatedMultiResult(score, moves, elapsedSeconds);
+        }
+
+        private static void FinalizeSimulatedMultiResult(int score, int moves, float elapsedSeconds)
+        {
+            if (room.isResolved || room.isLocked) return;
+
+            double nowMs = TournamentServerClock.NowMs;
+
+            TournamentSession.FinishGameplay(score);
+            TournamentGameSessionController.StopTracking();
+
+            room.localPlayer.hasCompleted = true;
+            room.localPlayer.score = score;
+            room.localPlayer.moves = moves;
+            room.localPlayer.timeSeconds = elapsedSeconds;
+            room.localPlayer.completionServerMs = nowMs;
+
+            foreach (TournamentMatchParticipant remote in room.remotePlayers)
+            {
+                if (remote.isEliminated) continue;
+                if (!remote.hasCompleted)
+                    remote.hasCompleted = true;
+                if (remote.completionServerMs == double.MaxValue)
+                    remote.completionServerMs = room.synchronizedStartServerMs + remote.timeSeconds * 1000d;
+            }
+
+            List<TournamentMatchParticipant> all = room.GetAllParticipants();
+            TournamentMatchResult result = TournamentRankingService.BuildFinalResult(
+                room.tournament,
+                room.localPlayer,
+                all,
+                prizeWon: 0,
+                room.selectedLevelIndex);
+
+            int prize = TournamentPrizeTable.GetPrize(room.tournament.id, result.playerRank);
+            result.prizeWon = prize;
+            room.SetRankingData(result.leaderboard);
+            FinalizeResult(result.playerRank, prize, duelWin: false, matchResult: result);
+        }
+
+        private static void FinalizeInstantRaceLoss(int rank)
+        {
+            if (!HasActiveRoom || room.isResolved || room.isLocked) return;
+
+            rank = Mathf.Max(1, rank);
+            TournamentSession.StopGameplay();
+            FreezeLocalGameplay();
+            TournamentGameSessionController.StopTracking();
+
+            int prize = TournamentPrizeTable.GetPrize(room.tournament.id, rank);
+            FinalizeResult(rank, prize, duelWin: false);
+        }
+
+        private static int CountFinishedParticipants()
+        {
+            int count = 0;
+            if (room.localPlayer != null && room.localPlayer.hasCompleted)
+                count++;
+            foreach (TournamentMatchParticipant remote in room.remotePlayers)
+            {
+                if (!remote.isEliminated && remote.hasCompleted)
+                    count++;
+            }
+            return count;
+        }
+
+        private static int CountFinishedParticipantsExcludingLocal()
+        {
+            int count = 0;
+            foreach (TournamentMatchParticipant remote in room.remotePlayers)
+            {
+                if (!remote.isEliminated && remote.hasCompleted)
+                    count++;
+            }
+            return count;
+        }
+
+        private static void FinalizeResult(
+            int rank,
+            int prize,
+            bool duelWin,
+            TournamentMatchResult matchResult = null)
+        {
+            if (!HasActiveRoom || room.isResolved) return;
+
+            room.isResolved = true;
+            room.state = TournamentRoomState.Resolved;
+            TournamentSession.StopGameplay();
+            FreezeLocalGameplay();
+
+            if (prize > 0 && !room.rewardGranted)
+            {
+                room.rewardGranted = true;
+                if (ApiConfig.Current.UseLocalSimulation)
+                {
+                    if (TournamentRewardGuard.TryClaimReward(room.roomId, prize) && CoinsHolder.Instance)
+                    {
+                        CoinsHolder.Add(prize);
+                        LevelCoinRewardEffect.Play(prize);
+                    }
+                }
+                else
+                {
+                    LevelCoinRewardEffect.Play(prize);
+                }
+            }
+
+            if (matchResult == null)
+            {
+                matchResult = new TournamentMatchResult
+                {
+                    tournamentId = room.tournament.id,
+                    tournamentName = room.tournament.displayName,
+                    maxPlayers = room.tournament.maxPlayers,
+                    levelIndex = room.selectedLevelIndex,
+                    playerRank = rank,
+                    playerScore = room.localPlayer.score,
+                    playerTimeSeconds = room.localPlayer.timeSeconds,
+                    playerMoves = room.localPlayer.moves,
+                    prizeWon = prize,
+                    entryFee = room.tournament.entryFee
+                };
+            }
+
+            matchResult.prizeWon = prize;
+            matchResult.playerRank = rank;
+            matchResult.levelIndex = room.selectedLevelIndex;
+            room.SetRankingData(matchResult.leaderboard);
+            TournamentHistoryService.SaveResult(matchResult);
+            SyncMatchToServer(matchResult);
+
+            pendingRank = rank;
+            pendingPrize = prize;
+            pendingDuelWin = duelWin;
+            pendingResultCached = true;
+
+            if (TournamentApiBridge.IsOnlineMode && instance != null)
+                instance.StartCoroutine(FinishResultFlowRoutine());
+            else
+                ShowPendingResultDialog();
+        }
+
+        private static IEnumerator FinishResultFlowRoutine()
+        {
+            if (pendingWalletBalance.HasValue)
+                ApplyWalletBalance(pendingWalletBalance);
+
+            if (TournamentApiBridge.IsOnlineMode)
+            {
+                var walletTask = WalletService.SyncToCoinsHolderAsync();
+                while (!walletTask.IsCompleted)
+                    yield return null;
+
+                if (walletTask.Result.Success)
+                    ApplyWalletBalance(walletTask.Result.Data);
+            }
+
+            ShowPendingResultDialog();
+        }
+
+        private static void ApplyWalletBalance(int? balance)
+        {
+            if (!balance.HasValue || !CoinsHolder.Instance)
+                return;
+
+            CoinsHolder.Instance.SetCount(balance.Value);
+            WalletService.CachedBalance = balance.Value;
+        }
+
+        public static void ShowPendingResultDialog()
+        {
+            if (!pendingResultCached || !HasActiveRoom) return;
+
+            int rank = pendingRank;
+            int prize = pendingPrize;
+            bool duelWin = pendingDuelWin;
+
+            if (duelWin)
+            {
+                TournamentFlowLog.PopupOpened($"YOU WIN rank={rank} prize={prize}");
+                TournamentResultDialog.ShowDuelWin(prize, rank, () => TournamentResultDialog.ReturnToTournamentPage());
+                return;
+            }
+
+            if (prize > 0)
+            {
+                TournamentFlowLog.PopupOpened($"YOU WIN rank={rank} prize={prize}");
+                TournamentResultDialog.ShowRankWin(rank, prize, () => TournamentResultDialog.ReturnToTournamentPage());
+                return;
+            }
+
+            if (!duelWin && room.IsDuel)
+            {
+                TournamentFlowLog.PopupOpened("YOU LOSE duel");
+                TournamentResultDialog.ShowDuelLoss(() => TournamentResultDialog.ReturnToTournamentPage());
+                return;
+            }
+
+            TournamentFlowLog.PopupOpened($"YOU LOSE rank={rank}");
+            TournamentResultDialog.ShowRankLoss(room.tournament.id, rank, () => TournamentResultDialog.ReturnToTournamentPage());
+        }
+
+        private static void ClearPendingResult()
+        {
+            pendingResultCached = false;
+            pendingRank = 0;
+            pendingPrize = 0;
+            pendingDuelWin = false;
+            pendingWalletBalance = null;
+        }
+
+        private static void FreezeLocalGameplay()
+        {
+            if (GameBoard.Instance)
+                GameBoard.Instance.SetControlActivity(false, false);
+        }
+
+        private static TournamentMatchParticipant GetDuelOpponent() =>
+            room.remotePlayers.Count > 0 ? room.remotePlayers[0] : null;
+
+        public static TournamentMatchParticipant GetDuelOpponentForHud() => GetDuelOpponent();
+
+        private static void PrepareDuelOpponent()
+        {
+            if (TournamentApiBridge.IsOnlineMode && !UseSimulatedDuelOpponent)
+            {
+                if (GetDuelOpponent() == null)
+                {
+                    room.remotePlayers.Add(new TournamentMatchParticipant
+                    {
+                        id = TournamentRoom.RemotePlayerId,
+                        displayName = "Opponent",
+                        isLocal = false
+                    });
+                }
+                return;
+            }
+
+            room.remotePlayers.Clear();
+            var rng = new System.Random(room.roomSeed);
+            float opponentSeconds = 40f + (float)rng.NextDouble() * 80f;
+
+            room.duelOpponentFinishOffsetMs = opponentSeconds * 1000d;
+            room.remotePlayers.Add(new TournamentMatchParticipant
+            {
+                id = TournamentRoom.RemotePlayerId,
+                displayName = "Opponent",
+                isLocal = false
+            });
+        }
+
+        private static void GenerateSimulatedOpponents(int count)
+        {
+            room.remotePlayers.Clear();
+            if (count <= 0) return;
+
+            var rng = new System.Random(room.roomSeed);
+
+            for (int i = 0; i < count; i++)
+            {
+                float time = 45f + (float)rng.NextDouble() * 130f;
+                room.remotePlayers.Add(new TournamentMatchParticipant
+                {
+                    id = "bot_" + i,
+                    displayName = TournamentRankingService.GetBotName(i),
+                    isLocal = false,
+                    hasCompleted = false,
+                    timeSeconds = time,
+                    score = 900 + rng.Next(0, 3200),
+                    moves = 12 + rng.Next(0, 55)
+                });
+            }
+        }
+
+        private static void ApplySimulatedOpponentTimestamps()
+        {
+            foreach (TournamentMatchParticipant remote in room.remotePlayers)
+            {
+                if (remote.isEliminated) continue;
+                remote.completionServerMs = room.synchronizedStartServerMs + remote.timeSeconds * 1000d;
+            }
+        }
+
+        public static void HandleServerMatchFinished(JToken resultsToken)
+        {
+            if (!HasActiveRoom || room.isResolved || !NetworkManager.HasInstance)
+                return;
+
+            StopLocalGameplayInstant();
+
+            int localUserId = NetworkManager.Instance.UserId;
+            int rank = room.maxPlayerCount;
+            int prize = 0;
+
+            if (resultsToken is JArray results)
+            {
+                foreach (JToken item in results)
+                {
+                    if (item["user_id"]?.Value<int>() != localUserId)
+                        continue;
+
+                    rank = item["rank"]?.Value<int>() ?? rank;
+                    prize = item["prize"]?.Value<int>() ?? 0;
+                    if (item["wallet_balance"] != null)
+                        pendingWalletBalance = item["wallet_balance"].Value<int>();
+                    break;
+                }
+            }
+
+            bool duelWin = room.IsDuel && rank == 1;
+            ApplyServerFinish(rank, prize, duelWin);
+        }
+
+        public static void DestroyRoom()
+        {
+            if (room != null)
+            {
+                TournamentFlowLog.RoomDestroyed(room.roomId);
+                room.Cleanup();
+            }
+
+            room = null;
+            ClearPendingResult();
+            duelServerScoreSubmitted = false;
+            TournamentServerClock.Reset();
+            TournamentRoomRegistry.ReleaseLocalRoom();
+            TournamentJoinFlowGuard.Reset();
+        }
+
+        private static void SyncMatchToServer(TournamentMatchResult matchResult)
+        {
+            if (!TournamentApiBridge.IsOnlineMode || !HasActiveRoom || matchResult == null)
+                return;
+
+            if (NetworkManager.HasInstance)
+                NetworkManager.Instance.StartCoroutine(SubmitMatchRoutine(matchResult));
+        }
+
+        private static IEnumerator SubmitMatchRoutine(TournamentMatchResult matchResult)
+        {
+            bool localFinished = room.localPlayer != null && room.localPlayer.hasCompleted;
+
+            if (!duelServerScoreSubmitted && localFinished)
+            {
+                var submitTask = TournamentService.SubmitScoreAsync(
+                    room.roomId,
+                    matchResult.playerScore,
+                    matchResult.playerMoves,
+                    Mathf.RoundToInt(matchResult.playerTimeSeconds));
+
+                while (!submitTask.IsCompleted)
+                    yield return null;
+
+                if (!submitTask.Result.Success)
+                {
+                    Debug.LogWarning("[TournamentMatchManager] Submit score failed: " + submitTask.Result.ErrorMessage);
+                    yield break;
+                }
+
+                duelServerScoreSubmitted = true;
+            }
+
+            var walletTask = WalletService.SyncToCoinsHolderAsync();
+            while (!walletTask.IsCompleted)
+                yield return null;
+
+            var historyTask = TournamentService.FetchHistoryAsync();
+            while (!historyTask.IsCompleted)
+                yield return null;
+
+            if (historyTask.Result.Success)
+                TournamentHistoryService.ApplyApiHistory(historyTask.Result.Data);
+        }
+    }
+}

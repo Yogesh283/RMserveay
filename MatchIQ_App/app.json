@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Match IQ",
+    "slug": "matchiq",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "matchiq",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111111"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fun.matchiq.app",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["matchiqunity"]
+      }
+    },
+    "android": {
+      "package": "fun.matchiq.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#111111",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "matchiq",
+              "host": "match-result"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen",
+      "expo-dev-client",
+      "./plugins/withUnityEmbed.js",
+      "./plugins/withUnityQueries.js"
+    ]
+  }
+}
