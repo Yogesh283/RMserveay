@@ -1,9 +1,0 @@
-.env
-node_modules/
-vendor/
-public/build/
-public/hot
-assets/logo.png
-public/downloads/*.apk
-*.zip
-publisher-dashboard/client/node_modules/
